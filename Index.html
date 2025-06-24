@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ESL Role-Play Bot</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    body { font-family: Arial; padding: 20px; background: #f2f2f2; }
+    #chat { background: white; padding: 20px; max-width: 600px; margin: auto; border-radius: 10px; }
+    .message { margin: 10px 0; }
+    .user { color: green; }
+    .bot { color: blue; }
+    .correction { color: red; font-size: 0.9em; }
+    textarea { width: 100%; height: 60px; margin-top: 10px; resize: none; }
+    input { width: 100%; padding: 8px; margin: 5px 0; }
+    button { padding: 10px 15px; margin: 5px 0; }
+  </style>
+</head>
+<body>
+  <div id="chat">
+    <h2>🎭 ESL Role-Play Bot</h2>
+    <div>
+      <input id="studentName" placeholder="Enter your name" />
+      <input id="sessionDate" type="date" />
+    </div>
+    <div id="conversation"></div>
+    <button onclick="startRecording()">🎙️ Speak</button>
+    <textarea id="textOutput" readonly placeholder="Your message will appear here..."></textarea>
+    <button onclick="sendMessage()">📨 Send</button>
+    <button onclick="downloadPDF()">⬇️ Download Conversation</button>
+  </div>
+
+  <script>
+    const scriptLines = [
+      "Excuse me. Can I borrow your pen?",
+      "I need to go to the restroom, would you mind taking a look at my things for a moment?",
+      "Thanks, if it hadn’t been for you, I wouldn’t have been able to go to the restroom.",
+      "Oh, the announcer is calling us, are you taking the same plane?",
+      "Please check the script. Would you like to practice again?"
+    ];
+
+    let scriptStep = 0;
+    let waitingForRestartAnswer = false;
+    let introSpoken = false;
+    const transcript = [];
+    const conversationDiv = document.getElementById('conversation');
+    const textOutput = document.getElementById('textOutput');
+
+    window.onload = () => {
+      if (!introSpoken) {
+        speak("Are you ready to practice?");
+        introSpoken = true;
+        setTimeout(() => speakAndShowBotLine(), 1500);
+      }
+    };
+
+    function startRecording() {
+      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognition.lang = 'en-US';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+      recognition.start();
+
+      recognition.onresult = function(event) {
+        const userText = event.results[0][0].transcript;
+        textOutput.value = userText;
+      };
+
+      recognition.onerror = function(event) {
+        alert("Speech recognition error: " + event.error);
+      };
+    }
+
+    function sendMessage() {
+      const userText = textOutput.value.trim();
+      if (!userText) {
+        alert("Please record your response first.");
+        return;
+      }
+
+      addMessage('user', userText);
+      const corrected = correctGrammar(userText);
+      if (corrected !== userText) {
+        addCorrection(corrected);
+      }
+      textOutput.value = '';
+
+      if (waitingForRestartAnswer) {
+        handleRestartDecision(userText.toLowerCase());
+      } else {
+        scriptStep++;
+        if (scriptStep < scriptLines.length - 1) {
+          speakAndShowBotLine();
+        } else {
+          waitingForRestartAnswer = true;
+          speakAndShowBotLine();
+        }
+      }
+    }
+
+    function correctGrammar(text) {
+      // Placeholder grammar fixer – simple common correction
+      return text.replace("i am", "I am").replace("i ", "I ").replace("dont", "don't").replace("wanna", "want to");
+    }
+
+    function addCorrection(text) {
+      const div = document.createElement('div');
+      div.className = 'correction';
+      div.textContent = `📝 Suggested: ${text}`;
+      conversationDiv.appendChild(div);
+    }
+
+    function handleRestartDecision(userInput) {
+      if (userInput.includes("yes")) {
+        scriptStep = 0;
+        waitingForRestartAnswer = false;
+        addMessage('bot', "(Restarting the script...)");
+        speak("Let's begin again.");
+        setTimeout(() => speakAndShowBotLine(), 1500);
+      } else if (userInput.includes("no")) {
+        addMessage('bot', "Thank you for practicing. See you next time!");
+        speak("Thank you for practicing. See you next time!");
+        waitingForRestartAnswer = false;
+      } else {
+        addMessage('bot', "Please say yes or no.");
+        speak("Please say yes or no.");
+      }
+    }
+
+    function speakAndShowBotLine() {
+      const botLine = scriptLines[scriptStep];
+      addMessage('bot', botLine);
+      speak(botLine);
+    }
+
+    function addMessage(who, text) {
+      const div = document.createElement('div');
+      div.className = `message ${who}`;
+      div.textContent = `${who === 'user' ? 'You' : 'Bot'}: ${text}`;
+      conversationDiv.appendChild(div);
+      transcript.push({ who, text });
+    }
+
+    function speak(text) {
+      const msg = new SpeechSynthesisUtterance(text);
+      speechSynthesis.speak(msg);
+    }
+
+    function downloadPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const name = document.getElementById("studentName").value || "Unknown Student";
+      const date = document.getElementById("sessionDate").value || new Date().toISOString().split('T')[0];
+      doc.text(`Conversation Transcript`, 10, 10);
+      doc.text(`Name: ${name}`, 10, 20);
+      doc.text(`Date: ${date}`, 10, 30);
+      let y = 40;
+      transcript.forEach(entry => {
+        doc.text(`${entry.who === 'bot' ? 'Bot' : 'Student'}: ${entry.text}`, 10, y);
+        y += 10;
+        if (y > 280) {
+          doc.addPage();
+          y = 20;
+        }
+      });
+      doc.save("conversation.pdf");
+    }
+  </script>
+</body>
+</html>
