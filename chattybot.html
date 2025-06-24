@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ESL ChattyBot Quiz – Voice Recorder</title>
+  <style>
+    body { font-family: Arial; background: #f0f0f0; padding: 20px; }
+    #chat-container {
+      max-width: 700px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    #chat-log {
+      height: 300px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+    }
+    .message { margin: 10px 0; }
+    .user { text-align: right; color: blue; }
+    .bot { text-align: left; color: green; }
+    input[type="text"] { width: 80%; padding: 10px; }
+    button { margin-top: 10px; padding: 10px; }
+    #controls { margin-top: 10px; }
+  </style>
+</head>
+<body>
+
+<div id="chat-container">
+  <h2>🎤 ChattyBot ESL Quiz (with Voice Recording)</h2>
+  <div id="chat-log"></div>
+
+  <input type="text" id="user-input" placeholder="Type your answer..." />
+  <button onclick="sendAnswer()">Send</button>
+
+  <div id="controls">
+    <button id="recordBtn">🎙️ Start Recording</button>
+    <button id="stopBtn" disabled>⏹️ Stop</button>
+    <button id="playBtn" disabled>▶️ Play</button>
+    <a id="downloadLink" style="display:none;">💾 Download</a>
+  </div>
+</div>
+
+<script>
+  const chatLog = document.getElementById("chat-log");
+  const userInput = document.getElementById("user-input");
+
+  const questions = [
+    { q: "1. What is the past tense of 'eat'?", a: "ate" },
+    { q: "2. What is the plural of 'child'?", a: "children" },
+    { q: "3. Translate to English: 'Me gusta el chocolate.'", a: "i like chocolate" },
+    { q: "4. What is the opposite of 'cold'?", a: "hot" },
+    { q: "5. What’s the correct form: 'He ___ to school every day.'", a: "goes" }
+  ];
+
+  let currentQuestion = 0;
+  let quizOver = false;
+  let score = 0;
+  let waitingRetry = false;
+
+  function speak(text) {
+    const utterance = new SpeechSynthesisUtterance(text);
+    window.speechSynthesis.speak(utterance);
+  }
+
+  function addMessage(text, sender) {
+    const msg = document.createElement("div");
+    msg.className = "message " + sender;
+    msg.innerText = text;
+    chatLog.appendChild(msg);
+    chatLog.scrollTop = chatLog.scrollHeight;
+  }
+
+  function askNextQuestion() {
+    if (currentQuestion < questions.length) {
+      const nextQ = questions[currentQuestion].q;
+      addMessage("ChattyBot: " + nextQ, "bot");
+      speak(nextQ);
+      waitingRetry = false;
+    } else {
+      quizOver = true;
+      const result = `🎉 Quiz complete! Your score: ${score} out of ${questions.length}`;
+      addMessage("ChattyBot: " + result, "bot");
+      speak(result);
+    }
+  }
+
+  function sendAnswer() {
+    if (quizOver) return;
+
+    const userText = userInput.value.trim();
+    if (!userText) return;
+
+    addMessage("You: " + userText, "user");
+
+    const correct = questions[currentQuestion].a.toLowerCase();
+    const
