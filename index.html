@@ -1,40 +1,44 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Welcome – ESL ChattyBot</title>
+  <meta charset="UTF-8" />
+  <title>My ChattyBots</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f0f4f8;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
+      text-align: center;
+      padding: 50px;
+      background-color: #f4f4f4;
     }
     h1 {
+      font-size: 2em;
       color: #333;
+    }
+    .button-container {
+      margin-top: 30px;
     }
     a.button {
       display: inline-block;
-      padding: 15px 30px;
-      background-color: #007bff;
-      color: white;
-      font-size: 18px;
-      border-radius: 8px;
+      margin: 10px;
+      padding: 15px 25px;
+      font-size: 16px;
       text-decoration: none;
-      margin-top: 20px;
-      transition: background-color 0.3s ease;
+      color: white;
+      background-color: #007aff;
+      border-radius: 8px;
+      transition: background-color 0.3s;
     }
     a.button:hover {
-      background-color: #0056b3;
+      background-color: #005bb5;
     }
   </style>
 </head>
 <body>
-  <h1>🎤 Welcome to the ESL Practice Bot</h1>
-  <a class="button" href="chattybot.html">Start Practice</a>
+  <h1>🎤 Welcome to ESL ChattyBots</h1>
+  <div class="button-container">
+    <a class="button" href="chattybot.html">🗣️ Practice – Student speaks blue parts</a>
+    <a class="button" href="chattybot_reversed.html">🎭 Practice – Student speaks gray parts</a>
+  </div>
 </body>
 </html>
