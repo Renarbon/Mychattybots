@@ -2,55 +2,59 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>ESL Role-Play Bot</title>
+  <title>ESL ChattyBot – Practice Role Play</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: Arial; padding: 20px; background: #f2f2f2; }
-    #chat { background: white; padding: 20px; max-width: 600px; margin: auto; border-radius: 10px; }
+    #chat { background: white; padding: 20px; max-width: 700px; margin: auto; border-radius: 10px; }
     .message { margin: 10px 0; }
     .user { color: green; }
     .bot { color: blue; }
-    textarea { width: 100%; height: 60px; margin-top: 10px; resize: none; }
-    button { padding: 10px 15px; margin: 5px 0; }
+    input, button { padding: 10px; margin: 5px; }
+    input[readonly] { background-color: #eee; }
   </style>
 </head>
 <body>
   <div id="chat">
-    <h2>🎭 ESL Role-Play Bot</h2>
+    <h2>🎤 ESL ChattyBot</h2>
+    <label>Student Name: <input id="studentName" type="text" /></label><br>
+    <label>Date: <input id="sessionDate" type="date" /></label><br>
     <div id="conversation"></div>
-
-    <button onclick="startRecording()">🎙️ Record Voice</button>
-    <textarea id="textOutput" readonly placeholder="Your message will appear here..."></textarea>
-    <button onclick="sendMessage()">📨 Send your message</button>
+    <button onclick="startRecording()">🎙️ Record Your Answer</button>
     <button onclick="downloadPDF()">⬇️ Download PDF</button>
   </div>
 
   <script>
+    const transcript = [];
+    const conversationDiv = document.getElementById('conversation');
+
     const scriptLines = [
       "Excuse me. Can I borrow your pen?",
       "I need to go to the restroom, would you mind taking a look at my things for a moment?",
       "Thanks, if it hadn’t been for you, I wouldn’t have been able to go to the restroom.",
       "Oh, the announcer is calling us, are you taking the same plane?",
-      "Please check the script. Would you like to practice again?"
+      "Take a look at the script. If it doesn’t match your answers correctly, say 'yes' and we’ll do it again. Would you like to practice again?"
     ];
 
-    let scriptStep = 0;
-    let waitingForRestartAnswer = false;
-    let introSpoken = false;
-    const transcript = [];
-    const conversationDiv = document.getElementById('conversation');
-    const textOutput = document.getElementById('textOutput');
+    let currentLine = 0;
+    let hasPromptedStart = false;
 
-    // Start with the intro and first bot line
-    window.onload = () => {
-      if (!introSpoken) {
-        speak("Are you ready to practice?");
-        introSpoken = true;
-        setTimeout(() => speakAndShowBotLine(), 1500);
-      } else {
-        speakAndShowBotLine();
-      }
+    // Voice selection
+    let selectedVoice;
+    window.speechSynthesis.onvoiceschanged = () => {
+      const voices = speechSynthesis.getVoices();
+      selectedVoice = voices.find(v =>
+        v.name.includes("Google US English") ||
+        v.name.includes("Microsoft Zira") ||
+        v.name.toLowerCase().includes("english")
+      );
     };
+
+    function speak(text) {
+      const msg = new SpeechSynthesisUtterance(text);
+      if (selectedVoice) msg.voice = selectedVoice;
+      speechSynthesis.speak(msg);
+    }
 
     function startRecording() {
       const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
@@ -58,62 +62,39 @@
       recognition.interimResults = false;
       recognition.maxAlternatives = 1;
 
-      recognition.start();
+      if (!hasPromptedStart) {
+        speak("Are you ready to practice?");
+        hasPromptedStart = true;
+      } else {
+        recognition.start();
+      }
 
       recognition.onresult = function(event) {
         const userText = event.results[0][0].transcript;
-        textOutput.value = userText;
+        addMessage('user', userText);
+
+        // Bot advances to next line
+        if (currentLine < scriptLines.length) {
+          const botReply = scriptLines[currentLine++];
+          addMessage('bot', botReply);
+          speak(botReply);
+        } else {
+          // After the last line, wait for yes/no
+          const lower = userText.toLowerCase();
+          if (lower.includes("yes")) {
+            currentLine = 0;
+            addMessage('bot', scriptLines[currentLine]);
+            speak(scriptLines[currentLine++]);
+          } else if (lower.includes("no")) {
+            addMessage('bot', "Great work today! See you next time.");
+            speak("Great work today! See you next time.");
+          }
+        }
       };
 
       recognition.onerror = function(event) {
         alert("Speech recognition error: " + event.error);
       };
-    }
-
-    function sendMessage() {
-      const userText = textOutput.value.trim();
-      if (!userText) {
-        alert("Please record your response first.");
-        return;
-      }
-
-      addMessage('user', userText);
-      textOutput.value = '';
-
-      if (waitingForRestartAnswer) {
-        handleRestartDecision(userText.toLowerCase());
-      } else {
-        scriptStep++;
-        if (scriptStep < scriptLines.length - 1) {
-          speakAndShowBotLine();
-        } else {
-          waitingForRestartAnswer = true;
-          speakAndShowBotLine();
-        }
-      }
-    }
-
-    function handleRestartDecision(userInput) {
-      if (userInput.includes("yes")) {
-        scriptStep = 0;
-        waitingForRestartAnswer = false;
-        addMessage('bot', "(Restarting the script...)");
-        speak("Let's begin again.");
-        setTimeout(() => speakAndShowBotLine(), 1500);
-      } else if (userInput.includes("no")) {
-        addMessage('bot', "Thank you for practicing. See you next time!");
-        speak("Thank you for practicing. See you next time!");
-        waitingForRestartAnswer = false;
-      } else {
-        addMessage('bot', "Please say yes or no.");
-        speak("Please say yes or no.");
-      }
-    }
-
-    function speakAndShowBotLine() {
-      const botLine = scriptLines[scriptStep];
-      addMessage('bot', botLine);
-      speak(botLine);
     }
 
     function addMessage(who, text) {
@@ -124,16 +105,16 @@
       transcript.push({ who, text });
     }
 
-    function speak(text) {
-      const msg = new SpeechSynthesisUtterance(text);
-      speechSynthesis.speak(msg);
-    }
-
     function downloadPDF() {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
-      doc.text("Conversation Transcript", 10, 10);
-      let y = 20;
+      const name = document.getElementById('studentName').value || 'Student';
+      const date = document.getElementById('sessionDate').value || new Date().toLocaleDateString();
+      doc.text(`Conversation Transcript
+Name: ${name}
+Date: ${date}`, 10, 10);
+
+      let y = 30;
       transcript.forEach(entry => {
         doc.text(`${entry.who === 'bot' ? 'Bot' : 'Student'}: ${entry.text}`, 10, y);
         y += 10;
@@ -142,7 +123,7 @@
           y = 20;
         }
       });
-      doc.save("conversation.pdf");
+      doc.save("chattybot_conversation.pdf");
     }
   </script>
 </body>
