@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>ESL ChattyBot – Practice Role Play</title>
+  <title>ESL ChattyBot – Fast Food Restaurant (Customer Version, Strict Correction, Colored PDF, Bot Starts On Record)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: Arial; padding: 20px; background: #f2f2f2; }
@@ -10,15 +10,19 @@
     .message { margin: 10px 0; }
     .user { color: green; }
     .bot { color: blue; }
+    .correction, .tip { color: #b85c00; font-size: 0.98em; margin-left: 10px; }
     input, button { padding: 10px; margin: 5px; }
     input[readonly] { background-color: #eee; }
   </style>
 </head>
 <body>
   <div id="chat">
-    <h2>🎤 ESL ChattyBot</h2>
+    <h2>🍔 ESL ChattyBot – Fast Food Restaurant (Customer Version, Strict Correction)</h2>
     <label>Student Name: <input id="studentName" type="text" /></label><br>
     <label>Date: <input id="sessionDate" type="date" /></label><br>
+    <div style="margin: 12px 0; color: #007aff; background: #e6e6ff; border-radius: 6px; padding: 8px; max-width: 600px;">
+      <b>Instructions:</b> You are the customer. Please read the <span style="color: #007aff;">blue</span> part aloud each turn. ChattyBot will play the cashier.
+    </div>
     <div id="conversation"></div>
     <button onclick="startRecording()">🎙️ Record</button>
     <button onclick="submitStudentResponse()" id="sendButton" disabled>📨 Send</button>
@@ -27,20 +31,30 @@
   </div>
 
   <script>
-    const transcript = [];
-    const conversationDiv = document.getElementById('conversation');
+    // === SCRIPT ===
+    const botLines = [
+      "Hello! Welcome to Burger Place. May I take your order?",
+      "Would you like fries or a drink with that?",
+      "Is that for here or to go?",
+      "Can I have your name for the order, please?",
+      "Your total is $7.50. How would you like to pay?",
+      "Thank you! Please wait while we prepare your order."
+    ];
     const scriptLines = [
-      "Excuse me. Can I borrow your pen?",
-      "I need to go to the restroom, would you mind taking a look at my things for a moment?",
-      "Thanks, if it hadn’t been for you, I wouldn’t have been able to go to the restroom.",
-      "Oh, the announcer is calling us, are you taking the same plane?",
-      "Take a look at the script. If it doesn’t match your answers correctly, say 'yes' and we’ll do it again. Would you like to practice again?"
+      "Yes, I’d like a cheeseburger, please.",
+      "Just fries, thank you.",
+      "To go, please.",
+      "My name is Sarah.",
+      "With my credit card.",
+      "Thank you!"
     ];
 
+    const transcript = [];
+    const conversationDiv = document.getElementById('conversation');
     let currentLine = 0;
-    let hasPromptedStart = false;
     let tempUserText = "";
     let selectedVoice;
+    let firstTurn = true;
 
     window.speechSynthesis.onvoiceschanged = () => {
       const voices = speechSynthesis.getVoices();
@@ -57,18 +71,33 @@
       speechSynthesis.speak(msg);
     }
 
+    function normalize(text) {
+      return text.toLowerCase().replace(/[’'".,!?]/g,"").replace(/\s+/g," ").trim();
+    }
+
+    function isCloseEnough(answer, expected) {
+      const ans = normalize(answer);
+      const exp = normalize(expected);
+      if (ans === exp) return true;
+      const ansWords = ans.split(" ");
+      const expWords = exp.split(" ");
+      let matchCount = 0;
+      expWords.forEach(w => { if (ansWords.includes(w)) matchCount++; });
+      return matchCount / expWords.length > 0.7;
+    }
+
     function startRecording() {
+      if (firstTurn) {
+        addMessage('bot', botLines[0]);
+        speak(botLines[0]);
+        firstTurn = false;
+        return;
+      }
       const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
       recognition.lang = 'en-US';
       recognition.interimResults = false;
       recognition.maxAlternatives = 1;
-
-      if (!hasPromptedStart) {
-        speak("Are you ready to practice?");
-        hasPromptedStart = true;
-      } else {
-        recognition.start();
-      }
+      recognition.start();
 
       recognition.onresult = function(event) {
         tempUserText = event.results[0][0].transcript;
@@ -85,20 +114,26 @@
       if (!tempUserText) return;
       addMessage('user', tempUserText);
 
-      if (currentLine < scriptLines.length) {
-        const botReply = scriptLines[currentLine++];
-        addMessage('bot', botReply);
-        speak(botReply);
+      // Correction
+      const expected = scriptLines[currentLine];
+      if (!isCloseEnough(tempUserText, expected)) {
+        addCorrection('correction', `The correct answer is: "${expected}"`);
+        addCorrection('tip', "Please try to match the example answer for practice.");
       } else {
-        const lower = tempUserText.toLowerCase();
-        if (lower.includes("yes")) {
-          currentLine = 0;
-          addMessage('bot', scriptLines[currentLine]);
-          speak(scriptLines[currentLine++]);
-        } else if (lower.includes("no")) {
+        addCorrection('correction', "Good job!");
+        addCorrection('tip', "");
+      }
+
+      // Bot/cashier reply
+      currentLine++;
+      if (currentLine < botLines.length) {
+        addMessage('bot', botLines[currentLine]);
+        speak(botLines[currentLine]);
+      } else {
+        setTimeout(() => {
           addMessage('bot', "Great work today! See you next time.");
           speak("Great work today! See you next time.");
-        }
+        }, 800);
       }
 
       document.getElementById("studentInput").value = "";
@@ -114,7 +149,15 @@
       transcript.push({ who, text });
     }
 
-    // --- COLORED PDF EXPORT ---
+    function addCorrection(type, text) {
+      if (!text) return;
+      const div = document.createElement('div');
+      div.className = `message ${type}`;
+      div.textContent = `${type.charAt(0).toUpperCase() + type.slice(1)}: ${text}`;
+      conversationDiv.appendChild(div);
+      transcript.push({ who: type, text });
+    }
+
     function downloadPDF() {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
@@ -124,15 +167,20 @@
       doc.text(`Conversation Transcript\nName: ${name}\nDate: ${date}`, 10, 10);
       let y = 30;
       transcript.forEach(entry => {
-        // Set color by role
+        let label = entry.who === 'bot' ? 'Bot'
+          : entry.who === 'user' ? 'You'
+          : entry.who.charAt(0).toUpperCase() + entry.who.slice(1);
+
         if (entry.who === 'user') {
-          doc.setTextColor(0, 150, 0); // Green for student
-        } else if (entry.who === 'bot') {
-          doc.setTextColor(0, 0, 200); // Blue for bot
+          doc.setTextColor(0, 150, 0);        // Green
+        } else if (entry.who === 'correction') {
+          doc.setTextColor(0, 0, 200);        // Blue
+        } else if (entry.who === 'tip') {
+          doc.setTextColor(184, 92, 0);       // Orange/brown
         } else {
-          doc.setTextColor(0, 0, 0);
+          doc.setTextColor(0, 0, 0);          // Black (bot)
         }
-        const label = entry.who === 'bot' ? 'Bot' : 'Student';
+
         const lines = doc.splitTextToSize(`${label}: ${entry.text}`, 180);
         lines.forEach(line => {
           doc.text(line, 10, y);
@@ -143,53 +191,57 @@
           }
         });
       });
-      const filename = `${name.replace(/\s+/g, '_')}_${date.replace(/[\/]/g, '-')}.pdf`;
+      const filename = `${name.replace(/\s+/g, '_')}_${date.replace(/[\/]/g, '-')}_fastfood_strict.pdf`;
       doc.save(filename);
     }
   </script>
 
-  <!-- Instruction + Sample Script -->
+  <!-- Script sample at the bottom for reference -->
   <div style="background-color: #f5f5f7; padding: 0 20px 20px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; font-size: 16px;">
-    <div style="margin: 20px auto 10px auto; max-width: 500px; font-size: 14px; background: #fff3cd; border: 1px solid #ffeeba; padding: 10px; border-radius: 8px;">
-      <strong>Instructions:</strong><br>
-      Please read only the <span style="color: #007aff;">blue</span> parts of the conversation. ChattyBot will read the gray parts.<br>
-      Press <strong>Record</strong>, then <strong>Send</strong> your response after each line.
-    </div>
-
     <div id="chatContainer" style="width: 500px; margin: auto; background-color: #f8f8f8; border: 1px solid #ccc; border-radius: 20px; padding: 10px;">
       <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
-        Excuse me. Can I borrow your pen?
+        Hello! Welcome to Burger Place. May I take your order?
       </div>
       <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
-        Sure, here you go.
+        Yes, I’d like a cheeseburger, please.
       </div>
       <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
-        I need to go to the restroom,would you mind taking a look at my things for a moment?
+        Would you like fries or a drink with that?
       </div>
       <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
-        No problem, I’ll take care of them.
+        Just fries, thank you.
       </div>
       <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
-        Thanks, if it hadn’t been for you, I wouldn’t have been able to go to the restroom.
+        Is that for here or to go?
       </div>
       <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
-        Glad to help, don’t be afraid to ask.
+        To go, please.
       </div>
       <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
-        oh, the announcer is calling us, are you taking the same plane?.
+        Can I have your name for the order, please?
       </div>
       <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
-        No, my plane leaves in an hour, have a nice flight.
+        My name is Sarah.
+      </div>
+      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+        Your total is $7.50. How would you like to pay?
+      </div>
+      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
+        With my credit card.
+      </div>
+      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+        Thank you! Please wait while we prepare your order.
+      </div>
+      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
+        Thank you!
       </div>
       <div style="clear: both;"></div>
     </div>
-
     <div style="text-align: right; margin-top: 10px;">
       <button onclick="toggleChat()" style="background-color: #f8f9fa; color: #333; border: 1px solid #ccc; padding: 5px 10px; font-size: 12px; cursor: pointer; border-radius: 5px;">
         show | hide script
       </button>
     </div>
-
     <script>
       function toggleChat() {
         const chatContainer = document.getElementById("chatContainer");
