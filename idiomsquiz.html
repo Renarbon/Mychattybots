@@ -24,9 +24,7 @@
     textarea { width: 100%; height: 60px; margin-top: 10px; resize: none; }
     button { padding: 10px 15px; margin: 5px 3px; }
     #studentName { width: 80%; padding: 7px; margin-bottom: 10px; }
-    #emailForm { margin-top: 16px; }
-    #studentEmail { width: 85%; padding: 7px; }
-    #emailBtn { background: #43a047; color: #fff; }
+    #emailStatus { color: #1976d2; margin-top: 10px; min-height: 22px; }
   </style>
 </head>
 <body>
@@ -41,15 +39,11 @@
     <textarea id="textOutput" readonly placeholder="Your answer will appear here..." style="display:none;"></textarea>
     <button onclick="sendMessage()" id="sendBtn" style="display:none;">Next</button>
     <button onclick="downloadPDF()" id="downloadBtn" style="display:none;">⬇️ Download PDF</button>
-
-    <form id="emailForm" style="display:none;" method="POST">
-      <input type="email" id="studentEmail" name="studentEmail" placeholder="Enter your email to send results" required>
-      <button type="submit" id="emailBtn">Email Results</button>
-    </form>
-    <div id="emailStatus" style="color: #1976d2; margin-top: 8px;"></div>
+    <div id="emailStatus"></div>
   </div>
 
   <script>
+    // ------ QUIZ DATA ------
     const scriptLines = [
       {
         phrase: "Don't take it personally",
@@ -118,8 +112,6 @@
     const downloadBtn = document.getElementById('downloadBtn');
     const startBtn = document.getElementById('startBtn');
     const studentNameInput = document.getElementById('studentName');
-    const emailForm = document.getElementById('emailForm');
-    const studentEmailInput = document.getElementById('studentEmail');
     const emailStatus = document.getElementById('emailStatus');
 
     function startQuiz() {
@@ -153,20 +145,20 @@
         recordBtn.style.display = "inline-block";
         sendBtn.style.display = "inline-block";
         downloadBtn.style.display = "none";
-        emailForm.style.display = "none";
         emailStatus.textContent = "";
       } else {
-        // Show score and PDF download and email form
+        // Show score, allow PDF, auto-send email to teacher
         const total = scriptLines.length;
         const correct = scores.filter(Boolean).length;
         const percent = Math.round((correct/total)*100);
-        addMessage('bot', `Quiz complete! Your score: ${percent}/100. Well done, ${studentName}. You can now download your transcript as PDF or email it.`);
-        speak(`Quiz complete! Your score is ${percent} out of 100. Well done, ${studentName}. You can now download your transcript as PDF or email it.`);
+        addMessage('bot', `Quiz complete! Your score: ${percent}/100. Well done, ${studentName}. You can now download your transcript as PDF.`);
+        speak(`Quiz complete! Your score is ${percent} out of 100. Well done, ${studentName}. You can now download your transcript as PDF.`);
         textOutput.style.display = "none";
         recordBtn.style.display = "none";
         sendBtn.style.display = "none";
         downloadBtn.style.display = "inline-block";
-        emailForm.style.display = "block";
+        // Auto-send results to teacher email
+        autoSendResultsToTeacher();
       }
     }
 
@@ -305,16 +297,12 @@
       doc.save(fileName);
     }
 
-    // ----- EMAIL FORM HANDLER -----
-    emailForm.onsubmit = function(e) {
-      e.preventDefault();
-      const email = studentEmailInput.value.trim();
-      if (!email) {
-        emailStatus.textContent = "Please enter your email.";
-        return;
-      }
-      emailStatus.textContent = "Sending...";
-      // Compose plain text transcript
+    // ----- AUTO EMAIL TO TEACHER -----
+    function autoSendResultsToTeacher() {
+      // CHANGE THIS TO YOUR EMAIL AND YOUR FORMSPREE ENDPOINT!
+      const teacherEmail = "YOUR_EMAIL@address.com";
+      const formspreeEndpoint = "https://formspree.io/f/xblyqgqq";
+
       const total = scriptLines.length;
       const correct = scores.filter(Boolean).length;
       const percent = Math.round((correct/total)*100);
@@ -336,27 +324,25 @@
         body += "\n";
       });
 
-      // ---- Send via Formspree (add your own endpoint!) ----
-      fetch("https://formspree.io/f/xblyqgqq", { // <--- REPLACE with your Formspree endpoint!
+      fetch(formspreeEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: email,
+          email: teacherEmail,
           message: body
         })
       })
       .then(res => {
         if (res.ok) {
-          emailStatus.textContent = "Results sent! Please check your email.";
-          emailForm.reset();
+          emailStatus.textContent = "Results sent to your teacher!";
         } else {
-          emailStatus.textContent = "Sending failed. Please try again later.";
+          emailStatus.textContent = "Auto-email failed. Please let your teacher know.";
         }
       })
       .catch(() => {
-        emailStatus.textContent = "Sending failed. Please try again later.";
+        emailStatus.textContent = "Auto-email failed. Please let your teacher know.";
       });
-    };
+    }
   </script>
 </body>
 </html>
