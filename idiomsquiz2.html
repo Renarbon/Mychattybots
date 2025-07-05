@@ -44,55 +44,17 @@
 
   <script>
     // ------ QUIZ DATA ------
-    const scriptLines =     
- [
+   const scriptLines = [
   {
-    phrase: "Break the ice",
+    phrase: `Break the ice`,
     options: [
-      "Getting help from a friend",
-      "Start a conversation in a social setting",
-      "Taking a break from work"
+      `Getting help from a friend`,
+      `. Start a conversation in a social setting`,
+      `Taking a break from work`
     ],
     correct: 1
-  },
- {
-        phrase: "Putting this off",
-        options: [
-          "Ignoring someone"
-          "Delaying something",
-          "Turning off the lights",
-          
-        ],
-        correct: 0
-      },
-      {
-        phrase: "I aced it",
-        options: [
-          "I did very well",
-          "I forgot it",
-          "I failed badly"
-        ],
-        correct: 0
-      },
-      {
-        phrase: "Bragging about",
-        options: [
-          "Boasting or showing off",
-          "Complaining",
-          "Whispering"
-        ],
-        correct: 0
-      },
-      {
-        phrase: "It was a no-brainer",
-        options: [
-          "It was very easy",
-          "It was scary",
-          "It was confusing"
-        ],
-        correct: 0
-      }
-    ];
+  }
+];
 
     let scriptStep = 0;
     let transcript = [];
