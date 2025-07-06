@@ -19,11 +19,11 @@
         results: answers
       };
 
-      fetch("https://formspree.io/f/xblyqgqq", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json"
+     // ----- AUTO EMAIL TO TEACHER -----
+    function autoSendResultsToTeacher() {
+      // CHANGE THIS TO YOUR EMAIL AND YOUR FORMSPREE ENDPOINT!
+      const teacherEmail = "renarguet@gmail.com";
+      const formspreeEndpoint = "https://formspree.io/f/xblyqgqq";
         },
         body: JSON.stringify(data)
       }).then(response => {
