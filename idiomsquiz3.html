@@ -37,32 +37,7 @@
     }
 
 
-    const ELEVEN_API_KEY = "sk_02ce32210e3130abab244b9baa8957e6201c8bea42b50d86";
-    const VOICE_ID = "3kmhLabcqbsGhEd3mEhD";
-
-    async function playVoice(text) {
-      try {
-        const resp = await fetch(
-          `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}?output_format=mp3_22050_32`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "xi-api-key": ELEVEN_API_KEY
-            },
-            body: JSON.stringify({ text })
-          }
-        );
-        if (!resp.ok) throw new Error("TTS failed: " + resp.status);
-        const blob = await resp.blob();
-        const url = URL.createObjectURL(blob);
-        const audio = new Audio(url);
-        audio.play();
-      } catch (err) {
-        console.error("ElevenLabs TTS error:", err);
-      }
-    }
-
+    
 </script>
   <style>
     body { font-family: Arial; padding: 20px; background: #f2f2f2; }
@@ -197,8 +172,14 @@
         const total = scriptLines.length;
         const correct = scores.filter(Boolean).length;
         const percent = Math.round((correct/total)*100);
-        addMessage('bot', `Quiz complete! Your score: ${percent}/100. Well done, ${studentName}. You can now download your transcript as PDF.`);
-        await playVoice(`Quiz complete! Your score is ${percent} out of 100. Well done, ${studentName}. You can now download your transcript as PDF.`);
+       if (percent >= 80) {
+  addMessage('bot', `Quiz complete! Your score: ${percent}/100. Well done, ${studentName}. You can now download your transcript as PDF.`);
+  await playVoice(`Quiz complete! Your score is ${percent} out of 100. Well done, ${studentName}. You can now download your transcript as PDF.`);
+} else {
+  addMessage('bot', `Quiz complete! Your score: ${percent}/100. You can improve, ${studentName}. Try again!`);
+  await playVoice(`Quiz complete! Your score is ${percent} out of 100. You can improve, ${studentName}. Try again.`);
+}
+
         textOutput.style.display = "none";
         recordBtn.style.display = "none";
         sendBtn.style.display = "none";
@@ -354,34 +335,24 @@
       }).catch(() => {
         emailStatus.textContent = "⚠️ Error sending results.";
       });
-    }
+    }const TTS_BACKEND_URL = "https://chattybot-backend.onrender.com"; // ← Replace with your actual Render URL
 
-
-    const ELEVEN_API_KEY = "sk_865fb49a3205c51284bd88bb8d25446e9a5cd652163585de";
-    const VOICE_ID = "ds0uumbpvplhO4tyz2yF";
-
-    async function playVoice(text) {
-      try {
-        const resp = await fetch(
-          `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}?output_format=mp3_22050_32`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "xi-api-key": ELEVEN_API_KEY
-            },
-            body: JSON.stringify({ text })
-          }
-        );
-        if (!resp.ok) throw new Error("TTS failed: " + resp.status);
-        const blob = await resp.blob();
-        const url = URL.createObjectURL(blob);
-        const audio = new Audio(url);
-        audio.play();
-      } catch (err) {
-        console.error("ElevenLabs TTS error:", err);
-      }
-    }
+async function playVoice(text) {
+  try {
+    const resp = await fetch(TTS_BACKEND_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }) // optional: add "voice_id" here
+    });
+    if (!resp.ok) throw new Error("TTS failed: " + resp.status);
+    const blob = await resp.blob();
+    const audio = new Audio(URL.createObjectURL(blob));
+    audio.play();
+  } catch (err) {
+    console.error("Backend TTS error:", err);
+  }
+}
+  
 
 </script>
 </body>
