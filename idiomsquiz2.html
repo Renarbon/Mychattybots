@@ -3,42 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Idioms Quiz Bot (with Scrambled Choices)</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
-    function sendEmail() {
-      const correct = scores.filter(Boolean).length;
-      const percent = Math.round((correct / scriptLines.length) * 100);
-      const answers = transcript.map((entry, i) => {
-        return `Q${i + 1}: ${entry.phrase}\nYour answer: ${entry.studentAnswer}\nCorrect answer: ${entry.correctAnswer}\nResult: ${entry.isCorrect ? 'Correct' : 'Incorrect'}\n`;
-      }).join("\n");
-
-      const data = {
-        _subject: `Quiz Results for ${studentName}`,
-        name: studentName,
-        score: `${percent}/100`,
-        results: answers
-      };
-
-      fetch("https://formspree.io/f/xblyqgqq", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
-        body: JSON.stringify(data)
-      }).then(response => {
-        if (response.ok) {
-          emailStatus.textContent = "✅ Results sent to teacher.";
-        } else {
-          emailStatus.textContent = "⚠️ Failed to send results.";
-        }
-      }).catch(() => {
-        emailStatus.textContent = "⚠️ Error sending results.";
-      });
-    }
-
-
-    
-</script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: Arial; padding: 20px; background: #f2f2f2; }
     #chat { background: white; padding: 20px; max-width: 600px; margin: auto; border-radius: 10px; }
@@ -77,7 +42,6 @@
     <div id="emailStatus"></div>
   </div>
   <script>
-    // 1. QUIZ DATA
     const scriptLines = [
       {
         phrase: "Break the ice",
@@ -108,7 +72,6 @@
       }
     ];
 
-    // 2. SCRAMBLE OPTIONS ON EVERY RELOAD
     function shuffleOptionsAndCorrectIndex() {
       scriptLines.forEach(q => {
         let arr = q.options.map((opt, idx) => ({opt, idx}));
@@ -123,7 +86,6 @@
     }
     shuffleOptionsAndCorrectIndex();
 
-    // 3. QUIZ BOT LOGIC (unchanged from previous examples)
     let scriptStep = 0;
     let transcript = [];
     let studentName = "";
@@ -151,6 +113,7 @@
       conversationDiv.innerHTML = '';
       nextBotPrompt();
     }
+
     async function nextBotPrompt() {
       if (scriptStep < scriptLines.length) {
         const entry = scriptLines[scriptStep];
@@ -172,8 +135,8 @@
         const total = scriptLines.length;
         const correct = scores.filter(Boolean).length;
         const percent = Math.round((correct/total)*100);
-        addMessage('bot', `Quiz complete! Your score: ${percent}/100. Well done, ${studentName}. You can now download your transcript as PDF.`);
-        await playVoice(`Quiz complete! Your score is ${percent} out of 100. Well done, ${studentName}. You can now download your transcript as PDF.`);
+        addMessage('bot', `Quiz complete! Your score: ${percent}/100. Well done ${studentName}. You can now download your transcript as PDF.`);
+        await playVoice(`Quiz complete! Your score is ${percent} out of 100. Well done ${studentName}. You can now download your transcript as PDF.`);
         textOutput.style.display = "none";
         recordBtn.style.display = "none";
         sendBtn.style.display = "none";
@@ -181,6 +144,7 @@
         sendEmail();
       }
     }
+
     function startRecording() {
       if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
         alert('Speech recognition not supported in this browser.');
@@ -205,6 +169,7 @@
         recordBtn.textContent = "🎙️ Record Your Answer";
       };
     }
+
     function partialMatch(studentAnswer, correctAnswer) {
       const norm = s => s.toLowerCase().replace(/[^a-z0-9 ]/gi, '').split(' ').filter(Boolean);
       const correctWords = norm(correctAnswer);
@@ -215,6 +180,7 @@
       });
       return matchCount >= Math.max(1, Math.ceil(correctWords.length * 0.6));
     }
+
     async function sendMessage() {
       const userText = textOutput.value.trim();
       if (!userText) {
@@ -236,6 +202,7 @@
       scriptStep++;
       nextBotPrompt();
     }
+
     function addMessage(who, text) {
       const div = document.createElement('div');
       div.className = `message ${who}`;
@@ -243,7 +210,7 @@
       conversationDiv.appendChild(div);
       conversationDiv.scrollTop = conversationDiv.scrollHeight;
     }
-    
+
     function downloadPDF() {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
@@ -298,7 +265,7 @@
       const fileName = `${studentName.replace(/\s+/g, '_')}_idioms_quiz.pdf`;
       doc.save(fileName);
     }
-  
+
     function sendEmail() {
       const correct = scores.filter(Boolean).length;
       const percent = Math.round((correct / scriptLines.length) * 100);
@@ -329,28 +296,26 @@
       }).catch(() => {
         emailStatus.textContent = "⚠️ Error sending results.";
       });
-    }const TTS_BACKEND_URL = "https://chattybot-backend.onrender.com"; // ← Replace with your actual Render URL
+    }
 
-async function playVoice(text) {
-  try {
-    const resp = await fetch(TTS_BACKEND_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text }) // optional: add "voice_id" here
-    });
-    if (!resp.ok) throw new Error("TTS failed: " + resp.status);
-    const blob = await resp.blob();
-    const audio = new Audio(URL.createObjectURL(blob));
-    audio.play();
-  } catch (err) {
-    console.error("Backend TTS error:", err);
-  }
-}
+    const TTS_BACKEND_URL = "https://chattybot-backend.onrender.com"; // your backend
 
+    async function playVoice(text) {
+      try {
+        const resp = await fetch(TTS_BACKEND_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text })
+        });
+        if (!resp.ok) throw new Error("TTS failed: " + resp.status);
+        const blob = await resp.blob();
+        const audio = new Audio(URL.createObjectURL(blob));
+        audio.play();
+      } catch (err) {
+        console.error("Backend TTS error:", err);
+      }
+    }
 
-
-    
-
-</script>
+  </script>
 </body>
 </html>
