@@ -8,8 +8,7 @@
       const correct = scores.filter(Boolean).length;
       const percent = Math.round((correct / scriptLines.length) * 100);
       const answers = transcript.map((entry, i) => {
-        const symbol = entry.isCorrect ? "✓" : "✗";
-        return `Q${i + 1}: ${entry.phrase}\nYour answer: ${entry.studentAnswer} ${symbol}\nCorrect answer: ${entry.correctAnswer}\n`;
+        return `Q${i + 1}: ${entry.phrase}\nYour answer: ${entry.studentAnswer}\nCorrect answer: ${entry.correctAnswer}\nResult: ${entry.isCorrect ? 'Correct' : 'Incorrect'}\n`;
       }).join("\n");
 
       const data = {
@@ -19,11 +18,11 @@
         results: answers
       };
 
-     // ----- AUTO EMAIL TO TEACHER -----
-    function autoSendResultsToTeacher() {
-      // CHANGE THIS TO YOUR EMAIL AND YOUR FORMSPREE ENDPOINT!
-      const teacherEmail = "renarguet@gmail.com";
-      const formspreeEndpoint = "https://formspree.io/f/xblyqgqq";
+      fetch("https://formspree.io/f/xblyqgqq", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
         },
         body: JSON.stringify(data)
       }).then(response => {
@@ -37,6 +36,8 @@
       });
     }
 
+
+    
 </script>
   <style>
     body { font-family: Arial; padding: 20px; background: #f2f2f2; }
@@ -150,7 +151,7 @@
       conversationDiv.innerHTML = '';
       nextBotPrompt();
     }
-    function nextBotPrompt() {
+    async function nextBotPrompt() {
       if (scriptStep < scriptLines.length) {
         const entry = scriptLines[scriptStep];
         let html = `<div class="message bot"><b>Bot:</b> What does "<b>${entry.phrase}</b>" mean?</div>`;
@@ -160,7 +161,7 @@
         });
         html += `</div>`;
         conversationDiv.innerHTML = html;
-        speak(`What does "${entry.phrase}" mean? The options are: ${entry.options.join(', ')}`);
+        await playVoice(`What does "${entry.phrase}" mean? The options are: ${entry.options.join(', ')}`);
         textOutput.value = "";
         textOutput.style.display = "block";
         recordBtn.style.display = "inline-block";
@@ -172,7 +173,7 @@
         const correct = scores.filter(Boolean).length;
         const percent = Math.round((correct/total)*100);
         addMessage('bot', `Quiz complete! Your score: ${percent}/100. Well done, ${studentName}. You can now download your transcript as PDF.`);
-        speak(`Quiz complete! Your score is ${percent} out of 100. Well done, ${studentName}. You can now download your transcript as PDF.`);
+        await playVoice(`Quiz complete! Your score is ${percent} out of 100. Well done, ${studentName}. You can now download your transcript as PDF.`);
         textOutput.style.display = "none";
         recordBtn.style.display = "none";
         sendBtn.style.display = "none";
@@ -214,7 +215,7 @@
       });
       return matchCount >= Math.max(1, Math.ceil(correctWords.length * 0.6));
     }
-    function sendMessage() {
+    async function sendMessage() {
       const userText = textOutput.value.trim();
       if (!userText) {
         alert("Please record your response first.");
@@ -242,10 +243,7 @@
       conversationDiv.appendChild(div);
       conversationDiv.scrollTop = conversationDiv.scrollHeight;
     }
-    function speak(text) {
-      const msg = new SpeechSynthesisUtterance(text);
-      speechSynthesis.speak(msg);
-    }
+    
     function downloadPDF() {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
@@ -305,8 +303,7 @@
       const correct = scores.filter(Boolean).length;
       const percent = Math.round((correct / scriptLines.length) * 100);
       const answers = transcript.map((entry, i) => {
-        const symbol = entry.isCorrect ? "✓" : "✗";
-        return `Q${i + 1}: ${entry.phrase}\nYour answer: ${entry.studentAnswer} ${symbol}\nCorrect answer: ${entry.correctAnswer}\n`;
+        return `Q${i + 1}: ${entry.phrase}\nYour answer: ${entry.studentAnswer}\nCorrect answer: ${entry.correctAnswer}\nResult: ${entry.isCorrect ? 'Correct' : 'Incorrect'}\n`;
       }).join("\n");
 
       const data = {
@@ -316,7 +313,7 @@
         results: answers
       };
 
-      fetch("https://formspree.io/f/your-form-id", {
+      fetch("https://formspree.io/f/xblyqgqq", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -332,7 +329,27 @@
       }).catch(() => {
         emailStatus.textContent = "⚠️ Error sending results.";
       });
-    }
+    }const TTS_BACKEND_URL = "https://your-render-app.onrender.com/api/tts"; // ← Replace with your actual Render URL
+
+async function playVoice(text) {
+  try {
+    const resp = await fetch(TTS_BACKEND_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }) // optional: add "voice_id" here
+    });
+    if (!resp.ok) throw new Error("TTS failed: " + resp.status);
+    const blob = await resp.blob();
+    const audio = new Audio(URL.createObjectURL(blob));
+    audio.play();
+  } catch (err) {
+    console.error("Backend TTS error:", err);
+  }
+}
+
+
+
+    
 
 </script>
 </body>
