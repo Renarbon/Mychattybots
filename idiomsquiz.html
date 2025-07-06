@@ -2,8 +2,43 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Idioms Speaking Quiz Bot</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <title>Idioms Quiz Bot (with Scrambled Choices)</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
+    function sendEmail() {
+      const correct = scores.filter(Boolean).length;
+      const percent = Math.round((correct / scriptLines.length) * 100);
+      const answers = transcript.map((entry, i) => {
+        return `Q${i + 1}: ${entry.phrase}\nYour answer: ${entry.studentAnswer}\nCorrect answer: ${entry.correctAnswer}\nResult: ${entry.isCorrect ? 'Correct' : 'Incorrect'}\n`;
+      }).join("\n");
+
+      const data = {
+        _subject: `Quiz Results for ${studentName}`,
+        name: studentName,
+        score: `${percent}/100`,
+        results: answers
+      };
+
+      fetch("https://formspree.io/f/xblyqgqq", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify(data)
+      }).then(response => {
+        if (response.ok) {
+          emailStatus.textContent = "✅ Results sent to teacher.";
+        } else {
+          emailStatus.textContent = "⚠️ Failed to send results.";
+        }
+      }).catch(() => {
+        emailStatus.textContent = "⚠️ Error sending results.";
+      });
+    }
+
+
+    
+</script>
   <style>
     body { font-family: Arial; padding: 20px; background: #f2f2f2; }
     #chat { background: white; padding: 20px; max-width: 600px; margin: auto; border-radius: 10px; }
@@ -41,65 +76,54 @@
     <button onclick="downloadPDF()" id="downloadBtn" style="display:none;">⬇️ Download PDF</button>
     <div id="emailStatus"></div>
   </div>
-
   <script>
-    // ------ QUIZ DATA ------
-    const scriptLines =     
-  {phrase: `let me sleep on it`,
-    options: [
-      `I need to sleep `,
-      `let me think about it`,
-      `let me go home first`
-    ],
-    correct: 0
-  },
-       {
-        phrase: "Buckle down",
-        options: [
-          "Wear a belt",
-          "Start working hard",
-          "Calm down"
-        ],
-        correct: 1
-      },
+    // 1. QUIZ DATA
+    const scriptLines = [
       {
-        phrase: "Putting this off",
+        phrase: "Break the ice",
         options: [
-          "Turning off the lights",
-          "Ignoring someone",
-          "Delaying something"
-        ],
-        correct: 2
-      },
-      {
-        phrase: "I aced it",
-        options: [
-          "I did very well",
-          "I forgot it",
-          "I failed badly"
+          "Start a conversation in a social setting",
+          "Literally shatter frozen water",
+          "Become very angry suddenly"
         ],
         correct: 0
       },
       {
-        phrase: "Bragging about",
+        phrase: "Hit the books",
         options: [
-          "Boasting or showing off",
-          "Complaining",
-          "Whispering"
+          "Study hard",
+          "Throw your books on the floor",
+          "Read a story to your friends"
         ],
         correct: 0
       },
       {
-        phrase: "It was a no-brainer",
+        phrase: "Let the cat out of the bag",
         options: [
-          "It was very easy",
-          "It was scary",
-          "It was confusing"
+          "Reveal a secret",
+          "Let your pet escape outside",
+          "Forget something important"
         ],
         correct: 0
       }
     ];
 
+    // 2. SCRAMBLE OPTIONS ON EVERY RELOAD
+    function shuffleOptionsAndCorrectIndex() {
+      scriptLines.forEach(q => {
+        let arr = q.options.map((opt, idx) => ({opt, idx}));
+        let correctOpt = q.options[q.correct];
+        for (let j = arr.length - 1; j > 0; j--) {
+          const k = Math.floor(Math.random() * (j + 1));
+          [arr[j], arr[k]] = [arr[k], arr[j]];
+        }
+        q.options = arr.map(x => x.opt);
+        q.correct = arr.findIndex(x => x.opt === correctOpt);
+      });
+    }
+    shuffleOptionsAndCorrectIndex();
+
+    // 3. QUIZ BOT LOGIC (unchanged from previous examples)
     let scriptStep = 0;
     let transcript = [];
     let studentName = "";
@@ -127,8 +151,7 @@
       conversationDiv.innerHTML = '';
       nextBotPrompt();
     }
-
-    function nextBotPrompt() {
+    async function nextBotPrompt() {
       if (scriptStep < scriptLines.length) {
         const entry = scriptLines[scriptStep];
         let html = `<div class="message bot"><b>Bot:</b> What does "<b>${entry.phrase}</b>" mean?</div>`;
@@ -138,7 +161,7 @@
         });
         html += `</div>`;
         conversationDiv.innerHTML = html;
-        speak(`What does "${entry.phrase}" mean? The options are: ${entry.options.join(', ')}`);
+        await playVoice(`What does "${entry.phrase}" mean? The options are: ${entry.options.join(', ')}`);
         textOutput.value = "";
         textOutput.style.display = "block";
         recordBtn.style.display = "inline-block";
@@ -146,21 +169,18 @@
         downloadBtn.style.display = "none";
         emailStatus.textContent = "";
       } else {
-        // Show score, allow PDF, auto-send email to teacher
         const total = scriptLines.length;
         const correct = scores.filter(Boolean).length;
         const percent = Math.round((correct/total)*100);
         addMessage('bot', `Quiz complete! Your score: ${percent}/100. Well done, ${studentName}. You can now download your transcript as PDF.`);
-        speak(`Quiz complete! Your score is ${percent} out of 100. Well done, ${studentName}. You can now download your transcript as PDF.`);
+        await playVoice(`Quiz complete! Your score is ${percent} out of 100. Well done, ${studentName}. You can now download your transcript as PDF.`);
         textOutput.style.display = "none";
         recordBtn.style.display = "none";
         sendBtn.style.display = "none";
         downloadBtn.style.display = "inline-block";
-        // Auto-send results to teacher email
-        autoSendResultsToTeacher();
+        sendEmail();
       }
     }
-
     function startRecording() {
       if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
         alert('Speech recognition not supported in this browser.');
@@ -170,26 +190,21 @@
       recognition.lang = 'en-US';
       recognition.interimResults = false;
       recognition.maxAlternatives = 1;
-
       recognition.start();
       recordBtn.textContent = "Recording... (Speak now)";
-
       recognition.onresult = function(event) {
         const userText = event.results[0][0].transcript;
         textOutput.value = userText;
         recordBtn.textContent = "🎙️ Record Your Answer";
       };
-
       recognition.onerror = function(event) {
         recordBtn.textContent = "🎙️ Record Your Answer";
         alert("Speech recognition error: " + event.error);
       };
-
       recognition.onend = function() {
         recordBtn.textContent = "🎙️ Record Your Answer";
       };
     }
-
     function partialMatch(studentAnswer, correctAnswer) {
       const norm = s => s.toLowerCase().replace(/[^a-z0-9 ]/gi, '').split(' ').filter(Boolean);
       const correctWords = norm(correctAnswer);
@@ -200,20 +215,16 @@
       });
       return matchCount >= Math.max(1, Math.ceil(correctWords.length * 0.6));
     }
-
-    function sendMessage() {
+    async function sendMessage() {
       const userText = textOutput.value.trim();
       if (!userText) {
         alert("Please record your response first.");
         return;
       }
       addMessage('user', userText);
-
       const entry = scriptLines[scriptStep];
       const correctAnswer = entry.options[entry.correct];
-
       const isCorrect = partialMatch(userText, correctAnswer);
-
       transcript.push({
         phrase: entry.phrase,
         options: entry.options,
@@ -225,7 +236,6 @@
       scriptStep++;
       nextBotPrompt();
     }
-
     function addMessage(who, text) {
       const div = document.createElement('div');
       div.className = `message ${who}`;
@@ -233,12 +243,7 @@
       conversationDiv.appendChild(div);
       conversationDiv.scrollTop = conversationDiv.scrollHeight;
     }
-
-    function speak(text) {
-      const msg = new SpeechSynthesisUtterance(text);
-      speechSynthesis.speak(msg);
-    }
-
+    
     function downloadPDF() {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
@@ -248,7 +253,6 @@
       doc.setFontSize(12);
       doc.text(`Name: ${studentName}`, 10, 23);
       doc.text(`Date: ${now.toLocaleString()}`, 10, 30);
-
       const total = scriptLines.length;
       const correct = scores.filter(Boolean).length;
       const percent = Math.round((correct/total)*100);
@@ -256,7 +260,6 @@
       doc.setTextColor(0, 86, 27);
       doc.text(`Score: ${percent}/100`, 10, 40);
       doc.setTextColor(0, 0, 0);
-
       let y = 52;
       transcript.forEach((entry, i) => {
         doc.setFontSize(12);
@@ -295,53 +298,56 @@
       const fileName = `${studentName.replace(/\s+/g, '_')}_idioms_quiz.pdf`;
       doc.save(fileName);
     }
-
-    // ----- AUTO EMAIL TO TEACHER -----
-    function autoSendResultsToTeacher() {
-      // CHANGE THIS TO YOUR EMAIL AND YOUR FORMSPREE ENDPOINT!
-      const teacherEmail = "renarguet@gmail.com";
-      const formspreeEndpoint = "https://formspree.io/f/xblyqgqq";
-
-      const total = scriptLines.length;
+  
+    function sendEmail() {
       const correct = scores.filter(Boolean).length;
-      const percent = Math.round((correct/total)*100);
-      let body = `Idioms Speaking Quiz\nName: ${studentName}\nDate: ${new Date().toLocaleString()}\nScore: ${percent}/100\n\n`;
-      transcript.forEach((entry, i) => {
-        body += `Q${i+1}: What does "${entry.phrase}" mean?\n`;
-        entry.options.forEach((opt, idx) => {
-          if (idx === scriptLines[i].correct) {
-            body += `* ${opt}\n`;
-          } else {
-            body += `  ${opt}\n`;
-          }
-        });
-        if (entry.isCorrect) {
-          body += `Your answer: ${entry.studentAnswer} (Correct)\n`;
-        } else {
-          body += `Your answer: ${entry.studentAnswer} (Incorrect)\nCorrect answer: ${entry.correctAnswer}\n`;
-        }
-        body += "\n";
-      });
+      const percent = Math.round((correct / scriptLines.length) * 100);
+      const answers = transcript.map((entry, i) => {
+        return `Q${i + 1}: ${entry.phrase}\nYour answer: ${entry.studentAnswer}\nCorrect answer: ${entry.correctAnswer}\nResult: ${entry.isCorrect ? 'Correct' : 'Incorrect'}\n`;
+      }).join("\n");
 
-      fetch(formspreeEndpoint, {
+      const data = {
+        _subject: `Quiz Results for ${studentName}`,
+        name: studentName,
+        score: `${percent}/100`,
+        results: answers
+      };
+
+      fetch("https://formspree.io/f/xblyqgqq", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: teacherEmail,
-          message: body
-        })
-      })
-      .then(res => {
-        if (res.ok) {
-          emailStatus.textContent = "Results sent to your teacher!";
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify(data)
+      }).then(response => {
+        if (response.ok) {
+          emailStatus.textContent = "✅ Results sent to teacher.";
         } else {
-          emailStatus.textContent = "Auto-email failed. Please let your teacher know.";
+          emailStatus.textContent = "⚠️ Failed to send results.";
         }
-      })
-      .catch(() => {
-        emailStatus.textContent = "Auto-email failed. Please let your teacher know.";
+      }).catch(() => {
+        emailStatus.textContent = "⚠️ Error sending results.";
       });
-    }
-  </script>
+    }const TTS_BACKEND_URL = "https://chattybot-backend.onrender.com"; // ← Replace with your actual Render URL
+
+async function playVoice(text) {
+  try {
+    const resp = await fetch(TTS_BACKEND_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }) // optional: add "voice_id" here
+    });
+    if (!resp.ok) throw new Error("TTS failed: " + resp.status);
+    const blob = await resp.blob();
+    const audio = new Audio(URL.createObjectURL(blob));
+    audio.play();
+  } catch (err) {
+    console.error("Backend TTS error:", err);
+  }
+}
+  
+
+</script>
 </body>
 </html>
