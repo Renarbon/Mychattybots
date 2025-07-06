@@ -197,14 +197,8 @@
         const total = scriptLines.length;
         const correct = scores.filter(Boolean).length;
         const percent = Math.round((correct/total)*100);
-        addMessage('bot', `Quiz complete! Your score: if (percent >= 80) {
-  addMessage('bot', `Quiz complete! Your score: ${percent}/100. Well done, ${studentName}. You can now download your transcript as PDF.`);
-  await playVoice(`Quiz complete! Your score is ${percent} out of 100. Well done, ${studentName}. You can now download your transcript as PDF.`);
-} else {
-  addMessage('bot', `Quiz complete! Your score: ${percent}/100. You can improve, ${studentName}. Try again!`);
-  await playVoice(`Quiz complete! Your score is ${percent} out of 100. You can improve, ${studentName}. Try again.`);
-}
-
+        addMessage('bot', `Quiz complete! Your score: ${percent}/100. You have completed this task, ${studentName}. You can now download your transcript as PDF.`);
+        await playVoice(`Quiz complete! Your score is ${percent} out of 100. You have completed this task, ${studentName}. You can now download your transcript as PDF.`);
         textOutput.style.display = "none";
         recordBtn.style.display = "none";
         sendBtn.style.display = "none";
