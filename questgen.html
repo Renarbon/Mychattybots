@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Quiz Generator with Scramble</title>
+  <style>
+    body { font-family: Arial; }
+    .question-box { background: #f8f8ff; margin: 12px 0; padding: 14px; border-radius: 8px; }
+    .option-input { width:65%; margin-right:6px; }
+    .btn { background: #0a1857; color: #fff; border: none; border-radius: 6px; padding: 7px 18px; margin: 7px 3px; font-size:1em; }
+    textarea { width: 100%; min-height: 140px; margin: 16px 0;}
+    .edit-hint { font-size:0.9em; color:#666;}
+  </style>
+</head>
+<body>
+  <h2>Quiz Generator (Auto-Options & Scramble)</h2>
+  <div id="form-area"></div>
+  <button class="btn" onclick="addQuestion()">Add Question</button>
+  <button class="btn" onclick="generateJS()">Generate JS Array</button>
+  <h3>Copy this code and paste it into your quiz:</h3>
+  <textarea id="outputJS" readonly></textarea>
+<script>
+let genericDistractors = [
+  "It's when you try something new",
+  "It means feeling confused",
+  "Doing something the wrong way",
+  "Taking a break from work",
+  "Being proud of someone else",
+  "Getting help from a friend",
+  "Making a quick decision",
+  "Being very tired",
+  "Making a big mistake",
+  "Doing something slowly",
+  "Ignoring a problem",
+  "Solving a puzzle",
+  "Laughing at a joke",
+  "Going on vacation",
+  "Feeling happy for no reason"
+];
+let questions = [{phrase:"", correct:"", options:["","",""], correctIndex:0}];
+
+function renderForm() {
+  let html = "";
+  questions.forEach((q,i) => {
+    html += `<div class="question-box">
+      <b>Q${i+1}:</b> 
+      <input type="text" value="${q.phrase}" onchange="questions[${i}].phrase=this.value" placeholder="Phrase/Idiom">
+      <br>
+      <label>Correct meaning: 
+        <input class="option-input" type="text" value="${q.correct}" onchange="questions[${i}].correct=this.value">
+        <span class="edit-hint">(Just write the correct meaning. Click "Auto Options" to fill in choices.)</span>
+      </label>
+      <br>
+      <button type="button" onclick="autoOptions(${i})">Auto Options</button>
+      <button type="button" onclick="scrambleOptions(${i})">Scramble Options</button>
+      <div>
+        <label>Option 1: <input class="option-input" type="text" value="${q.options[0]}" onchange="questions[${i}].options[0]=this.value"></label><br>
+        <label>Option 2: <input class="option-input" type="text" value="${q.options[1]}" onchange="questions[${i}].options[1]=this.value"></label><br>
+        <label>Option 3: <input class="option-input" type="text" value="${q.options[2]}" onchange="questions[${i}].options[2]=this.value"></label>
+      </div>
+      <div class="edit-hint">Make sure the correct answer is in the list, then set "Correct Option": 
+        <select onchange="questions[${i}].correctIndex=parseInt(this.value)">
+          <option value="0" ${q.correctIndex===0?'selected':''}>Option 1</option>
+          <option value="1" ${q.correctIndex===1?'selected':''}>Option 2</option>
+          <option value="2" ${q.correctIndex===2?'selected':''}>Option 3</option>
+        </select>
+      </div>
+    </div>`;
+  });
+  document.getElementById('form-area').innerHTML = html;
+}
+function addQuestion() {
+  questions.push({phrase:"", correct:"", options:["","",""], correctIndex:0});
+  renderForm();
+}
+function autoOptions(i) {
+  let q = questions[i];
+  // Place the correct answer in a random position
+  let idx = Math.floor(Math.random()*3);
+  let distractors = [];
+  while (distractors.length < 2) {
+    let fake = genericDistractors[Math.floor(Math.random()*genericDistractors.length)];
+    if (fake !== q.correct && !distractors.includes(fake)) distractors.push(fake);
+  }
+  let opts = [null,null,null];
+  opts[idx] = q.correct;
+  let f=0;
+  for (let j=0;j<3;j++) {
+    if (opts[j]===null) opts[j]=distractors[f++];
+  }
+  q.options = opts;
+  q.correctIndex = idx;
+  renderForm();
+}
+function scrambleOptions(i) {
+  let q = questions[i];
+  // Pair options with their indices
+  let arr = q.options.map((opt, idx) => ({opt, idx}));
+  // Remember which index is the correct one
+  const correctOpt = q.options[q.correctIndex];
+  // Fisher-Yates shuffle
+  for (let j = arr.length - 1; j > 0; j--) {
+    const k = Math.floor(Math.random() * (j + 1));
+    [arr[j], arr[k]] = [arr[k], arr[j]];
+  }
+  // Find new index of correct answer
+  let newCorrectIndex = arr.findIndex(x => x.opt === correctOpt);
+  q.options = arr.map(x=>x.opt);
+  q.correctIndex = newCorrectIndex;
+  renderForm();
+}
+function escapeJS(val) {
+  return val.replace(/\\/g, "\\\\").replace(/`/g, "\\`").replace(/\$/g, "\\$");
+}
+function generateJS() {
+  let scriptLines = '[\n' + questions.map(q =>
+    `  {\n    phrase: \`${escapeJS(q.phrase)}\`,\n    options: [\n      \`${escapeJS(q.options[0])}\`,\n      \`${escapeJS(q.options[1])}\`,\n      \`${escapeJS(q.options[2])}\`\n    ],\n    correct: ${q.correctIndex}\n  }`
+    ).join(',\n') + '\n]';
+  document.getElementById('outputJS').value = "const scriptLines = " + scriptLines + ";";
+}
+renderForm();
+</script>
+</body>
+</html>
