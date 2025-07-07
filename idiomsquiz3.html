@@ -45,34 +45,52 @@
   <script>
     // 1. QUIZ DATA
     const scriptLines = [
-      {
-        phrase: "Break the ice",
-        options: [
-          "Start a conversation in a social setting",
-          "Literally shatter frozen water",
-          "Become very angry suddenly"
-        ],
-        correct: 0
-      },
-      {
-        phrase: "Hit the books",
-        options: [
-          "Study hard",
-          "Throw your books on the floor",
-          "Read a story to your friends"
-        ],
-        correct: 0
-      },
-      {
-        phrase: "Let the cat out of the bag",
-        options: [
-          "Reveal a secret",
-          "Let your pet escape outside",
-          "Forget something important"
-        ],
-        correct: 0
-      }
-    ];
+  {
+    phrase: `Don't take it personally.`,
+    options: [
+      `I've treated everyone this way`,
+      `Being very tired`,
+      `Taking a break from work`
+    ],
+    correct: 0
+  },
+  {
+    phrase: `putting this off `,
+    options: [
+      `Taking a break from work`,
+      `Doing something the wrong way`,
+      `do this right now`
+    ],
+    correct: 2
+  },
+  {
+    phrase: `I mean that as a compliment`,
+    options: [
+      `something positive about you`,
+      `Making a big mistake`,
+      `Laughing at a joke`
+    ],
+    correct: 0
+  },
+  {
+    phrase: `Better late than never`,
+    options: [
+      `Better do something right`,
+      `It's better to do something late than to never do it`,
+      `Taking a break from work`
+    ],
+    correct: 1
+  },
+  {
+    phrase: `bragging about`,
+    options: [
+      `to talk with excessive pride`,
+      `Laughing at a joke`,
+      `Doing something the wrong way`
+    ],
+    correct: 0
+  }
+];
 
     // 2. SCRAMBLE OPTIONS ON EVERY RELOAD
     function shuffleOptionsAndCorrectIndex() {
