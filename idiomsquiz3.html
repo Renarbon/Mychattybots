@@ -135,8 +135,22 @@
         correct: 0
       }
     ];
+// 2. SCRAMBLE OPTIONS ON EVERY RELOAD
+    function shuffleOptionsAndCorrectIndex() {
+      scriptLines.forEach(q => {
+        let arr = q.options.map((opt, idx) => ({opt, idx}));
+        let correctOpt = q.options[q.correct];
+        for (let j = arr.length - 1; j > 0; j--) {
+          const k = Math.floor(Math.random() * (j + 1));
+          [arr[j], arr[k]] = [arr[k], arr[j]];
+        }
+        q.options = arr.map(x => x.opt);
+        q.correct = arr.findIndex(x => x.opt === correctOpt);
+      });
+    }
+    shuffleOptionsAndCorrectIndex();
 
-    // ------ 2. QUIZ LOGIC ------
+    // ------ 3. QUIZ LOGIC ------
     let scriptStep = 0;
     let transcript = [];
     let studentName = "";
