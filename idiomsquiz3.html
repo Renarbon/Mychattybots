@@ -41,55 +41,109 @@
     <button onclick="downloadPDF()" id="downloadBtn" style="display:none;">⬇️ Download PDF</button>
     <div id="audioStatus"></div>
   </div>
+
+  <!-- Hidden Form for Formspree -->
+  <form id="resultsForm" action="https://formspree.io/f/xblyqgqq" method="POST" style="display:none;">
+    <input type="hidden" name="_subject" value="Quiz Results">
+    <input type="hidden" name="name" id="formName">
+    <input type="hidden" name="score" id="formScore">
+    <textarea name="results" id="formResults"></textarea>
+  </form>
+
   <script>
     // ------ 1. YOUR QUIZ DATA HERE ------
-   const scriptLines = [
-  {
-    phrase: `Don't take it personally.`,
-    options: [
-      `I've treated everyone this way`,
-      `Being very tired`,
-      `Taking a break from work`
-    ],
-    correct: 0
-  },
-  {
-    phrase: `putting this off `,
-    options: [
-      `Taking a break from work`,
-      `Doing something the wrong way`,
-      `do this right now`
-    ],
-    correct: 2
-  },
-  {
-    phrase: `I mean that as a compliment`,
-    options: [
-      `something positive about you`,
-      `Making a big mistake`,
-      `Laughing at a joke`
-    ],
-    correct: 0
-  },
-  {
-    phrase: `Better late than never`,
-    options: [
-      `Better do something right`,
-      `It's better to do something late than to never do it`,
-      `Taking a break from work`
-    ],
-    correct: 1
-  },
-  {
-    phrase: `bragging about`,
-    options: [
-      `to talk with excessive pride`,
-      `Laughing at a joke`,
-      `Doing something the wrong way`
-    ],
-    correct: 0
-  }
-];
+    const scriptLines = [
+      {
+        phrase: "Break the ice",
+        options: [
+          "Start a conversation in a social setting",
+          "Literally shatter frozen water",
+          "Become very angry suddenly"
+        ],
+        correct: 0
+      },
+      {
+        phrase: "Hit the sack",
+        options: [
+          "Go to bed",
+          "Punch a pillow",
+          "Pack your bags"
+        ],
+        correct: 0
+      },
+      {
+        phrase: "Under the weather",
+        options: [
+          "Feeling sick",
+          "Caught in the rain",
+          "Very happy"
+        ],
+        correct: 0
+      },
+      {
+        phrase: "Piece of cake",
+        options: [
+          "Very easy",
+          "A slice of dessert",
+          "Something delicious"
+        ],
+        correct: 0
+      },
+      {
+        phrase: "Cost an arm and a leg",
+        options: [
+          "Very expensive",
+          "Involves hard labor",
+          "Needs body strength"
+        ],
+        correct: 0
+      },
+      {
+        phrase: "Let the cat out of the bag",
+        options: [
+          "Reveal a secret",
+          "Let your pet escape",
+          "Forget something important"
+        ],
+        correct: 0
+      },
+      {
+        phrase: "Burn the midnight oil",
+        options: [
+          "Stay up late working or studying",
+          "Start a fire at night",
+          "Light a candle at dinner"
+        ],
+        correct: 0
+      },
+      {
+        phrase: "Hit the books",
+        options: [
+          "Study hard",
+          "Throw your books",
+          "Write a story"
+        ],
+        correct: 0
+      },
+      {
+        phrase: "Bite the bullet",
+        options: [
+          "Face a difficult situation bravely",
+          "Eat something hard",
+          "Act quickly"
+        ],
+        correct: 0
+      },
+      {
+        phrase: "Once in a blue moon",
+        options: [
+          "Very rarely",
+          "During the night",
+          "When the sky is clear"
+        ],
+        correct: 0
+      }
+    ];
 
     // ------ 2. QUIZ LOGIC ------
     let scriptStep = 0;
@@ -193,7 +247,7 @@
         // Only ElevenLabs TTS for the outro/feedback
         await playVoice(feedback);
 
-        // Send quiz results to your email using Formspree
+        // Send quiz results to your email using Formspree (classic HTML form)
         sendEmail();
 
         textOutput.style.display = "none";
@@ -324,7 +378,7 @@
       doc.save(fileName);
     }
 
-    // ------ 3. SEND EMAIL VIA FORMSPREE ------
+    // ------ 3. SEND EMAIL VIA FORMSPREE (HTML FORM) ------
     function sendEmail() {
       const correct = scores.filter(Boolean).length;
       const percent = Math.round((correct / scriptLines.length) * 100);
@@ -332,29 +386,15 @@
         return `Q${i + 1}: ${entry.phrase}\nYour answer: ${entry.studentAnswer}\nCorrect answer: ${entry.correctAnswer}\nResult: ${entry.isCorrect ? 'Correct' : 'Incorrect'}\n`;
       }).join("\n");
 
-      const data = {
-        _subject: `Quiz Results for ${studentName}`,
-        name: studentName,
-        score: `${percent}/100`,
-        results: answers
-      };
+      document.getElementById('formName').value = studentName;
+      document.getElementById('formScore').value = `${percent}/100`;
+      document.getElementById('formResults').value = answers;
 
-      fetch("https://formspree.io/f/xblyqgqq", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
-        body: JSON.stringify(data)
-      }).then(response => {
-        if (response.ok) {
-          audioStatus.textContent = "✅ Results sent to teacher.";
-        } else {
-          audioStatus.textContent = "⚠️ Failed to send results.";
-        }
-      }).catch(() => {
-        audioStatus.textContent = "⚠️ Error sending results.";
-      });
+      // Submit the form (will reload the page, so show a message first)
+      audioStatus.textContent = "Submitting results to your teacher...";
+      setTimeout(() => {
+        document.getElementById('resultsForm').submit();
+      }, 1000); // 1 second so user sees message
     }
   </script>
 </body>
