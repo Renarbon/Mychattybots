@@ -1,9 +1,8 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Idioms Quiz Bot (with Scrambled Choices)</title>
+  <title>Idioms Quiz Bot (with Scrambled Choices & Email)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: Arial; padding: 20px; background: #f2f2f2; }
@@ -43,8 +42,8 @@
     <div id="audioStatus"></div>
   </div>
   <script>
-    // 1. QUIZ DATA
-    const scriptLines = [
+    // ------ 1. YOUR QUIZ DATA HERE ------
+   const scriptLines = [
   {
     phrase: `Don't take it personally.`,
     options: [
@@ -92,22 +91,7 @@
   }
 ];
 
-    // 2. SCRAMBLE OPTIONS ON EVERY RELOAD
-    function shuffleOptionsAndCorrectIndex() {
-      scriptLines.forEach(q => {
-        let arr = q.options.map((opt, idx) => ({opt, idx}));
-        let correctOpt = q.options[q.correct];
-        for (let j = arr.length - 1; j > 0; j--) {
-          const k = Math.floor(Math.random() * (j + 1));
-          [arr[j], arr[k]] = [arr[k], arr[j]];
-        }
-        q.options = arr.map(x => x.opt);
-        q.correct = arr.findIndex(x => x.opt === correctOpt);
-      });
-    }
-    shuffleOptionsAndCorrectIndex();
-
-    // 3. QUIZ BOT LOGIC
+    // ------ 2. QUIZ LOGIC ------
     let scriptStep = 0;
     let transcript = [];
     let studentName = "";
@@ -208,6 +192,9 @@
         }
         // Only ElevenLabs TTS for the outro/feedback
         await playVoice(feedback);
+
+        // Send quiz results to your email using Formspree
+        sendEmail();
 
         textOutput.style.display = "none";
         recordBtn.style.display = "none";
@@ -335,63 +322,40 @@
       });
       const fileName = `${studentName.replace(/\s+/g, '_')}_idioms_quiz.pdf`;
       doc.save(fileName);
-    }function sendEmail() {
-  const correct = scores.filter(Boolean).length;
-  const percent = Math.round((correct / scriptLines.length) * 100);
-  const answers = transcript.map((entry, i) => {
-    return `Q${i + 1}: ${entry.phrase}\nYour answer: ${entry.studentAnswer}\nCorrect answer: ${entry.correctAnswer}\nResult: ${entry.isCorrect ? 'Correct' : 'Incorrect'}\n`;
-  }).join("\n");
-
-  const data = {
-    _subject: `Quiz Results for ${studentName}`,
-    name: studentName,
-    score: `${percent}/100`,
-    results: answers
-  };
-
-  fetch("https://formspree.io/f/xblyqgqq", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Accept": "application/json"
-    },
-    body: JSON.stringify(data)
-  }).then(response => {
-    if (response.ok) {
-      audioStatus.textContent = "✅ Results sent to teacher.";
-    } else {
-      audioStatus.textContent = "⚠️ Failed to send results.";
     }
-  }).catch(() => {
-    audioStatus.textContent = "⚠️ Error sending results.";
-  });
-}
-await playVoice(feedback);
-sendEmail();
-else {
-  const total = scriptLines.length;
-  const correct = scores.filter(Boolean).length;
-  const percent = Math.round((correct/total)*100);
-  let feedback = "";
-  if (percent >= 80) {
-    feedback = `Quiz complete! Your score is ${percent} out of 100. Well done, ${studentName}. You can now download your transcript as PDF.`;
-    addMessage('bot', feedback);
-  } else {
-    feedback = `Quiz complete! Your score is ${percent} out of 100. You can improve, ${studentName}. Try again!`;
-    addMessage('bot', feedback);
-  }
-  // Only ElevenLabs TTS for the outro/feedback
-  await playVoice(feedback);
 
-  // Send quiz results to your email using Formspree
-  sendEmail();
+    // ------ 3. SEND EMAIL VIA FORMSPREE ------
+    function sendEmail() {
+      const correct = scores.filter(Boolean).length;
+      const percent = Math.round((correct / scriptLines.length) * 100);
+      const answers = transcript.map((entry, i) => {
+        return `Q${i + 1}: ${entry.phrase}\nYour answer: ${entry.studentAnswer}\nCorrect answer: ${entry.correctAnswer}\nResult: ${entry.isCorrect ? 'Correct' : 'Incorrect'}\n`;
+      }).join("\n");
 
-  textOutput.style.display = "none";
-  recordBtn.style.display = "none";
-  sendBtn.style.display = "none";
-  downloadBtn.style.display = "inline-block";
-}
+      const data = {
+        _subject: `Quiz Results for ${studentName}`,
+        name: studentName,
+        score: `${percent}/100`,
+        results: answers
+      };
 
+      fetch("https://formspree.io/f/xblyqgqq", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify(data)
+      }).then(response => {
+        if (response.ok) {
+          audioStatus.textContent = "✅ Results sent to teacher.";
+        } else {
+          audioStatus.textContent = "⚠️ Failed to send results.";
+        }
+      }).catch(() => {
+        audioStatus.textContent = "⚠️ Error sending results.";
+      });
+    }
   </script>
 </body>
 </html>
