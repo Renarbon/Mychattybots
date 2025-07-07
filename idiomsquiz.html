@@ -3,42 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Idioms Quiz Bot (with Scrambled Choices)</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
-    function sendEmail() {
-      const correct = scores.filter(Boolean).length;
-      const percent = Math.round((correct / scriptLines.length) * 100);
-      const answers = transcript.map((entry, i) => {
-        return `Q${i + 1}: ${entry.phrase}\nYour answer: ${entry.studentAnswer}\nCorrect answer: ${entry.correctAnswer}\nResult: ${entry.isCorrect ? 'Correct' : 'Incorrect'}\n`;
-      }).join("\n");
-
-      const data = {
-        _subject: `Quiz Results for ${studentName}`,
-        name: studentName,
-        score: `${percent}/100`,
-        results: answers
-      };
-
-      fetch("https://formspree.io/f/xblyqgqq", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
-        body: JSON.stringify(data)
-      }).then(response => {
-        if (response.ok) {
-          emailStatus.textContent = "✅ Results sent to teacher.";
-        } else {
-          emailStatus.textContent = "⚠️ Failed to send results.";
-        }
-      }).catch(() => {
-        emailStatus.textContent = "⚠️ Error sending results.";
-      });
-    }
-
-
-    
-</script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: Arial; padding: 20px; background: #f2f2f2; }
     #chat { background: white; padding: 20px; max-width: 600px; margin: auto; border-radius: 10px; }
@@ -59,7 +24,7 @@
     textarea { width: 100%; height: 60px; margin-top: 10px; resize: none; }
     button { padding: 10px 15px; margin: 5px 3px; }
     #studentName { width: 80%; padding: 7px; margin-bottom: 10px; }
-    #emailStatus { color: #1976d2; margin-top: 10px; min-height: 22px; }
+    #audioStatus { color: #1976d2; margin-top: 10px; min-height: 22px; }
   </style>
 </head>
 <body>
@@ -74,7 +39,7 @@
     <textarea id="textOutput" readonly placeholder="Your answer will appear here..." style="display:none;"></textarea>
     <button onclick="sendMessage()" id="sendBtn" style="display:none;">Next</button>
     <button onclick="downloadPDF()" id="downloadBtn" style="display:none;">⬇️ Download PDF</button>
-    <div id="emailStatus"></div>
+    <div id="audioStatus"></div>
   </div>
   <script>
     // 1. QUIZ DATA
@@ -123,7 +88,7 @@
     }
     shuffleOptionsAndCorrectIndex();
 
-    // 3. QUIZ BOT LOGIC (unchanged from previous examples)
+    // 3. QUIZ BOT LOGIC
     let scriptStep = 0;
     let transcript = [];
     let studentName = "";
@@ -135,7 +100,7 @@
     const downloadBtn = document.getElementById('downloadBtn');
     const startBtn = document.getElementById('startBtn');
     const studentNameInput = document.getElementById('studentName');
-    const emailStatus = document.getElementById('emailStatus');
+    const audioStatus = document.getElementById('audioStatus');
 
     function startQuiz() {
       studentName = studentNameInput.value.trim();
@@ -151,6 +116,45 @@
       conversationDiv.innerHTML = '';
       nextBotPrompt();
     }
+
+    // Browser TTS: for question only
+    function speakWithBrowser(text) {
+      window.speechSynthesis.cancel();
+      const synth = window.speechSynthesis;
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+      synth.speak(utterance);
+    }
+
+    // ElevenLabs TTS: for outro only
+    async function playVoice(text) {
+      window.speechSynthesis.cancel();
+      const apiKey = "sk_865fb49a3205c51284bd88bb8d25446e9a5cd652163585de";
+      const voiceId = "ds0uumbpvplhO4tyz2yF";
+      const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
+      try {
+        const resp = await fetch(url, {
+          method: "POST",
+          headers: {
+            "xi-api-key": apiKey,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            text: text,
+            model_id: "eleven_monolingual_v1",
+            voice_settings: { stability: 0.5, similarity_boost: 0.75 }
+          })
+        });
+        if (!resp.ok) throw new Error("TTS failed: " + resp.status);
+        const audioBlob = await resp.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        audio.play();
+      } catch (err) {
+        alert("TTS error: " + err.message);
+      }
+    }
+
     async function nextBotPrompt() {
       if (scriptStep < scriptLines.length) {
         const entry = scriptLines[scriptStep];
@@ -161,37 +165,37 @@
         });
         html += `</div>`;
         conversationDiv.innerHTML = html;
-        speakWithBrowser(`What does "${entry.phrase}" mean? The options are: ${entry.options.join(', ')}`);
+
+        // Only browser TTS for the idiom/question, not the options
+        speakWithBrowser(`What does "${entry.phrase}" mean?`);
+
         textOutput.value = "";
         textOutput.style.display = "block";
         recordBtn.style.display = "inline-block";
         sendBtn.style.display = "inline-block";
         downloadBtn.style.display = "none";
-        emailStatus.textContent = "";
+        audioStatus.textContent = "";
       } else {
         const total = scriptLines.length;
         const correct = scores.filter(Boolean).length;
         const percent = Math.round((correct/total)*100);
-       if (percent >= 80) {
-  addMessage('bot', `Quiz complete! Your score: ${percent}/100. Well done, ${studentName}. You can now download your transcript as PDF.`);
-  await playVoice(`Quiz complete! Your score is ${percent} out of 100. Well done, ${studentName}. You can now download your transcript as PDF.`);
-} else {
-  addMessage('bot', `Quiz complete! Your score: ${percent}/100. You can improve, ${studentName}. Try again!`);
-  await playVoice(`Quiz complete! Your score is ${percent} out of 100. You can improve, ${studentName}. Try again.`);
-}
+        let feedback = "";
+        if (percent >= 80) {
+          feedback = `Quiz complete! Your score is ${percent} out of 100. Well done, ${studentName}. You can now download your transcript as PDF.`;
+          addMessage('bot', feedback);
+        } else {
+          feedback = `Quiz complete! Your score is ${percent} out of 100. You can improve, ${studentName}. Try again!`;
+          addMessage('bot', feedback);
+        }
+        // Only ElevenLabs TTS for the outro/feedback
+        await playVoice(feedback);
 
         textOutput.style.display = "none";
         recordBtn.style.display = "none";
         sendBtn.style.display = "none";
         downloadBtn.style.display = "inline-block";
-        sendEmail();
       }
-    }function speakWithBrowser(text) {
-  const synth = window.speechSynthesis;
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = 'en-US';
-  synth.speak(utterance);
-}
+    }
 
     function startRecording() {
       if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
@@ -217,6 +221,7 @@
         recordBtn.textContent = "🎙️ Record Your Answer";
       };
     }
+
     function partialMatch(studentAnswer, correctAnswer) {
       const norm = s => s.toLowerCase().replace(/[^a-z0-9 ]/gi, '').split(' ').filter(Boolean);
       const correctWords = norm(correctAnswer);
@@ -227,6 +232,7 @@
       });
       return matchCount >= Math.max(1, Math.ceil(correctWords.length * 0.6));
     }
+
     async function sendMessage() {
       const userText = textOutput.value.trim();
       if (!userText) {
@@ -248,6 +254,7 @@
       scriptStep++;
       nextBotPrompt();
     }
+
     function addMessage(who, text) {
       const div = document.createElement('div');
       div.className = `message ${who}`;
@@ -255,7 +262,7 @@
       conversationDiv.appendChild(div);
       conversationDiv.scrollTop = conversationDiv.scrollHeight;
     }
-    
+
     function downloadPDF() {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
@@ -310,56 +317,6 @@
       const fileName = `${studentName.replace(/\s+/g, '_')}_idioms_quiz.pdf`;
       doc.save(fileName);
     }
-  
-    function sendEmail() {
-      const correct = scores.filter(Boolean).length;
-      const percent = Math.round((correct / scriptLines.length) * 100);
-      const answers = transcript.map((entry, i) => {
-        return `Q${i + 1}: ${entry.phrase}\nYour answer: ${entry.studentAnswer}\nCorrect answer: ${entry.correctAnswer}\nResult: ${entry.isCorrect ? 'Correct' : 'Incorrect'}\n`;
-      }).join("\n");
-
-      const data = {
-        _subject: `Quiz Results for ${studentName}`,
-        name: studentName,
-        score: `${percent}/100`,
-        results: answers
-      };
-
-      fetch("https://formspree.io/f/xblyqgqq", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
-        body: JSON.stringify(data)
-      }).then(response => {
-        if (response.ok) {
-          emailStatus.textContent = "✅ Results sent to teacher.";
-        } else {
-          emailStatus.textContent = "⚠️ Failed to send results.";
-        }
-      }).catch(() => {
-        emailStatus.textContent = "⚠️ Error sending results.";
-      });
-    }const TTS_BACKEND_URL = "https://chattybot-backend.onrender.com"; // ← Replace with your actual Render URL
-
-async function playVoice(text) {
-  try {
-    const resp = await fetch(TTS_BACKEND_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text }) // optional: add "voice_id" here
-    });
-    if (!resp.ok) throw new Error("TTS failed: " + resp.status);
-    const blob = await resp.blob();
-    const audio = new Audio(URL.createObjectURL(blob));
-    audio.play();
-  } catch (err) {
-    console.error("Backend TTS error:", err);
-  }
-}
-  
-
-</script>
+  </script>
 </body>
 </html>
