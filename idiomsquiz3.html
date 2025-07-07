@@ -335,7 +335,63 @@
       });
       const fileName = `${studentName.replace(/\s+/g, '_')}_idioms_quiz.pdf`;
       doc.save(fileName);
+    }function sendEmail() {
+  const correct = scores.filter(Boolean).length;
+  const percent = Math.round((correct / scriptLines.length) * 100);
+  const answers = transcript.map((entry, i) => {
+    return `Q${i + 1}: ${entry.phrase}\nYour answer: ${entry.studentAnswer}\nCorrect answer: ${entry.correctAnswer}\nResult: ${entry.isCorrect ? 'Correct' : 'Incorrect'}\n`;
+  }).join("\n");
+
+  const data = {
+    _subject: `Quiz Results for ${studentName}`,
+    name: studentName,
+    score: `${percent}/100`,
+    results: answers
+  };
+
+  fetch("https://formspree.io/f/xblyqgqq", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Accept": "application/json"
+    },
+    body: JSON.stringify(data)
+  }).then(response => {
+    if (response.ok) {
+      audioStatus.textContent = "✅ Results sent to teacher.";
+    } else {
+      audioStatus.textContent = "⚠️ Failed to send results.";
     }
+  }).catch(() => {
+    audioStatus.textContent = "⚠️ Error sending results.";
+  });
+}
+await playVoice(feedback);
+sendEmail();
+else {
+  const total = scriptLines.length;
+  const correct = scores.filter(Boolean).length;
+  const percent = Math.round((correct/total)*100);
+  let feedback = "";
+  if (percent >= 80) {
+    feedback = `Quiz complete! Your score is ${percent} out of 100. Well done, ${studentName}. You can now download your transcript as PDF.`;
+    addMessage('bot', feedback);
+  } else {
+    feedback = `Quiz complete! Your score is ${percent} out of 100. You can improve, ${studentName}. Try again!`;
+    addMessage('bot', feedback);
+  }
+  // Only ElevenLabs TTS for the outro/feedback
+  await playVoice(feedback);
+
+  // Send quiz results to your email using Formspree
+  sendEmail();
+
+  textOutput.style.display = "none";
+  recordBtn.style.display = "none";
+  sendBtn.style.display = "none";
+  downloadBtn.style.display = "inline-block";
+}
+
   </script>
 </body>
 </html>
