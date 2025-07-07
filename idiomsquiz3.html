@@ -41,15 +41,6 @@
     <button onclick="downloadPDF()" id="downloadBtn" style="display:none;">⬇️ Download PDF</button>
     <div id="audioStatus"></div>
   </div>
-
-  <!-- Hidden Form for Formspree -->
-  <form id="resultsForm" action="https://formspree.io/f/xblyqgqq" method="POST" style="display:none;">
-    <input type="hidden" name="_subject" value="Quiz Results">
-    <input type="hidden" name="name" id="formName">
-    <input type="hidden" name="score" id="formScore">
-    <textarea name="results" id="formResults"></textarea>
-  </form>
-
   <script>
     // ------ 1. YOUR QUIZ DATA HERE ------
     const scriptLines = [
@@ -247,7 +238,7 @@
         // Only ElevenLabs TTS for the outro/feedback
         await playVoice(feedback);
 
-        // Send quiz results to your email using Formspree (classic HTML form)
+        // Send quiz results to your email using Formspree
         sendEmail();
 
         textOutput.style.display = "none";
@@ -378,7 +369,7 @@
       doc.save(fileName);
     }
 
-    // ------ 3. SEND EMAIL VIA FORMSPREE (HTML FORM) ------
+    // ------ 3. SEND EMAIL VIA FORMSPREE ------
     function sendEmail() {
       const correct = scores.filter(Boolean).length;
       const percent = Math.round((correct / scriptLines.length) * 100);
@@ -386,15 +377,29 @@
         return `Q${i + 1}: ${entry.phrase}\nYour answer: ${entry.studentAnswer}\nCorrect answer: ${entry.correctAnswer}\nResult: ${entry.isCorrect ? 'Correct' : 'Incorrect'}\n`;
       }).join("\n");
 
-      document.getElementById('formName').value = studentName;
-      document.getElementById('formScore').value = `${percent}/100`;
-      document.getElementById('formResults').value = answers;
+      const data = {
+        _subject: `Quiz Results for ${studentName}`,
+        name: studentName,
+        score: `${percent}/100`,
+        results: answers
+      };
 
-      // Submit the form (will reload the page, so show a message first)
-      audioStatus.textContent = "Submitting results to your teacher...";
-      setTimeout(() => {
-        document.getElementById('resultsForm').submit();
-      }, 1000); // 1 second so user sees message
+      fetch("https://formspree.io/f/xblyqgqq", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify(data)
+      }).then(response => {
+        if (response.ok) {
+          audioStatus.textContent = "✅ Results sent to teacher.";
+        } else {
+          audioStatus.textContent = "⚠️ Failed to send results.";
+        }
+      }).catch(() => {
+        audioStatus.textContent = "⚠️ Error sending results.";
+      });
     }
   </script>
 </body>
