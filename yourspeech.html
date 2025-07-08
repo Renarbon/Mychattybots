@@ -1,150 +1,218 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Your Speech - ChattyBot</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body {
-            background: #f0f0f0;
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-        }
-        #container {
-            max-width: 650px;
-            margin: 30px auto;
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
-        h1 {
-            color: #222;
-            text-align: center;
-        }
-        textarea {
-            width: 100%;
-            height: 100px;
-            margin-top: 15px;
-            margin-bottom: 15px;
-            border-radius: 6px;
-            border: 1px solid #ccc;
-            font-size: 1em;
-            padding: 10px;
-            resize: vertical;
-        }
-        .info {
-            color: #666;
-            font-size: 0.92em;
-            margin-bottom: 16px;
-        }
-        .correctionBox {
-            margin-top: 18px;
-            background: #eaffea;
-            border: 1px solid #8f8;
-            border-radius: 6px;
-            padding: 14px;
-            font-size: 1.05em;
-        }
-        button {
-            padding: 12px 22px;
-            font-size: 1em;
-            border-radius: 8px;
-            border: none;
-            background: #5a7dff;
-            color: white;
-            margin-right: 10px;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        button:hover {
-            background: #3455c1;
-        }
-        #audioPlayer {
-            width: 100%;
-            margin-top: 10px;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>ESL Speaking Recorder with Feedback</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    body { font-family: Arial; padding: 30px; background: #f2f2f2; }
+    #container { max-width: 650px; margin: 30px auto; background: white; padding: 30px 30px 20px 30px; border-radius: 16px; }
+    h2 { color: #007aff; }
+    label { margin-top: 10px; display: inline-block;}
+    button { padding: 12px 22px; font-size: 1em; border-radius: 8px; border: none; margin: 6px; cursor: pointer;}
+    #recordBtn.recording { background: #dc3545; color: white; }
+    #stopBtn { background: #dc3545; color: white; }
+    #downloadPDF, #downloadAudio { background: #007aff; color: white; }
+    textarea { width: 100%; height: 120px; margin-top: 10px; font-size: 1.05em; padding: 10px; border-radius: 7px; border: 1px solid #ccc; background: #f9f9f9; resize: vertical;}
+    .info { color: #666; background: #e6e6e6; border-radius: 8px; padding: 10px; margin: 16px 0 10px 0; }
+    .correctionBox { background: #f0fff0; border-left: 4px solid #30c230; margin: 16px 0; padding: 10px 16px; border-radius: 7px; }
+    .correctionLabel { color: #007aff; font-weight: bold; }
+    audio { margin-top: 8px; width: 100%; }
+  </style>
 </head>
 <body>
-    <div id="container">
-        <h1>Your Speech</h1>
-        <div class="info">Press "Start Recording" to record your voice. When done, stop and play your audio or submit for correction.</div>
-        <div>
-            <button onclick="startRecording()">Start Recording</button>
-            <button onclick="stopRecording()">Stop Recording</button>
-            <button onclick="playAudio()">Play Audio</button>
-        </div>
-        <audio id="audioPlayer" controls></audio>
-        <textarea id="transcript" placeholder="Your speech will appear here..."></textarea>
-        <button onclick="submitForCorrection()">Submit for Grammar Correction</button>
-        <div id="correctionResult" class="correctionBox" style="display:none;"></div>
+  <div id="container">
+    <h2>🎤 ESL Speaking Practice (with Feedback)</h2>
+    <div class="info">
+      Please speak for 1–2 minutes about any topic.<br>
+      Enter your name, then press <b>Record</b> to begin. Press <b>Stop</b> when done.<br>
+      You can preview, download your transcript and audio file, and see grammar feedback.
     </div>
-    <script>
-        // Placeholder variables and functions for demonstration
-        let recording = false;
-        let audioChunks = [];
-        let mediaRecorder;
-        let audioBlob;
+    <label>Student Name: <input id="studentName" type="text" required /></label>
+    <label>Date: <input id="sessionDate" type="date" /></label><br><br>
+    <button id="recordBtn" onclick="startRecording()">🎙️ Record</button>
+    <button id="stopBtn" onclick="stopRecording()" disabled>⏹️ Stop</button>
+    <button id="downloadPDF" onclick="downloadPDF()" disabled>⬇️ Download PDF</button>
+    <button id="downloadAudio" onclick="downloadAudio()" disabled>⬇️ Download Audio</button>
+    <br>
+    <audio id="audioPlayer" controls style="display:none;"></audio>
+    <textarea id="transcript" readonly placeholder="Your transcript will appear here..."></textarea>
+    <div id="feedback" class="correctionBox" style="display:none;">
+      <span class="correctionLabel">Feedback:</span>
+      <div id="correctionText"></div>
+      <div style="margin-top:8px;">
+        <span class="correctionLabel">Suggested Correction:</span>
+        <div id="correctionSuggestion" style="color:#228822; font-weight:bold;"></div>
+      </div>
+    </div>
+  </div>
+  <script>
+    let recognition = null, mediaRecorder = null, audioChunks = [], finalTranscript = "";
+    let isRecording = false;
+    const transcriptBox = document.getElementById('transcript');
+    const recordBtn = document.getElementById('recordBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const downloadPDFBtn = document.getElementById('downloadPDF');
+    const downloadAudioBtn = document.getElementById('downloadAudio');
+    const audioPlayer = document.getElementById('audioPlayer');
+    let audioBlob = null;
 
-        function startRecording() {
-            navigator.mediaDevices.getUserMedia({ audio: true })
-                .then(stream => {
-                    mediaRecorder = new MediaRecorder(stream);
-                    audioChunks = [];
-                    mediaRecorder.ondataavailable = e => {
-                        audioChunks.push(e.data);
-                    };
-                    mediaRecorder.onstop = e => {
-                        audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                        const audioURL = URL.createObjectURL(audioBlob);
-                        document.getElementById('audioPlayer').src = audioURL;
-                        // You can add code here to send audioBlob to a speech-to-text API
-                    };
-                    mediaRecorder.start();
-                    recording = true;
-                })
-                .catch(err => alert('Microphone access denied.'));
-        }
+    function getNiceDate() {
+      const d = document.getElementById('sessionDate').value || new Date().toISOString().slice(0,10);
+      return d;
+    }
 
-        function stopRecording() {
-            if (mediaRecorder && recording) {
-                mediaRecorder.stop();
-                recording = false;
-            }
-        }
+    function startRecording() {
+      // Browser support check
+      if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        alert("Sorry, your browser does not support Speech Recognition. Try Chrome or Edge.");
+        return;
+      }
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert("Sorry, your browser does not support audio recording.");
+        return;
+      }
+      finalTranscript = "";
+      transcriptBox.value = "";
+      audioChunks = [];
+      audioBlob = null;
+      downloadPDFBtn.disabled = true;
+      downloadAudioBtn.disabled = true;
+      audioPlayer.style.display = "none";
+      document.getElementById('feedback').style.display = "none";
 
-        function playAudio() {
-            document.getElementById('audioPlayer').play();
-        }
+      // --- Speech Recognition ---
+      recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognition.lang = 'en-US';
+      recognition.continuous = true;
+      recognition.interimResults = true;
 
-        function submitForCorrection() {
-            const text = document.getElementById('transcript').value.trim();
-            if (!text) {
-                alert('Please provide some text to correct.');
-                return;
-            }
-            fetch('/api/grammar-correct', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.corrected) {
-                    document.getElementById('correctionResult').textContent = data.corrected;
-                    document.getElementById('correctionResult').style.display = 'block';
-                } else {
-                    document.getElementById('correctionResult').textContent = 'Error: ' + (data.error || 'Unknown error');
-                    document.getElementById('correctionResult').style.display = 'block';
-                }
-            })
-            .catch(() => {
-                document.getElementById('correctionResult').textContent = 'Server error. Try again later.';
-                document.getElementById('correctionResult').style.display = 'block';
-            });
+      recognition.onresult = function(event) {
+        let interimTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript + " ";
+          } else {
+            interimTranscript += event.results[i][0].transcript;
+          }
         }
-    </script>
+        transcriptBox.value = finalTranscript + interimTranscript;
+      };
+
+      recognition.onerror = function(event) {
+        transcriptBox.value = "Speech recognition error: " + event.error;
+        stopRecording();
+      };
+
+      recognition.start();
+
+      // --- Audio Recording (WAV) ---
+      navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(stream => {
+        mediaRecorder = new MediaRecorder(stream);
+        mediaRecorder.ondataavailable = e => { audioChunks.push(e.data); };
+        mediaRecorder.onstop = () => {
+          audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+          audioPlayer.src = URL.createObjectURL(audioBlob);
+          audioPlayer.style.display = "block";
+          downloadAudioBtn.disabled = false;
+        };
+        mediaRecorder.start();
+        recordBtn.disabled = true;
+        recordBtn.classList.add("recording");
+        stopBtn.disabled = false;
+        isRecording = true;
+      })
+      .catch(err => {
+        alert("Could not start audio recording: " + err);
+      });
+    }
+
+    function stopRecording() {
+      if (recognition) { recognition.stop(); }
+      if (mediaRecorder && isRecording) {
+        mediaRecorder.stop();
+        isRecording = false;
+        recordBtn.disabled = false;
+        recordBtn.classList.remove("recording");
+        stopBtn.disabled = true;
+        downloadPDFBtn.disabled = false;
+        showFeedback(transcriptBox.value);
+      }
+    }
+
+    function downloadPDF() {
+      const { jsPDF } = window.jspdf;
+      const name = document.getElementById('studentName').value || 'Student';
+      const date = getNiceDate();
+      const doc = new jsPDF();
+      doc.setTextColor(0,0,0);
+      doc.text(`ESL Speaking Transcript\nName: ${name}\nDate: ${date}\n`, 10, 10);
+      doc.setTextColor(30, 90, 30);
+      let y = 32;
+      const lines = doc.splitTextToSize(transcriptBox.value, 180);
+      lines.forEach(line => {
+        doc.text(line, 10, y);
+        y += 10;
+        if (y > 280) { doc.addPage(); y = 20; }
+      });
+      // Add correction/suggestion to PDF
+      const correction = document.getElementById('correctionText').textContent;
+      const suggestion = document.getElementById('correctionSuggestion').textContent;
+      if (correction || suggestion) {
+        doc.setTextColor(0,0,0);
+        y += 10;
+        doc.text("Feedback:", 10, y); y+=8;
+        doc.setTextColor(0,60,120);
+        doc.text(doc.splitTextToSize(correction, 180), 10, y); y+=12;
+        doc.setTextColor(34, 136, 34);
+        doc.text("Suggested Correction:", 10, y); y+=8;
+        doc.text(doc.splitTextToSize(suggestion, 180), 10, y);
+      }
+      const filename = `${name.replace(/\s+/g,'_')}_${date.replace(/[\/]/g,'-')}_speaking.pdf`;
+      doc.save(filename);
+    }
+
+    function downloadAudio() {
+      if (!audioBlob) return;
+      const name = document.getElementById('studentName').value || 'Student';
+      const date = getNiceDate();
+      const filename = `${name.replace(/\s+/g,'_')}_${date.replace(/[\/]/g,'-')}_speaking.wav`;
+      const url = URL.createObjectURL(audioBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }, 200);
+    }
+
+    // === Real grammar correction via Render backend ===
+    function showFeedback(text) {
+      const feedbackBox = document.getElementById('feedback');
+      const correctionDiv = document.getElementById('correctionText');
+      const suggestionDiv = document.getElementById('correctionSuggestion');
+      feedbackBox.style.display = "block";
+
+      // Use your public Render backend URL!
+      fetch('https://chattybot-backend.onrender.com/api/grammar-correct', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text })
+      })
+      .then(res => res.json())
+      .then(data => {
+        correctionDiv.textContent = data.feedback || "No feedback.";
+        suggestionDiv.textContent = data.correction || "(No suggestion)";
+      })
+      .catch(err => {
+        correctionDiv.textContent = "API error.";
+        suggestionDiv.textContent = "";
+      });
+    }
+  </script>
 </body>
 </html>
