@@ -31,8 +31,8 @@
   </div>
   <button id="download-pdf" style="display:none;">Download PDF</button>
   <script>
-    const GRAMMAR_API_URL = "https://chattybot-backend.onrender.com"; // <-- update if needed
-    const OPENAI_API_KEY = "";
+    const GRAMMAR_API_URL = "https://chattybot-backend.onrender.com/api/grammar-correct";
+    const CHATBOT_API_URL = "https://chattybot-backend.onrender.com/api/chatbot";
     const MAX_QUESTIONS = 6;
 
     let studentName = '';
@@ -173,24 +173,19 @@
       if (recognition) recognition.start();
     };
 
-    // --- OpenAI API call ---
+    // --- Chatbot via Backend ---
     async function getOpenAIResponse() {
       try {
-        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        const response = await fetch(CHATBOT_API_URL, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer " + OPENAI_API_KEY
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             model: "gpt-4o",
-            messages: conversation,
-            max_tokens: 150,
-            temperature: 0.7,
+            messages: conversation
           })
         });
         const data = await response.json();
-        const botMsg = data.choices?.[0]?.message?.content?.trim() || "Sorry, I didn't get that.";
+        const botMsg = data.reply?.trim() || "Sorry, I didn't get that.";
         conversation.push({ role: "assistant", content: botMsg });
         return botMsg;
       } catch (e) {
@@ -199,49 +194,50 @@
     }
 
     // --- PDF Download ---
-   pdfBtn.onclick = () => {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  doc.setFontSize(14);
-  doc.text("ESL Conversation Practice", 10, 12);
-  doc.text(`Student: ${studentName}`, 10, 20);
+    pdfBtn.onclick = () => {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.setFontSize(14);
+      doc.text("ESL Conversation Practice", 10, 12);
+      doc.text(`Student: ${studentName}`, 10, 20);
 
-  let y = 32;
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const margin = 10;
-  const maxLineWidth = pageWidth - 2 * margin;
+      let y = 32;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 10;
+      const maxLineWidth = pageWidth - 2 * margin;
 
-  function printParagraph(label, text, color = [33, 33, 33]) {
-    doc.setTextColor(...color);
-    let lines = doc.splitTextToSize(`${label} ${text}`, maxLineWidth);
-    lines.forEach(line => {
-      doc.text(line, margin + 2, y);
-      y += 6;
-    });
-  }
+      function printParagraph(label, text, color = [33, 33, 33]) {
+        doc.setTextColor(...color);
+        let lines = doc.splitTextToSize(`${label} ${text}`, maxLineWidth);
+        lines.forEach(line => {
+          doc.text(line, margin + 2, y);
+          y += 6;
+        });
+      }
 
-  transcript.forEach((entry, i) => {
-    doc.setFont(undefined, "bold");
-    printParagraph(`Q${i + 1}:`, entry.question);
+      transcript.forEach((entry, i) => {
+        doc.setFont(undefined, "bold");
+        printParagraph(`Q${i + 1}:`, entry.question);
 
-    doc.setFont(undefined, "normal");
+        doc.setFont(undefined, "normal");
 
-    if (entry.studentAnswer !== entry.correctedAnswer) {
-      printParagraph("Your answer:", entry.studentAnswer, [229, 57, 53]);
-      printParagraph("Corrected:", entry.correctedAnswer, [46, 125, 50]);
-    } else {
-      printParagraph("Your answer:", entry.studentAnswer, [46, 125, 50]);
-    }
+        if (entry.studentAnswer !== entry.correctedAnswer) {
+          printParagraph("Your answer:", entry.studentAnswer, [229, 57, 53]);
+          printParagraph("Corrected:", entry.correctedAnswer, [46, 125, 50]);
+        } else {
+          printParagraph("Your answer:", entry.studentAnswer, [46, 125, 50]);
+        }
 
-    printParagraph("Bot:", entry.botReply);
+        printParagraph("Bot:", entry.botReply);
 
-    y += 2;
-    if (y > 270) { doc.addPage(); y = 18; }
-  });
+        y += 2;
+        if (y > 270) { doc.addPage(); y = 18; }
+      });
 
-  const fileName = `${studentName.replace(/[^a-z0-9]/gi, '_')}_ESL_ChattyBot.pdf`;
-  doc.save(fileName);
-};
+      const fileName = `${studentName.replace(/[^a-z0-9]/gi, '_')}_ESL_ChattyBot.pdf`;
+      doc.save(fileName);
+    };
+
     // Initial state: disable mic and chat until student name is entered
     micBtn.disabled = true;
   </script>
