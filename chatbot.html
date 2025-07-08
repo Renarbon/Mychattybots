@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>ESL ChattyBot (Voice Only, Grammar, PDF)</title>
+  <title>ESL ChattyBot (Lemonfox Voice, Grammar, PDF)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; max-width: 600px; margin: 30px auto; background: #f9f9fc; }
@@ -35,6 +35,45 @@
     const CHATBOT_API_URL = "https://chattybot-backend.onrender.com/api/chatbot";
     const MAX_QUESTIONS = 6;
 
+    // Lemonfox Adam voice function
+    async function lemonfoxSpeak(text) {
+      const apiKey = "pqT589X7JBTimS2MVoP1IyNOPD1iVwGX";
+      try {
+        const response = await fetch("https://api.lemonfox.ai/tts", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": apiKey
+          },
+          body: JSON.stringify({
+            text: text,
+            voice: "Adam"
+          })
+        });
+        const data = await response.json();
+        if (data.audioUrl) {
+          const audio = new Audio(data.audioUrl);
+          audio.play();
+        } else {
+          // fallback: use browser TTS if Lemonfox fails
+          if ('speechSynthesis' in window) {
+            const utter = new SpeechSynthesisUtterance(text);
+            utter.lang = 'en-US';
+            speechSynthesis.cancel();
+            speechSynthesis.speak(utter);
+          }
+        }
+      } catch (e) {
+        // fallback to browser TTS
+        if ('speechSynthesis' in window) {
+          const utter = new SpeechSynthesisUtterance(text);
+          utter.lang = 'en-US';
+          speechSynthesis.cancel();
+          speechSynthesis.speak(utter);
+        }
+      }
+    }
+
     let studentName = '';
     let questionCount = 0;
     let conversation = [
@@ -62,7 +101,7 @@
 
     function startBot() {
       addMessage('bot', "Hello " + studentName + "! Let's practice English. I'll ask you some questions. Are you ready?");
-      speak("Hello " + studentName + "! Let's practice English. I'll ask you some questions. Are you ready?");
+      lemonfoxSpeak("Hello " + studentName + "! Let's practice English. I'll ask you some questions. Are you ready?");
     }
 
     function addMessage(role, text, subtext = "") {
@@ -77,15 +116,6 @@
         chat.appendChild(sub);
       }
       chat.scrollTop = chat.scrollHeight;
-    }
-
-    function speak(text) {
-      if ('speechSynthesis' in window) {
-        const utter = new SpeechSynthesisUtterance(text);
-        utter.lang = 'en-US';
-        speechSynthesis.cancel();
-        speechSynthesis.speak(utter);
-      }
     }
 
     // ---- Speech Recognition ----
@@ -127,7 +157,7 @@
         // --- Bot Reply ---
         let botReply = await getOpenAIResponse();
         addMessage('bot', botReply);
-        speak(botReply);
+        lemonfoxSpeak(botReply);
 
         transcript.push({
           question: conversation[conversation.length-2]?.content || "",
@@ -147,7 +177,7 @@
           // Final message
           setTimeout(() => {
             addMessage('bot', "Great job! Conversation finished.");
-            speak("Great job! Conversation finished.");
+            lemonfoxSpeak("Great job! Conversation finished.");
             pdfBtn.style.display = '';
           }, 600);
         } else {
