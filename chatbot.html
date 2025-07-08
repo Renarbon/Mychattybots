@@ -37,24 +37,30 @@
 
     // Lemonfox Adam voice function
     async function lemonfoxSpeak(text) {
-      const apiKey = "pqT589X7JBTimS2MVoP1IyNOPD1iVwGX";
-      try {
-        const response = await fetch("https://api.lemonfox.ai/tts", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-api-key": apiKey
-          },
-          body: JSON.stringify({
-            text: text,
-            voice: "Adam"
-          })
-        });
-        const data = await response.json();
-        if (data.audioUrl) {
-          const audio = new Audio(data.audioUrl);
-          audio.play();
-        } else {
+  const apiKey = "pqT589X7JBTimS2MVoP1IyNOPD1iVwGX";
+  try {
+    const response = await fetch("https://api.lemonfox.ai/tts", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey
+      },
+      body: JSON.stringify({
+        text: text,
+        voice: "Adam"
+      })
+    });
+    const data = await response.json();
+    if (data.audioUrl) {
+      const audio = new Audio(data.audioUrl);
+      audio.play();
+    }
+    // If there's no audioUrl or Lemonfox fails, do nothing (no browser TTS)
+  } catch (e) {
+    // Do nothing if Lemonfox fails
+  }
+}
+
           // fallback: use browser TTS if Lemonfox fails
           if ('speechSynthesis' in window) {
             const utter = new SpeechSynthesisUtterance(text);
