@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>ESL ChattyBot (Safe Lemonfox, Voice Dropdown)</title>
+  <title>ESL ChattyBot (Safe Lemonfox, Voice Dropdown, Fixed Ending)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; max-width: 600px; margin: 30px auto; background: #f9f9fc; }
@@ -43,10 +43,9 @@
   <script>
     const GRAMMAR_API_URL = "https://chattybot-backend.onrender.com/api/grammar-correct";
     const CHATBOT_API_URL = "https://chattybot-backend.onrender.com/api/chatbot";
-    const LEMONFOX_PROXY_URL = "https://chattybot-backend.onrender.com/api/lemonfox-tts"; // <-- New backend route!
+    const LEMONFOX_PROXY_URL = "https://chattybot-backend.onrender.com/api/lemonfox-tts";
     const MAX_QUESTIONS = 6;
 
-    // Speak using backend proxy for Lemonfox
     async function speakWithLemonfox(text) {
       const voice = document.getElementById('voice-select').value;
       try {
@@ -160,6 +159,7 @@
 
         questionCount++;
         if (questionCount >= MAX_QUESTIONS) {
+          // After 6 user answers and 6 bot replies, finish conversation (after a short pause)
           finished = true;
           input.disabled = true;
           sendBtn.disabled = true;
@@ -169,7 +169,7 @@
             addMessage('bot', "Great job! Conversation finished.");
             speakWithLemonfox("Great job! Conversation finished.");
             pdfBtn.style.display = '';
-          }, 600);
+          }, 1200); // delay so it doesn't overlap with last bot reply!
         } else {
           status.textContent = "";
         }
