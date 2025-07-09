@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Idioms Quiz Bot (with Scrambled Choices & Email)</title>
+  <title>Idioms Quiz Bot (ExamView Email Version)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: Arial; padding: 20px; background: #f2f2f2; }
@@ -41,101 +41,34 @@
     <button onclick="downloadPDF()" id="downloadBtn" style="display:none;">⬇️ Download PDF</button>
     <div id="audioStatus"></div>
   </div>
+
+  <!-- Hidden form for ExamView email submission -->
+  <form id="examviewForm" action="http://score.examview.com/cgi-bin/results.cgi" method="POST" style="display:none;">
+    <input type="hidden" name="instructor_name" value="rene">
+    <input type="hidden" name="instructor_formalname" value="Mr. Argueta">
+    <input type="hidden" name="instructor_email" value="renarguet@gmail.com">
+    <input type="hidden" name="test_name" value="Idioms Quiz">
+    <input type="hidden" name="student_name" id="ev_student_name">
+    <input type="hidden" name="score_percent" id="ev_score_percent">
+    <input type="hidden" name="results" id="ev_results">
+  </form>
+
   <script>
     // ------ 1. YOUR QUIZ DATA HERE ------
     const scriptLines = [
-      {
-        phrase: "Break the ice",
-        options: [
-          "Start a conversation in a social setting",
-          "Literally shatter frozen water",
-          "Become very angry suddenly"
-        ],
-        correct: 0
-      },
-      {
-        phrase: "Hit the sack",
-        options: [
-          "Go to bed",
-          "Punch a pillow",
-          "Pack your bags"
-        ],
-        correct: 0
-      },
-      {
-        phrase: "Under the weather",
-        options: [
-          "Feeling sick",
-          "Caught in the rain",
-          "Very happy"
-        ],
-        correct: 0
-      },
-      {
-        phrase: "Piece of cake",
-        options: [
-          "Very easy",
-          "A slice of dessert",
-          "Something delicious"
-        ],
-        correct: 0
-      },
-      {
-        phrase: "Cost an arm and a leg",
-        options: [
-          "Very expensive",
-          "Involves hard labor",
-          "Needs body strength"
-        ],
-        correct: 0
-      },
-      {
-        phrase: "Let the cat out of the bag",
-        options: [
-          "Reveal a secret",
-          "Let your pet escape",
-          "Forget something important"
-        ],
-        correct: 0
-      },
-      {
-        phrase: "Burn the midnight oil",
-        options: [
-          "Stay up late working or studying",
-          "Start a fire at night",
-          "Light a candle at dinner"
-        ],
-        correct: 0
-      },
-      {
-        phrase: "Hit the books",
-        options: [
-          "Study hard",
-          "Throw your books",
-          "Write a story"
-        ],
-        correct: 0
-      },
-      {
-        phrase: "Bite the bullet",
-        options: [
-          "Face a difficult situation bravely",
-          "Eat something hard",
-          "Act quickly"
-        ],
-        correct: 0
-      },
-      {
-        phrase: "Once in a blue moon",
-        options: [
-          "Very rarely",
-          "During the night",
-          "When the sky is clear"
-        ],
-        correct: 0
-      }
+      { phrase: "Break the ice", options: [ "Start a conversation in a social setting", "Literally shatter frozen water", "Become very angry suddenly" ], correct: 0 },
+      { phrase: "Hit the sack", options: [ "Go to bed", "Punch a pillow", "Pack your bags" ], correct: 0 },
+      { phrase: "Under the weather", options: [ "Feeling sick", "Caught in the rain", "Very happy" ], correct: 0 },
+      { phrase: "Piece of cake", options: [ "Very easy", "A slice of dessert", "Something delicious" ], correct: 0 },
+      { phrase: "Cost an arm and a leg", options: [ "Very expensive", "Involves hard labor", "Needs body strength" ], correct: 0 },
+      { phrase: "Let the cat out of the bag", options: [ "Reveal a secret", "Let your pet escape", "Forget something important" ], correct: 0 },
+      { phrase: "Burn the midnight oil", options: [ "Stay up late working or studying", "Start a fire at night", "Light a candle at dinner" ], correct: 0 },
+      { phrase: "Hit the books", options: [ "Study hard", "Throw your books", "Write a story" ], correct: 0 },
+      { phrase: "Bite the bullet", options: [ "Face a difficult situation bravely", "Eat something hard", "Act quickly" ], correct: 0 },
+      { phrase: "Once in a blue moon", options: [ "Very rarely", "During the night", "When the sky is clear" ], correct: 0 }
     ];
-// 2. SCRAMBLE OPTIONS ON EVERY RELOAD
+
+    // 2. SCRAMBLE OPTIONS ON EVERY RELOAD
     function shuffleOptionsAndCorrectIndex() {
       scriptLines.forEach(q => {
         let arr = q.options.map((opt, idx) => ({opt, idx}));
@@ -191,30 +124,8 @@
     // ElevenLabs TTS: for outro only
     async function playVoice(text) {
       window.speechSynthesis.cancel();
-      const apiKey = "sk_865fb49a3205c51284bd88bb8d25446e9a5cd652163585de";
-      const voiceId = "ds0uumbpvplhO4tyz2yF";
-      const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
-      try {
-        const resp = await fetch(url, {
-          method: "POST",
-          headers: {
-            "xi-api-key": apiKey,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            text: text,
-            model_id: "eleven_monolingual_v1",
-            voice_settings: { stability: 0.5, similarity_boost: 0.75 }
-          })
-        });
-        if (!resp.ok) throw new Error("TTS failed: " + resp.status);
-        const audioBlob = await resp.blob();
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const audio = new Audio(audioUrl);
-        audio.play();
-      } catch (err) {
-        alert("TTS error: " + err.message);
-      }
+      // Commented out ElevenLabs to avoid unneeded API use during test
+      // ...
     }
 
     async function nextBotPrompt() {
@@ -240,7 +151,7 @@
       } else {
         const total = scriptLines.length;
         const correct = scores.filter(Boolean).length;
-        const percent = Math.round((correct/total)*100);
+        const percent = Math.round((correct / total) * 100);
         let feedback = "";
         if (percent >= 80) {
           feedback = `Quiz complete! Your score is ${percent} out of 100. Well done, ${studentName}. You can now download your transcript as PDF.`;
@@ -249,11 +160,19 @@
           feedback = `Quiz complete! Your score is ${percent} out of 100. You can improve, ${studentName}. Try again!`;
           addMessage('bot', feedback);
         }
-        // Only ElevenLabs TTS for the outro/feedback
-        await playVoice(feedback);
+        // ElevenLabs TTS skipped for demo
 
-        // Send quiz results to your email using Formspree
-        sendEmail();
+        // Build results string for email
+        const answers = transcript.map((entry, i) => {
+          return `Q${i + 1}: ${entry.phrase}
+Your answer: ${entry.studentAnswer}
+Correct answer: ${entry.correctAnswer}
+Result: ${entry.isCorrect ? 'Correct' : 'Incorrect'}
+`;
+        }).join("\n");
+
+        // === Submit to ExamView! ===
+        submitToExamView(studentName, percent, answers);
 
         textOutput.style.display = "none";
         recordBtn.style.display = "none";
@@ -383,37 +302,12 @@
       doc.save(fileName);
     }
 
-    // ------ 3. SEND EMAIL VIA FORMSPREE ------
-    function sendEmail() {
-      const correct = scores.filter(Boolean).length;
-      const percent = Math.round((correct / scriptLines.length) * 100);
-      const answers = transcript.map((entry, i) => {
-        return `Q${i + 1}: ${entry.phrase}\nYour answer: ${entry.studentAnswer}\nCorrect answer: ${entry.correctAnswer}\nResult: ${entry.isCorrect ? 'Correct' : 'Incorrect'}\n`;
-      }).join("\n");
-
-      const data = {
-        _subject: `Quiz Results for ${studentName}`,
-        name: studentName,
-        score: `${percent}/100`,
-        results: answers
-      };
-
-      fetch("https://getform.io/f/azynejvb", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
-        body: JSON.stringify(data)
-      }).then(response => {
-        if (response.ok) {
-          audioStatus.textContent = "✅ Results sent to teacher.";
-        } else {
-          audioStatus.textContent = "⚠️ Failed to send results.";
-        }
-      }).catch(() => {
-        audioStatus.textContent = "⚠️ Error sending results.";
-      });
+    // ===== ExamView Submission Function =====
+    function submitToExamView(studentName, percent, answersText) {
+      document.getElementById('ev_student_name').value = studentName;
+      document.getElementById('ev_score_percent').value = percent;
+      document.getElementById('ev_results').value = answersText;
+      document.getElementById('examviewForm').submit();
     }
   </script>
 </body>
