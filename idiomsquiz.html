@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Idioms Quiz Bot (with Scrambled Choices)</title>
+  <title>Idioms Quiz Bot (with Scrambled Choices & Email)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: Arial; padding: 20px; background: #f2f2f2; }
@@ -42,7 +42,7 @@
     <div id="audioStatus"></div>
   </div>
   <script>
-    // 1. QUIZ DATA
+    // ------ 1. YOUR QUIZ DATA HERE ------
     const scriptLines = [
       {
         phrase: "Break the ice",
@@ -54,26 +54,25 @@
         correct: 0
       },
       {
-        phrase: "Hit the books",
+        phrase: "Hit the sack",
         options: [
-          "Study hard",
-          "Throw your books on the floor",
-          "Read a story to your friends"
+          "Go to bed",
+          "Punch a pillow",
+          "Pack your bags"
         ],
         correct: 0
       },
       {
-        phrase: "Let the cat out of the bag",
+        phrase: "Under the weather",
         options: [
-          "Reveal a secret",
-          "Let your pet escape outside",
-          "Forget something important"
+          "Feeling sick",
+          "Caught in the rain",
+          "Very happy"
         ],
         correct: 0
-      }
+    }
     ];
-
-    // 2. SCRAMBLE OPTIONS ON EVERY RELOAD
+// 2. SCRAMBLE OPTIONS ON EVERY RELOAD
     function shuffleOptionsAndCorrectIndex() {
       scriptLines.forEach(q => {
         let arr = q.options.map((opt, idx) => ({opt, idx}));
@@ -88,7 +87,7 @@
     }
     shuffleOptionsAndCorrectIndex();
 
-    // 3. QUIZ BOT LOGIC
+    // ------ 3. QUIZ LOGIC ------
     let scriptStep = 0;
     let transcript = [];
     let studentName = "";
@@ -189,6 +188,9 @@
         }
         // Only ElevenLabs TTS for the outro/feedback
         await playVoice(feedback);
+
+        // Send quiz results to your email using Formspree
+        sendEmail();
 
         textOutput.style.display = "none";
         recordBtn.style.display = "none";
@@ -316,6 +318,39 @@
       });
       const fileName = `${studentName.replace(/\s+/g, '_')}_idioms_quiz.pdf`;
       doc.save(fileName);
+    }
+
+    // ------ 3. SEND EMAIL VIA FORMSPREE ------
+    function sendEmail() {
+      const correct = scores.filter(Boolean).length;
+      const percent = Math.round((correct / scriptLines.length) * 100);
+      const answers = transcript.map((entry, i) => {
+        return `Q${i + 1}: ${entry.phrase}\nYour answer: ${entry.studentAnswer}\nCorrect answer: ${entry.correctAnswer}\nResult: ${entry.isCorrect ? 'Correct' : 'Incorrect'}\n`;
+      }).join("\n");
+
+      const data = {
+        _subject: `Quiz Results for ${studentName}`,
+        name: studentName,
+        score: `${percent}/100`,
+        results: answers
+      };
+
+      fetch("https://getform.io/f/azynejvb", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify(data)
+      }).then(response => {
+        if (response.ok) {
+          audioStatus.textContent = "✅ Results sent to teacher.";
+        } else {
+          audioStatus.textContent = "⚠️ Failed to send results.";
+        }
+      }).catch(() => {
+        audioStatus.textContent = "⚠️ Error sending results.";
+      });
     }
   </script>
 </body>
