@@ -45,11 +45,11 @@
     // ------ 1. YOUR QUIZ DATA HERE ------
     const scriptLines = [
       {
-        phrase: "Break the ice",
+        phrase: "let me sleep on it",
         options: [
-          "Start a conversation in a social setting",
+          "Think about out for a while",
           "Literally shatter frozen water",
-          "Become very angry suddenly"
+          "Become very sleepy suddenly"
         ],
         correct: 0
       },
@@ -61,8 +61,17 @@
           "Pack your bags"
         ],
         correct: 0
+      },
+      {
+        phrase: "you nailed it",
+        options: [
+          "you did a great job",
+          "During the night",
+          "When the sky is clear"
+        ],
+        correct: 0
       }
-      ];
+    ];
 // 2. SCRAMBLE OPTIONS ON EVERY RELOAD
     function shuffleOptionsAndCorrectIndex() {
       scriptLines.forEach(q => {
