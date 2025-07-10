@@ -128,7 +128,7 @@
     // ElevenLabs TTS: for outro only
     async function playVoice(text) {
       window.speechSynthesis.cancel();
-      const apiKey = "sk_865fb49a3205c51284bd88bb8d25446e9a5cd652163585de";
+     const CHATBOT_API_URL = "https://chattybot-backend.onrender.com/api/chatbot";
       const voiceId = "ds0uumbpvplhO4tyz2yF";
       const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
       try {
