@@ -43,35 +43,107 @@
   </div>
   <script>
     // ------ 1. YOUR QUIZ DATA HERE ------
-    const scriptLines = [
-      {
-        phrase: "Break the ice",
-        options: [
-          "Start a conversation in a social setting",
-          "Literally shatter frozen water",
-          "Become very angry suddenly"
-        ],
-        correct: 0
-      },
-      {
-        phrase: "Hit the sack",
-        options: [
-          "Go to bed",
-          "Punch a pillow",
-          "Pack your bags"
-        ],
-        correct: 0
-      },
-      {
-        phrase: "Once in a blue moon",
-        options: [
-          "Very rarely",
-          "During the night",
-          "When the sky is clear"
-        ],
-        correct: 0
-      }
-    ];
+   const scriptLines = [
+  {
+    phrase: "A little bird told me",
+    options: [
+      "I heard it from a secret, reliable source",
+      "A small bird literally told me",
+      "I saw it happen myself"
+    ],
+    correct: 0
+  },
+  {
+    phrase: "Cheer up!",
+    options: [
+      "Feel happier",
+      "Yell loudly",
+      "Throw a party"
+    ],
+    correct: 0
+  },
+  {
+    phrase: "Fire away. I'm all ears.",
+    options: [
+      "Go ahead and ask your question, I'm listening",
+      "Let's start a fire together",
+      "I need to rest my ears"
+    ],
+    correct: 0
+  },
+  {
+    phrase: "Get a life!",
+    options: [
+      "Do something more interesting with your time",
+      "Acquire a new existence",
+      "Purchase residential property"
+    ],
+    correct: 0
+  },
+  {
+    phrase: "Hold on.",
+    options: [
+      "Wait a moment",
+      "Grip something tightly",
+      "Hang clothes to dry"
+    ],
+    correct: 0
+  },
+  {
+    phrase: "I couldn't care less.",
+    options: [
+      "I do not care at all",
+      "I wish I cared a little more",
+      "I almost care"
+    ],
+    correct: 0
+  },
+  {
+    phrase: "Make yourself at home.",
+    options: [
+      "Feel relaxed as if you were in your own home",
+      "Build your own house",
+      "Invite me into your home"
+    ],
+    correct: 0
+  },
+  {
+    phrase: "My lips are sealed.",
+    options: [
+      "I will not tell anyone",
+      "My lips are dry",
+      "I have closed my mouth physically"
+    ],
+    correct: 0
+  },
+  {
+    phrase: "No way!",
+    options: [
+      "Absolutely not",
+      "Let's go",
+      "There is no path"
+    ],
+    correct: 0
+  },
+  {
+    phrase: "Take it easy.",
+    options: [
+      "Relax and not worry",
+      "Carry it gently",
+      "Simplify the task"
+    ],
+    correct: 0
+  },
+  {
+    phrase: "Let me sleep on it",
+    options: [
+      "I'll think about it and decide tomorrow",
+      "Put me to sleep",
+      "Sleep on top of it physically"
+    ],
+    correct: 0
+  }
+];
 // 2. SCRAMBLE OPTIONS ON EVERY RELOAD
     function shuffleOptionsAndCorrectIndex() {
       scriptLines.forEach(q => {
