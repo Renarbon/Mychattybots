@@ -256,8 +256,12 @@
       conversationDiv.appendChild(div);
       conversationDiv.scrollTop = conversationDiv.scrollHeight;
     }
+    let pdfDownloaded = false;
 
-    function downloadPDF() {
+function downloadPDF() {
+  // ...existing code to generate and save PDF...
+  pdfDownloaded = true;
+ {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
       const now = new Date();
@@ -313,11 +317,14 @@
     }
 
     function submitResults() {
-      // Called when the student clicks Submit Results
-      sendToNetlifyForm();
-      // Optionally show a thank you message
-      audioStatus.textContent = "✅ Results sent to teacher via Netlify Forms!";
-      submitBtn.style.display = "none";
+  if (!pdfDownloaded) {
+    alert("Please download your PDF transcript first!");
+    return;
+  }
+  sendToNetlifyForm();
+  audioStatus.textContent = "✅ Results sent to teacher via Netlify Forms!";
+  submitBtn.style.display = "none";
+     
       // Optionally: window.location.href = "/thanks.html";  // Redirect after submit
     }
 
