@@ -59,7 +59,7 @@
       {
         phrase: "let me sleep on it",
         options: [
-          "Think about it for a while",
+          "Think about out for a while",
           "Literally shatter frozen water",
           "Become very sleepy suddenly"
         ],
@@ -142,6 +142,24 @@
       synth.speak(utterance);
     }
 
+    // ELEVENLABS PLAY FUNCTION
+    async function playWithElevenLabs(text) {
+      try {
+        const response = await fetch("https://chattybot-backend.onrender.com/api/tts", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({ text })
+        });
+        if (!response.ok) throw new Error("TTS backend error");
+        const blob = await response.blob();
+        const audio = new Audio(URL.createObjectURL(blob));
+        audio.play();
+      } catch (e) {
+        console.error(e);
+        audioStatus.textContent = "Error with ElevenLabs TTS: " + e.message;
+      }
+    }
+
     async function nextBotPrompt() {
       if (scriptStep < scriptLines.length) {
         const entry = scriptLines[scriptStep];
@@ -176,7 +194,8 @@
           feedback = `Quiz complete! Your score is ${percent} out of 100. You can improve, ${studentName}. Try again!`;
         }
         addMessage('bot', feedback);
-        speakWithBrowser(feedback);
+        // *** USE ELEVENLABS HERE FOR FEEDBACK ***
+        playWithElevenLabs(feedback);
 
         // Hide all input/buttons except PDF/submit
         textOutput.style.display = "none";
@@ -186,9 +205,6 @@
         submitBtn.style.display = "inline-block";
 
         audioStatus.textContent = "⬇️ Download your PDF transcript first, then click 'Submit Results' to send to your teacher.";
-
-        // Do NOT auto-submit here!
-        // Wait for user to click "Submit Results"
       }
     }
 
