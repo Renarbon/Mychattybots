@@ -301,22 +301,15 @@
       const fileName = `${studentName.replace(/\s+/g, '_')}_idioms_quiz.pdf`;
       doc.save(fileName);
     }
-
-    // ------ 4. SEND RESULTS TO NETLIFY FORMS ------
-    function sendToNetlifyForm() {
-      const correct = scores.filter(Boolean).length;
-      const percent = Math.round((correct / scriptLines.length) * 100);
-      const answers = transcript.map((entry, i) => {
-        return `Q${i + 1}: ${entry.phrase}\nYour answer: ${entry.studentAnswer}\nCorrect answer: ${entry.correctAnswer}\nResult: ${entry.isCorrect ? 'Correct' : 'Incorrect'}\n`;
-      }).join("\n");
-      // Fill hidden form fields
-      document.getElementById("formStudentName").value = studentName;
-      document.getElementById("formScore").value = `${percent}/100`;
-      document.getElementById("formResults").value = answers;
-      // Submit form
-      document.getElementById("hiddenQuizForm").submit();
-      audioStatus.textContent = "✅ Results sent to teacher via Netlify Forms.";
-    }
-  </script>
+     </script>
+  <form name="idioms-quiz" method="POST" data-netlify="true" netlify-honeypot="bot-field" style="display:none;">
+  <input type="hidden" name="form-name" value="idioms-quiz">
+  <input type="hidden" name="subject" value="Idioms Quiz Submission from idioms-quiz (%{submissionId})" />
+  <input type="hidden" name="studentName">
+  <input type="hidden" name="score">
+  <input type="hidden" name="results">
+  <input type="text" name="bot-field" style="display:none;">
+  
+  </form>
 </body>
 </html>
