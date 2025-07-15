@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Idioms Quiz Bot (with Scrambled Choices & Email)</title>
+  <title>Idioms Speaking Quiz Bot</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: Arial; padding: 20px; background: #f2f2f2; }
@@ -39,8 +39,19 @@
     <textarea id="textOutput" readonly placeholder="Your answer will appear here..." style="display:none;"></textarea>
     <button onclick="sendMessage()" id="sendBtn" style="display:none;">Next</button>
     <button onclick="downloadPDF()" id="downloadBtn" style="display:none;">⬇️ Download PDF</button>
+    <button onclick="submitResults()" id="submitBtn" style="display:none;background:#17a317;color:#fff;">Submit Results</button>
     <div id="audioStatus"></div>
   </div>
+  
+  <!-- Netlify Hidden Form (for quiz results) -->
+  <form name="idioms-quiz" id="hiddenQuizForm" method="POST" data-netlify="true" netlify-honeypot="bot-field" style="display:none;">
+    <input type="hidden" name="form-name" value="idioms-quiz">
+    <input type="hidden" name="subject" value="Idioms Quiz Submission from idioms-quiz (%{submissionId})" />
+    <input type="hidden" name="studentName" id="formStudentName">
+    <input type="hidden" name="score" id="formScore">
+    <input type="hidden" name="results" id="formResults">
+    <input type="text" name="bot-field" style="display:none;">
+  </form>
   <script>
       // ------ 1. YOUR QUIZ DATA HERE ------
    const scriptLines = [
