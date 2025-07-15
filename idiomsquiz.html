@@ -42,15 +42,7 @@
     <div id="audioStatus"></div>
   </div>
   <script>
-   <form name="idioms-quiz" netlify netlify-honeypot="bot-field" style="display:none;">
-  <input type="hidden" name="form-name" value="idioms-quiz">
-  <input type="hidden" name="subject" value="Idioms Quiz Submission from idioms-quiz (%{submissionId})" />
-  <input type="hidden" name="studentName" id="formStudentName">
-  <input type="hidden" name="score" id="formScore">
-  <input type="hidden" name="results" id="formResults">
-  <input type="text" name="bot-field" style="display:none;">
-</form>
-    // ------ 1. YOUR QUIZ DATA HERE ------
+      // ------ 1. YOUR QUIZ DATA HERE ------
    const scriptLines = [
   {
     phrase: "A little bird told me",
@@ -433,5 +425,14 @@
       });
     }
   </script>
+  <form name="idioms-quiz" method="POST" data-netlify="true" netlify-honeypot="bot-field" style="display:none;">
+  <input type="hidden" name="form-name" value="idioms-quiz">
+  <input type="hidden" name="subject" value="Idioms Quiz Submission from idioms-quiz (%{submissionId})" />
+  <input type="hidden" name="studentName">
+  <input type="hidden" name="score">
+  <input type="hidden" name="results">
+  <input type="text" name="bot-field" style="display:none;">
+</form>
+
 </body>
 </html>
