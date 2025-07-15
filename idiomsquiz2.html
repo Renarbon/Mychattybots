@@ -39,6 +39,7 @@
     <textarea id="textOutput" readonly placeholder="Your answer will appear here..." style="display:none;"></textarea>
     <button onclick="sendMessage()" id="sendBtn" style="display:none;">Next</button>
     <button onclick="downloadPDF()" id="downloadBtn" style="display:none;">⬇️ Download PDF</button>
+    <button onclick="submitResults()" id="submitBtn" style="display:none;background:#17a317;color:#fff;">Submit Results</button>
     <div id="audioStatus"></div>
   </div>
   
@@ -109,6 +110,7 @@
     const recordBtn = document.getElementById('recordBtn');
     const sendBtn = document.getElementById('sendBtn');
     const downloadBtn = document.getElementById('downloadBtn');
+    const submitBtn = document.getElementById('submitBtn');
     const startBtn = document.getElementById('startBtn');
     const studentNameInput = document.getElementById('studentName');
     const audioStatus = document.getElementById('audioStatus');
@@ -155,6 +157,7 @@
         recordBtn.style.display = "inline-block";
         sendBtn.style.display = "inline-block";
         downloadBtn.style.display = "none";
+        submitBtn.style.display = "none";
         audioStatus.textContent = "";
       } else {
         // Quiz is finished
@@ -165,25 +168,24 @@
         const percent = Math.round((correct/total)*100);
         let feedback = "";
         if (percent >= 80) {
-          feedback = `Quiz complete! Your score is ${percent} out of 100. Well done, ${studentName}. You can now download your transcript as PDF.`;
-          addMessage('bot', feedback);
+          feedback = `Quiz complete! Your score is ${percent} out of 100. Well done, ${studentName}.`;
         } else {
           feedback = `Quiz complete! Your score is ${percent} out of 100. You can improve, ${studentName}. Try again!`;
-          addMessage('bot', feedback);
         }
+        addMessage('bot', feedback);
         speakWithBrowser(feedback);
 
-        // Hide inputs & buttons after quiz ends
+        // Hide all input/buttons except PDF/submit
         textOutput.style.display = "none";
         recordBtn.style.display = "none";
         sendBtn.style.display = "none";
         downloadBtn.style.display = "inline-block";
+        submitBtn.style.display = "inline-block";
 
-        // Show status message
-        audioStatus.textContent = "✅ Results sent to teacher via Netlify Forms.";
+        audioStatus.textContent = "⬇️ Download your PDF transcript first, then click 'Submit Results' to send to your teacher.";
 
-        // Send results to Netlify
-        sendToNetlifyForm();
+        // Do NOT auto-submit here!
+        // Wait for user to click "Submit Results"
       }
     }
 
@@ -308,6 +310,15 @@
       });
       const fileName = `${studentName.replace(/\s+/g, '_')}_idioms_quiz.pdf`;
       doc.save(fileName);
+    }
+
+    function submitResults() {
+      // Called when the student clicks Submit Results
+      sendToNetlifyForm();
+      // Optionally show a thank you message
+      audioStatus.textContent = "✅ Results sent to teacher via Netlify Forms!";
+      submitBtn.style.display = "none";
+      // Optionally: window.location.href = "/thanks.html";  // Redirect after submit
     }
 
     function sendToNetlifyForm() {
