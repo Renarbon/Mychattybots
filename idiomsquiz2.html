@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Idioms Quiz Bot (with Scrambled Choices & Email)</title>
+  <title>Idioms Quiz Bot (with Scrambled Choices & Netlify Form)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: Arial; padding: 20px; background: #f2f2f2; }
@@ -41,6 +41,16 @@
     <button onclick="downloadPDF()" id="downloadBtn" style="display:none;">⬇️ Download PDF</button>
     <div id="audioStatus"></div>
   </div>
+  
+  <!-- Netlify Hidden Form (for quiz results) -->
+  <form name="idioms-quiz" id="hiddenQuizForm" method="POST" data-netlify="true" netlify-honeypot="bot-field" style="display:none;">
+    <input type="hidden" name="form-name" value="idioms-quiz">
+    <input type="hidden" name="studentName" id="formStudentName">
+    <input type="hidden" name="score" id="formScore">
+    <input type="hidden" name="results" id="formResults">
+    <input type="text" name="bot-field" style="display:none;"> <!-- honeypot field for bots -->
+  </form>
+
   <script>
     // ------ 1. YOUR QUIZ DATA HERE ------
     const scriptLines = [
@@ -72,7 +82,7 @@
         correct: 0
       }
     ];
-// 2. SCRAMBLE OPTIONS ON EVERY RELOAD
+    // 2. SCRAMBLE OPTIONS ON EVERY RELOAD
     function shuffleOptionsAndCorrectIndex() {
       scriptLines.forEach(q => {
         let arr = q.options.map((opt, idx) => ({opt, idx}));
@@ -125,35 +135,6 @@
       synth.speak(utterance);
     }
 
-    // ElevenLabs TTS: for outro only
-    async function playVoice(text) {
-      window.speechSynthesis.cancel();
-      const CHATBOT_API_URL = "https://chattybot-backend.onrender.com/api/chatbot";
-      const voiceId = "ds0uumbpvplhO4tyz2yF";
-      const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
-      try {
-        const resp = await fetch(url, {
-          method: "POST",
-          headers: {
-            "xi-api-key": apiKey,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            text: text,
-            model_id: "eleven_monolingual_v1",
-            voice_settings: { stability: 0.5, similarity_boost: 0.75 }
-          })
-        });
-        if (!resp.ok) throw new Error("TTS failed: " + resp.status);
-        const audioBlob = await resp.blob();
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const audio = new Audio(audioUrl);
-        audio.play();
-      } catch (err) {
-        alert("TTS error: " + err.message);
-      }
-    }
-
     async function nextBotPrompt() {
       if (scriptStep < scriptLines.length) {
         const entry = scriptLines[scriptStep];
@@ -186,11 +167,11 @@
           feedback = `Quiz complete! Your score is ${percent} out of 100. You can improve, ${studentName}. Try again!`;
           addMessage('bot', feedback);
         }
-        // Only ElevenLabs TTS for the outro/feedback
-        await playVoice(feedback);
+        // Only Browser TTS for the outro/feedback (no ElevenLabs in this version)
+        speakWithBrowser(feedback);
 
-        // Send quiz results to your email using Formspree
-        sendEmail();
+        // Send quiz results to Netlify form
+        sendToNetlifyForm();
 
         textOutput.style.display = "none";
         recordBtn.style.display = "none";
@@ -320,37 +301,20 @@
       doc.save(fileName);
     }
 
-    // ------ 3. SEND EMAIL VIA FORMSPREE ------
-    function sendEmail() {
+    // ------ 4. SEND RESULTS TO NETLIFY FORMS ------
+    function sendToNetlifyForm() {
       const correct = scores.filter(Boolean).length;
       const percent = Math.round((correct / scriptLines.length) * 100);
       const answers = transcript.map((entry, i) => {
         return `Q${i + 1}: ${entry.phrase}\nYour answer: ${entry.studentAnswer}\nCorrect answer: ${entry.correctAnswer}\nResult: ${entry.isCorrect ? 'Correct' : 'Incorrect'}\n`;
       }).join("\n");
-
-      const data = {
-        _subject: `Quiz Results for ${studentName}`,
-        name: studentName,
-        score: `${percent}/100`,
-        results: answers
-      };
-
-      fetch("http://score.examview.com/cgi-bin/results.cgi", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
-        body: JSON.stringify(data)
-      }).then(response => {
-        if (response.ok) {
-          audioStatus.textContent = "✅ Results sent to teacher.";
-        } else {
-          audioStatus.textContent = "⚠️ Failed to send results.";
-        }
-      }).catch(() => {
-        audioStatus.textContent = "⚠️ Error sending results.";
-      });
+      // Fill hidden form fields
+      document.getElementById("formStudentName").value = studentName;
+      document.getElementById("formScore").value = `${percent}/100`;
+      document.getElementById("formResults").value = answers;
+      // Submit form
+      document.getElementById("hiddenQuizForm").submit();
+      audioStatus.textContent = "✅ Results sent to teacher via Netlify Forms.";
     }
   </script>
 </body>
