@@ -391,40 +391,7 @@
       const fileName = `${studentName.replace(/\s+/g, '_')}_idioms_quiz.pdf`;
       doc.save(fileName);
     }
-
-    // ------ 3. SEND EMAIL VIA FORMSPREE ------
-    function sendEmail() {
-      const correct = scores.filter(Boolean).length;
-      const percent = Math.round((correct / scriptLines.length) * 100);
-      const answers = transcript.map((entry, i) => {
-        return `Q${i + 1}: ${entry.phrase}\nYour answer: ${entry.studentAnswer}\nCorrect answer: ${entry.correctAnswer}\nResult: ${entry.isCorrect ? 'Correct' : 'Incorrect'}\n`;
-      }).join("\n");
-
-      const data = {
-        _subject: `Quiz Results for ${studentName}`,
-        name: studentName,
-        score: `${percent}/100`,
-        results: answers
-      };
-
-      fetch("http://score.examview.com/cgi-bin/results.cgi", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
-        body: JSON.stringify(data)
-      }).then(response => {
-        if (response.ok) {
-          audioStatus.textContent = "✅ Results sent to teacher.";
-        } else {
-          audioStatus.textContent = "⚠️ Failed to send results.";
-        }
-      }).catch(() => {
-        audioStatus.textContent = "⚠️ Error sending results.";
-      });
-    }
-  </script>
+    </script>
   <form name="idioms-quiz" method="POST" data-netlify="true" netlify-honeypot="bot-field" style="display:none;">
   <input type="hidden" name="form-name" value="idioms-quiz">
   <input type="hidden" name="subject" value="Idioms Quiz Submission from idioms-quiz (%{submissionId})" />
