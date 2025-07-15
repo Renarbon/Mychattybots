@@ -105,6 +105,8 @@
     let studentName = "";
     let scores = [];
     let quizComplete = false;
+    let pdfDownloaded = false;
+
     const conversationDiv = document.getElementById('conversation');
     const textOutput = document.getElementById('textOutput');
     const recordBtn = document.getElementById('recordBtn');
@@ -127,6 +129,7 @@
       transcript = [];
       scores = [];
       quizComplete = false;
+      pdfDownloaded = false;
       conversationDiv.innerHTML = '';
       nextBotPrompt();
     }
@@ -256,12 +259,8 @@
       conversationDiv.appendChild(div);
       conversationDiv.scrollTop = conversationDiv.scrollHeight;
     }
-    let pdfDownloaded = false;
 
-function downloadPDF() {
-  // ...existing code to generate and save PDF...
-  pdfDownloaded = true;
- {
+    function downloadPDF() {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
       const now = new Date();
@@ -314,17 +313,17 @@ function downloadPDF() {
       });
       const fileName = `${studentName.replace(/\s+/g, '_')}_idioms_quiz.pdf`;
       doc.save(fileName);
+      pdfDownloaded = true;
     }
 
     function submitResults() {
-  if (!pdfDownloaded) {
-    alert("Please download your PDF transcript first!");
-    return;
-  }
-  sendToNetlifyForm();
-  audioStatus.textContent = "✅ Results sent to teacher via Netlify Forms!";
-  submitBtn.style.display = "none";
-     
+      if (!pdfDownloaded) {
+        alert("Please download your PDF transcript first!");
+        return;
+      }
+      sendToNetlifyForm();
+      audioStatus.textContent = "✅ Results sent to teacher via Netlify Forms!";
+      submitBtn.style.display = "none";
       // Optionally: window.location.href = "/thanks.html";  // Redirect after submit
     }
 
