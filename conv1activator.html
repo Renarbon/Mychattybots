@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Hotel Management Roleplay - ESL Speaking</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f9f9f9; max-width: 650px; margin: 30px auto; padding: 2em; border-radius: 16px; box-shadow: 0 2px 12px #ccc; }
+    h2 { color: #4B60E8; }
+    label, input, button { font-size: 1em; }
+    textarea { width: 100%; min-height: 3em; margin-bottom: 1em; }
+    .script { background: #e9f3ff; padding: 1em; border-radius: 10px; margin-bottom: 1em; }
+    .section { margin-bottom: 2em; }
+    .recorder-controls { margin: 10px 0; }
+    .download-btn { margin-top: 1em; background: #4B60E8; color: #fff; border: none; border-radius: 8px; padding: 10px 20px; font-weight: bold; }
+    .audio-play { margin: 10px 0; }
+    .bot-line { font-weight: bold; color: #3a4a7f; }
+    .student-line { font-weight: bold; color: #127650; }
+  </style>
+</head>
+<body>
+  <h2>Hotel Management Roleplay</h2>
+  <p>Instructions: Enter your name, then practice speaking with the bot. First, you'll play "B" and reply to the bot. Then, you'll reverse and play "A". Download your recordings when done to upload to Google Classroom.</p>
+  
+  <div class="section">
+    <label for="studentName"><b>Your Name:</b></label>
+    <input id="studentName" type="text" placeholder="Enter your name" required>
+  </div>
+
+  <div class="section script">
+    <b>Script:</b><br>
+    <span class="bot-line">A: So, Andy, what brings you here today?</span><br>
+    <span class="student-line">B: I'd like some advice. I've been considering taking up hotel management.</span><br>
+    <span class="bot-line">A: Hotel management. Correct me if I'm wrong, but weren't you studying marine biology?</span><br>
+    <span class="student-line">B: I was. But I've given it some thought, and I've decided I'm not cut out for science.</span><br>
+    <span class="bot-line">A: OK. So how can I help?</span><br>
+    <span class="student-line">B: Well, I'd like to enroll in a good program. I was hoping you could steer me in the right direction.</span><br>
+    <span class="bot-line">A: Give me a day or two to look into it. I'll get back to you before the end of the week.</span><br>
+    <span class="student-line">B: That's great.</span><br>
+    <span class="bot-line">A: My pleasure. And I'd be more than happy to write you a recommendation if you decide to apply.</span>
+  </div>
+  
+  <!-- Part 1: Student plays B -->
+  <div class="section" id="partB-section">
+    <h3>Part 1: You are <span class="student-line">B</span></h3>
+    <button onclick="startRoleplay('B')">Start Part 1</button>
+    <div id="partB-roleplay" style="display:none;">
+      <div id="partB-lines"></div>
+      <div class="recorder-controls">
+        <button onclick="startRecording('B')" id="startRecB">🎤 Start Recording</button>
+        <button onclick="stopRecording('B')" id="stopRecB" disabled>⏹️ Stop Recording</button>
+        <audio id="audioB" class="audio-play" controls style="display:none;"></audio>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Part 2: Student plays A -->
+  <div class="section" id="partA-section">
+    <h3>Part 2: You are <span class="bot-line">A</span></h3>
+    <button onclick="startRoleplay('A')">Start Part 2</button>
+    <div id="partA-roleplay" style="display:none;">
+      <div id="partA-lines"></div>
+      <div class="recorder-controls">
+        <button onclick="startRecording('A')" id="startRecA">🎤 Start Recording</button>
+        <button onclick="stopRecording('A')" id="stopRecA" disabled>⏹️ Stop Recording</button>
+        <audio id="audioA" class="audio-play" controls style="display:none;"></audio>
+      </div>
+    </div>
+  </div>
+  
+  <button class="download-btn" onclick="downloadRecordings()">⬇️ Download My Recordings</button>
+  
+  <script>
+    // ==== CONFIGURATION ====
+    const LEMONFOX_API_URL = "https://chattybot-backend.onrender.com/api/lemonfox-tts"; // Update as needed
+    const LEMONFOX_VOICE_A = "en-US-AndyNeural";  // Lemonfox voice for 'A'
+    const LEMONFOX_VOICE_B = "en-US-JaneNeural";  // Lemonfox voice for 'B'
+    // If you have other voices or IDs from Lemonfox, adjust above
+
+    // ==== SCRIPT ====
+    const scriptLines = [
+      { role: "A", text: "So, Andy, what brings you here today?" },
+      { role: "B", text: "I'd like some advice. I've been considering taking up hotel management." },
+      { role: "A", text: "Hotel management. Correct me if I'm wrong, but weren't you studying marine biology?" },
+      { role: "B", text: "I was. But I've given it some thought, and I've decided I'm not cut out for science." },
+      { role: "A", text: "OK. So how can I help?" },
+      { role: "B", text: "Well, I'd like to enroll in a good program. I was hoping you could steer me in the right direction." },
+      { role: "A", text: "Give me a day or two to look into it. I'll get back to you before the end of the week." },
+      { role: "B", text: "That's great." },
+      { role: "A", text: "My pleasure. And I'd be more than happy to write you a recommendation if you decide to apply." }
+    ];
+
+    // ==== UI SETUP ====
+    function replaceName(text) {
+      const name = document.getElementById('studentName').value.trim() || "Andy";
+      return text.replace(/Andy/g, name);
+    }
+
+    function renderRoleplay(role) {
+      let html = '';
+      scriptLines.forEach((line, i) => {
+        if (role === 'B' && line.role === 'A') {
+          html += `<button onclick="playLemonfoxTTS('${replaceName(line.text)}','${LEMONFOX_VOICE_A}')">🔊 ${replaceName(line.text)}</button><br>`;
+        }
+        if (role === 'B' && line.role === 'B') {
+          html += `<span class="student-line">Your turn: ${line.text}</span><br>`;
+        }
+        if (role === 'A' && line.role === 'B') {
+          html += `<button onclick="playLemonfoxTTS('${line.text}','${LEMONFOX_VOICE_B}')">🔊 ${line.text}</button><br>`;
+        }
+        if (role === 'A' && line.role === 'A') {
+          html += `<span class="bot-line">Your turn: ${replaceName(line.text)}</span><br>`;
+        }
+      });
+      if (role === 'B') document.getElementById('partB-lines').innerHTML = html;
+      else document.getElementById('partA-lines').innerHTML = html;
+    }
+
+    function startRoleplay(role) {
+      if (!document.getElementById('studentName').value.trim()) {
+        alert('Please enter your name first!');
+        return;
+      }
+      if (role === 'B') {
+        document.getElementById('partB-roleplay').style.display = '';
+        renderRoleplay('B');
+      } else {
+        document.getElementById('partA-roleplay').style.display = '';
+        renderRoleplay('A');
+      }
+    }
+
+    // ==== Lemonfox TTS ====
+    async function playLemonfoxTTS(text, voice) {
+      const name = document.getElementById('studentName').value.trim() || "Andy";
+      const btn = event.target;
+      btn.disabled = true; btn.innerText = "Loading...";
+
+      try {
+        const response = await fetch(LEMONFOX_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, voice, studentName: name })
+        });
+        if (!response.ok) throw new Error("TTS error");
+        const { audioUrl, audioBase64 } = await response.json();
+
+        let audioSrc;
+        if (audioUrl) audioSrc = audioUrl;
+        else if (audioBase64) audioSrc = "data:audio/mp3;base64," + audioBase64;
+        else throw new Error("No audio found");
+
+        const audio = new Audio(audioSrc);
+        audio.play();
+      } catch (e) {
+        alert('TTS failed. Please try again.');
+      }
+      btn.disabled = false; btn.innerText = "🔊 " + text;
+    }
+
+    // ==== Recording student ====
+    let recorderB, chunksB = [];
+    let recorderA, chunksA = [];
+    let audioBlobB, audioBlobA;
+
+    function startRecording(role) {
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        if (role === 'B') {
+          recorderB = new MediaRecorder(stream);
+          chunksB = [];
+          recorderB.ondataavailable = e => chunksB.push(e.data);
+          recorderB.onstop = () => {
+            audioBlobB = new Blob(chunksB, { 'type': 'audio/webm' });
+            const audioURL = URL.createObjectURL(audioBlobB);
+            document.getElementById('audioB').src = audioURL;
+            document.getElementById('audioB').style.display = '';
+          };
+          recorderB.start();
+          document.getElementById('startRecB').disabled = true;
+          document.getElementById('stopRecB').disabled = false;
+        } else {
+          recorderA = new MediaRecorder(stream);
+          chunksA = [];
+          recorderA.ondataavailable = e => chunksA.push(e.data);
+          recorderA.onstop = () => {
+            audioBlobA = new Blob(chunksA, { 'type': 'audio/webm' });
+            const audioURL = URL.createObjectURL(audioBlobA);
+            document.getElementById('audioA').src = audioURL;
+            document.getElementById('audioA').style.display = '';
+          };
+          recorderA.start();
+          document.getElementById('startRecA').disabled = true;
+          document.getElementById('stopRecA').disabled = false;
+        }
+      });
+    }
+
+    function stopRecording(role) {
+      if (role === 'B' && recorderB && recorderB.state === "recording") {
+        recorderB.stop();
+        document.getElementById('startRecB').disabled = false;
+        document.getElementById('stopRecB').disabled = true;
+      }
+      if (role === 'A' && recorderA && recorderA.state === "recording") {
+        recorderA.stop();
+        document.getElementById('startRecA').disabled = false;
+        document.getElementById('stopRecA').disabled = true;
+      }
+    }
+
+    function downloadRecordings() {
+      const name = document.getElementById('studentName').value.trim();
+      if (!audioBlobB && !audioBlobA) { alert("Please record both parts!"); return; }
+      if (audioBlobB) {
+        const urlB = URL.createObjectURL(audioBlobB);
+        const aB = document.createElement('a');
+        aB.href = urlB;
+        aB.download = `${name}_PartB.webm`;
+        aB.click();
+      }
+      if (audioBlobA) {
+        const urlA = URL.createObjectURL(audioBlobA);
+        const aA = document.createElement('a');
+        aA.href = urlA;
+        aA.download = `${name}_PartA.webm`;
+        aA.click();
+      }
+    }
+  </script>
+</body>
+</html>
