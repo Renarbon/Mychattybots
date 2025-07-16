@@ -50,10 +50,10 @@
       const voice = document.getElementById('voice-select').value;
       try {
         const response = await fetch(LEMONFOX_PROXY_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ input: text, voice: voice })
-        });
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ text: text, voice: voice })   // <--- Corrected!
+});
         if (!response.ok) {
           console.warn("Proxy error:", response.status, response.statusText);
           return;
