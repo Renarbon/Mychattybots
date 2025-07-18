@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>ESL ChattyBot – Fast Food Restaurant (Customer Version, Strict Correction, Colored PDF, Bot Starts On Record)</title>
+  <title>ESL ChattyBot – Fast Food Restaurant (LemonFox Voice)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: Arial; padding: 20px; background: #f2f2f2; }
@@ -17,7 +17,7 @@
 </head>
 <body>
   <div id="chat">
-    <h2>🍔 ESL ChattyBot – Fast Food Restaurant (Customer Version, Strict Correction)</h2>
+    <h2>🍔 ESL ChattyBot – Fast Food Restaurant (Customer Version, LemonFox Voice)</h2>
     <label>Student Name: <input id="studentName" type="text" /></label><br>
     <label>Date: <input id="sessionDate" type="date" /></label><br>
     <div style="margin: 12px 0; color: #007aff; background: #e6e6ff; border-radius: 6px; padding: 8px; max-width: 600px;">
@@ -31,7 +31,6 @@
   </div>
 
   <script>
-    // === SCRIPT ===
     const botLines = [
       "Hello! Welcome to Burger Place. May I take your order?",
       "Would you like fries or a drink with that?",
@@ -53,22 +52,23 @@
     const conversationDiv = document.getElementById('conversation');
     let currentLine = 0;
     let tempUserText = "";
-    let selectedVoice;
     let firstTurn = true;
 
-    window.speechSynthesis.onvoiceschanged = () => {
-      const voices = speechSynthesis.getVoices();
-      selectedVoice = voices.find(v =>
-        v.name.includes("Google US English") ||
-        v.name.includes("Microsoft Zira") ||
-        v.name.toLowerCase().includes("english")
-      );
-    };
-
     function speak(text) {
-      const msg = new SpeechSynthesisUtterance(text);
-      if (selectedVoice) msg.voice = selectedVoice;
-      speechSynthesis.speak(msg);
+      fetch("https://chattybot-backend.onrender.com/api/lemonfox-voice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text })
+      })
+      .then(res => res.blob())
+      .then(blob => {
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        audio.play();
+      })
+      .catch(err => {
+        console.error("LemonFox speak error:", err);
+      });
     }
 
     function normalize(text) {
@@ -114,7 +114,6 @@
       if (!tempUserText) return;
       addMessage('user', tempUserText);
 
-      // Correction
       const expected = scriptLines[currentLine];
       if (!isCloseEnough(tempUserText, expected)) {
         addCorrection('correction', `The correct answer is: "${expected}"`);
@@ -124,7 +123,6 @@
         addCorrection('tip', "");
       }
 
-      // Bot/cashier reply
       currentLine++;
       if (currentLine < botLines.length) {
         addMessage('bot', botLines[currentLine]);
@@ -191,63 +189,9 @@
           }
         });
       });
-      const filename = `${name.replace(/\s+/g, '_')}_${date.replace(/[\/]/g, '-')}_fastfood_strict.pdf`;
+      const filename = `${name.replace(/\s+/g, '_')}_${date.replace(/[\/]/g, '-')}_fastfood_lemonfox.pdf`;
       doc.save(filename);
     }
   </script>
-
-  <!-- Script sample at the bottom for reference -->
-  <div style="background-color: #f5f5f7; padding: 0 20px 20px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; font-size: 16px;">
-    <div id="chatContainer" style="width: 500px; margin: auto; background-color: #f8f8f8; border: 1px solid #ccc; border-radius: 20px; padding: 10px;">
-      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
-        Hello! Welcome to Burger Place. May I take your order?
-      </div>
-      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
-        Yes, I’d like a cheeseburger, please.
-      </div>
-      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
-        Would you like fries or a drink with that?
-      </div>
-      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
-        Just fries, thank you.
-      </div>
-      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
-        Is that for here or to go?
-      </div>
-      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
-        To go, please.
-      </div>
-      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
-        Can I have your name for the order, please?
-      </div>
-      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
-        My name is Sarah.
-      </div>
-      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
-        Your total is $7.50. How would you like to pay?
-      </div>
-      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
-        With my credit card.
-      </div>
-      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
-        Thank you! Please wait while we prepare your order.
-      </div>
-      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
-        Thank you!
-      </div>
-      <div style="clear: both;"></div>
-    </div>
-    <div style="text-align: right; margin-top: 10px;">
-      <button onclick="toggleChat()" style="background-color: #f8f9fa; color: #333; border: 1px solid #ccc; padding: 5px 10px; font-size: 12px; cursor: pointer; border-radius: 5px;">
-        show | hide script
-      </button>
-    </div>
-    <script>
-      function toggleChat() {
-        const chatContainer = document.getElementById("chatContainer");
-        chatContainer.style.display = chatContainer.style.display === "none" ? "block" : "none";
-      }
-    </script>
-  </div>
 </body>
 </html>
