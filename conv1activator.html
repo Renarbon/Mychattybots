@@ -70,9 +70,13 @@
   <button class="download-btn" onclick="downloadRecordings()">⬇️ Download My Recordings</button>
   
   <script>
-      // === CONFIG: Set your backend URL here ===
+    // === CONFIG: Set your backend URL here ===
     const BASE_URL = "https://chattybot-backend.onrender.com";
     const LEMONFOX_PROXY_URL = `${BASE_URL}/api/lemonfox-tts`;
+
+    // === Optional: Lemonfox voices for each role ===
+    const LEMONFOX_VOICE_A = "adam"; // for 'A' (advisor)
+    const LEMONFOX_VOICE_B = "sarah"; // for 'B' (Andy)  (you can change these)
 
     // ==== SCRIPT ====
     const scriptLines = [
@@ -127,27 +131,23 @@
       }
     }
 
-    // ==== Lemonfox TTS ====
+    // ==== Lemonfox TTS – FIXED to use the backend/proxy ====
     async function playLemonfoxTTS(text, voice) {
-      const name = document.getElementById('studentName').value.trim() || "Andy";
       const btn = event.target;
       btn.disabled = true; btn.innerText = "Loading...";
 
       try {
-        const response = await fetch(LEMONFOX_API_URL, {
+        const response = await fetch(LEMONFOX_PROXY_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text, voice, studentName: name })
+          body: JSON.stringify({ text, voice })
         });
         if (!response.ok) throw new Error("TTS error");
-        const { audioUrl, audioBase64 } = await response.json();
+        // Backend should return an audio file (mp3/mpeg)
+        const audioBlob = await response.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
 
-        let audioSrc;
-        if (audioUrl) audioSrc = audioUrl;
-        else if (audioBase64) audioSrc = "data:audio/mp3;base64," + audioBase64;
-        else throw new Error("No audio found");
-
-        const audio = new Audio(audioSrc);
+        const audio = new Audio(audioUrl);
         audio.play();
       } catch (e) {
         alert('TTS failed. Please try again.');
