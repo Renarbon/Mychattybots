@@ -70,11 +70,9 @@
   <button class="download-btn" onclick="downloadRecordings()">⬇️ Download My Recordings</button>
   
   <script>
-    // ==== CONFIGURATION ====
-    const LEMONFOX_API_URL = "https://chattybot-backend.onrender.com/api/lemonfox-tts"; // Update as needed
-    const LEMONFOX_VOICE_A = "en-US-AndyNeural";  // Lemonfox voice for 'A'
-    const LEMONFOX_VOICE_B = "en-US-JaneNeural";  // Lemonfox voice for 'B'
-    // If you have other voices or IDs from Lemonfox, adjust above
+      // === CONFIG: Set your backend URL here ===
+    const BASE_URL = "https://chattybot-backend.onrender.com";
+    const LEMONFOX_PROXY_URL = `${BASE_URL}/api/lemonfox-tts`;
 
     // ==== SCRIPT ====
     const scriptLines = [
@@ -88,7 +86,27 @@
       { role: "B", text: "That's great." },
       { role: "A", text: "My pleasure. And I'd be more than happy to write you a recommendation if you decide to apply." }
     ];
-
+ // --- Lemonfox via backend proxy ---
+    async function speakWithLemonfox(text) {
+      const voice = document.getElementById('voice-select').value;
+      try {
+        const response = await fetch(LEMONFOX_PROXY_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text, voice })
+        });
+        if (!response.ok) {
+          alert("Lemonfox error: " + response.status + " - " + response.statusText);
+          return;
+        }
+        const audioBlob = await response.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        audio.play();
+      } catch (e) {
+        alert("Lemonfox error: " + e);
+      }
+    }
     // ==== UI SETUP ====
     function replaceName(text) {
       const name = document.getElementById('studentName').value.trim() || "Andy";
