@@ -179,6 +179,16 @@
       addMessage('user', scriptLines[0]);
       document.getElementById("studentInput").value = "";
       document.getElementById("sendButton").disabled = true;
+    }
+    // === ENSURE CORRECT CHAT START ===
+    window.onload = () => {
+      conversationDiv.innerHTML = "";
+      transcript.length = 0;
+      currentLine = 0;
+      tempUserText = "";
+      document.getElementById("studentInput").value = "";
+      document.getElementById("sendButton").disabled = true;
+      updatePrompt();
     };
     </script>
 
