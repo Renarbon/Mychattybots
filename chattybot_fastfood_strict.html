@@ -15,7 +15,6 @@
     input[readonly] { background-color: #eee; }
   </style>
 </head>
-<body>
   <!-- Script sample at the bottom for reference -->
   <div style="background-color: #f5f5f7; padding: 0 20px 20px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; font-size: 16px;">
     <div id="chatContainer" style="width: 500px; margin: auto; background-color: #f8f8f8; border: 1px solid #ccc; border-radius: 20px; padding: 10px;">
@@ -40,11 +39,11 @@
       <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
         Can I have your name for the order, please?
       </div>
-      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;" id="sampleNameLine">
-        My name is _______.
+      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
+        My name is ______.
       </div>
       <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
-        Your total is $7.50. How would you like to pay?
+        Your total is $7.50  How would you like to pay?
       </div>
       <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
         With my credit card.
@@ -69,7 +68,7 @@
       }
     </script>
   </div>
-
+<body>
   <div id="chat">
     <h2>🍔 ESL ChattyBot – Fast Food Restaurant (Customer Version, Strict Correction)</h2>
     <label>Student Name: <input id="studentName" type="text" /></label><br>
@@ -92,7 +91,7 @@
       "Would you like fries or a drink with that?",
       "Is that for here or to go?",
       "Can I have your name for the order, please?",
-      "Your total is $7.50. How would you like to pay?",
+      "Your total is $7 and 50 cents How would you like to pay?",
       "Thank you! Please wait while we prepare your order."
     ];
     const scriptLines = [
@@ -102,15 +101,21 @@
       "My name is Sarah.",
       "With my credit card.",
       "Thank you!"
-    ];
+    ];function startRecording() {
+  if (firstTurn) {
+    // --- DYNAMIC NAME PATCH ---
+    const nameInput = document.getElementById('studentName').value.trim();
+    const studentName = nameInput || 'Student';
+    scriptLines[3] = `My name is ${studentName}.`;
+    // ----------------------------
 
-    // Update sample name line dynamically
-    const nameInput = document.getElementById('studentName');
-    const sampleNameLine = document.getElementById('sampleNameLine');
-    nameInput.addEventListener('input', () => {
-      const name = nameInput.value.trim() || '_______';
-      sampleNameLine.textContent = `My name is ${name}.`;
-    });
+    addMessage('bot', botLines[0]);
+    speak(botLines[0]);
+    firstTurn = false;
+    return;
+  }
+  // ... rest of your recording logic ...
+}
 
     // === STATE ===
     const transcript = [];
@@ -119,20 +124,27 @@
     let tempUserText = "";
     let firstTurn = true;
 
-    // === SPEAK via backend ===
+    // === SPEAK via LemonFox API ===
     async function speak(text) {
       try {
-        const res = await fetch("https://chattybot-backend.onrender.com/api/lemonfox-voice", {
+        const res = await fetch("https://api.lemonfox.ai/v1/audio/speech", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text })
+          headers: {
+            "Authorization": "pqT589X7JBTimS2MVoP1IyNOPD1iVwGX",
+            "Content-Type":  "application/json"
+          },
+          body: JSON.stringify({
+            input: text,
+            voice: "sarah",
+            response_format: "mp3"
+          })
         });
         if (!res.ok) {
-          console.error("Backend error:", await res.text());
+          console.error("LemonFox error:", await res.text());
           return;
         }
         const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
+        const url  = URL.createObjectURL(blob);
         new Audio(url).play();
       } catch (err) {
         console.error("Speak failed:", err);
@@ -156,12 +168,6 @@
     }
 
     // === FLOW ===
-    window.addEventListener('DOMContentLoaded', () => {
-      addMessage('bot', botLines[0]);
-      speak(botLines[0]);
-      firstTurn = false;
-    });
-
     function startRecording() {
       if (firstTurn) {
         addMessage('bot', botLines[0]);
@@ -254,5 +260,59 @@
       doc.save(fn);
     }
   </script>
+
+  <!-- Script sample at the bottom for reference -->
+  <div style="background-color: #f5f5f7; padding: 0 20px 20px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; font-size: 16px;">
+    <div id="chatContainer" style="width: 500px; margin: auto; background-color: #f8f8f8; border: 1px solid #ccc; border-radius: 20px; padding: 10px;">
+      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+        Hello! Welcome to Burger Place. May I take your order?
+      </div>
+      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
+        Yes, I’d like a cheeseburger, please.
+      </div>
+      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+        Would you like fries or a drink with that?
+      </div>
+      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
+        Just fries, thank you.
+      </div>
+      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+        Is that for here or to go?
+      </div>
+      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
+        To go, please.
+      </div>
+      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+        Can I have your name for the order, please?
+      </div>
+      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
+        My name is _______.
+      </div>
+      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+        Your total is $7.50 How would you like to pay?
+      </div>
+      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
+        With my credit card.
+      </div>
+      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+        Thank you! Please wait while we prepare your order.
+      </div>
+      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
+        Thank you!
+      </div>
+      <div style="clear: both;"></div>
+    </div>
+    <div style="text-align: right; margin-top: 10px;">
+      <button onclick="toggleChat()" style="background-color: #f8f9fa; color: #333; border: 1px solid #ccc; padding: 5px 10px; font-size: 12px; cursor: pointer; border-radius: 5px;">
+        show | hide script
+      </button>
+    </div>
+    <script>
+      function toggleChat() {
+        const chatContainer = document.getElementById("chatContainer");
+        chatContainer.style.display = chatContainer.style.display === "none" ? "block" : "none";
+      }
+    </script>
+  </div>
 </body>
 </html>
