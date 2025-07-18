@@ -112,23 +112,16 @@
 
     // === FLOW ===
     function startRecording() {
-      if (firstTurn) {
-        addMessage('bot', botLines[0]);
-        speakWithLemonfox(botLines[0]);
-        firstTurn = false;
-        return;
-      }
-      const recog = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-      recog.lang = 'en-US'; recog.interimResults = false; recog.maxAlternatives = 1;
-      recog.start();
-      recog.onresult = e => {
-        tempUserText = e.results[0][0].transcript;
-        document.getElementById("studentInput").value = tempUserText;
-        document.getElementById("sendButton").disabled = false;
-      };
-      recog.onerror = e => alert("Speech recognition error: " + e.error);
-    }
-
+  const recog = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+  recog.lang = 'en-US'; recog.interimResults = false; recog.maxAlternatives = 1;
+  recog.start();
+  recog.onresult = e => {
+    tempUserText = e.results[0][0].transcript;
+    document.getElementById("studentInput").value = tempUserText;
+    document.getElementById("sendButton").disabled = false;
+  };
+  recog.onerror = e => alert("Speech recognition error: " + e.error);
+}
     function submitStudentResponse() {
       if (!tempUserText) return;
       addMessage('user', tempUserText);
