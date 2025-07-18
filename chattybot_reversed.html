@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>ESL ChattyBot – Hotel Management Roleplay</title>
+  <title>ESL ChattyBot – Fast Food Restaurant (Cashier Version, read the gray parts **)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: Arial; padding: 20px; background: #f2f2f2; }
@@ -18,7 +18,7 @@
 </head>
 <body>
   <div id="chat">
-    <h2>💼 ESL ChattyBot – Hotel Management Roleplay (Student = A, Bot = B)</h2>
+    <h2>🍔 ESL ChattyBot – Fast Food Restaurant (Cashier Version, read the gray parts **)</h2>
     <label>Student Name: <input id="studentName" type="text" /></label><br>
     <label>Date: <input id="sessionDate" type="date" /></label><br>
     <label for="voice-select"><b>Voice:</b></label>
@@ -32,7 +32,8 @@
       <option value="santa">Santa</option>
     </select>
     <div style="margin: 12px 0; color: #007aff; background: #e6e6ff; border-radius: 6px; padding: 8px; max-width: 600px;">
-      <b>Instructions:</b> You are "A" (the advisor/friend). Please read the <span style="color: green;">green</span> part aloud each turn. ChattyBot will play "B" (Andy).
+      <b>Instructions:</b> You are the cashier. Please read the <span style="color: #007aff;">green</span>
+      part aloud each turn. ChattyBot will play the customer.
     </div>
     <div id="conversation"></div>
     <button onclick="startRecording()" id="recordButton">🎙️ Record</button>
@@ -46,21 +47,22 @@
     const LEMONFOX_PROXY_URL = `${BASE_URL}/api/lemonfox-tts`;
 
     // === SCRIPT DATA ===
-    // Student (A) lines – green
-    const scriptLines = [
-      "So, Andy, what brings you here today?",
-      "Hotel management. Correct me if I'm wrong, but weren't you studying marine biology?",
-      "OK. So how can I help?",
-      "Give me a day or two to look into it. I'll get back to you before the end of the week.",
-      "My pleasure. And I'd be more than happy to write you a recommendation if you decide to apply."
-    ];
-    // Bot (B) lines – blue
-    const botLines = [
-      "I'd like some advice. I've been considering taking up hotel management.",
-      "I was. But I've given it some thought, and I've decided I'm not cut out for science.",
-      "Well, I'd like to enroll in a good program. I was hoping you could steer me in the right direction.",
-      "That's great."
-    ];
+// Bot (B) lines – blue
+const botLines = [
+  "I'd like some advice. I've been considering taking up hotel management.",
+  "I was. But I've given it some thought, and I've decided I'm not cut out for science.",
+  "Well, I'd like to enroll in a good program. I was hoping you could steer me in the right direction.",
+  "That's great."
+];
+
+// Student (A) lines – gray/left
+const scriptLines = [
+  "So, Andy, what brings you here today?",
+  "Hotel management. Correct me if I'm wrong, but weren't you studying marine biology?",
+  "OK. So how can I help?",
+  "Give me a day or two to look into it. I'll get back to you before the end of the week.",
+  "My pleasure. And I'd be more than happy to write you a recommendation if you decide to apply."
+];
 
     // === STATE ===
     const transcript = [];
@@ -104,9 +106,10 @@
 
     function submitStudentResponse() {
       if (!tempUserText) return;
+      const expected = scriptLines[currentLine];
       addMessage('user', tempUserText);
 
-      // Bot replies with the matching line for this step
+      // Bot replies with the matching customer line for this step
       if (currentLine < botLines.length) {
         setTimeout(() => {
           addMessage('bot', botLines[currentLine]);
@@ -114,12 +117,9 @@
         }, 900);
       }
 
-      currentLine++; // Only increment after both have spoken
+      currentLine++; // <-- Only increment after both have spoken
 
-      document.getElementById("studentInput").value = "";
-      tempUserText = "";
-      document.getElementById("sendButton").disabled = true;
-    }
+      
 
     // === DOM HELPERS ===
     function addMessage(who, text) {
@@ -130,7 +130,6 @@
       transcript.push({ who, text });
       conversationDiv.scrollTop = conversationDiv.scrollHeight;
     }
-
     // === PDF EXPORT ===
     function downloadPDF() {
       const { jsPDF } = window.jspdf;
@@ -155,9 +154,9 @@
           y+=10; if (y>280){ doc.addPage(); y=20; }
         });
       });
-      const fn = `${name.replace(/\s+/g,'_')}_${date.replace(/\//g,'-')}_hotel_roleplay.pdf`;
+      const fn = `${name.replace(/\s+/g,'_')}_${date.replace(/\//g,'-')}_fastfood_cashier.pdf`;
       doc.save(fn);
-    }
+    } 
 
     // === ENSURE CORRECT CHAT START ===
     window.onload = () => {
@@ -169,41 +168,39 @@
       document.getElementById("studentInput").value = "";
       document.getElementById("sendButton").disabled = true;
     };
-  </script>
+    </script>
 
   <!-- Script sample at the bottom for reference -->
   <div style="background-color: #f5f5f7; padding: 0 20px 20px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; font-size: 16px;">
-    <div id="chatContainer" style="width: 500px; margin: auto; background-color: #f8f8f8; border: 1px solid #ccc; border-radius: 20px; padding: 10px;">
-      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
-        So, Andy, what brings you here today?
-      </div>
-      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
-        I'd like some advice. I've been considering taking up hotel management.
-      </div>
-      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
-        Hotel management. Correct me if I'm wrong, but weren't you studying marine biology?
-      </div>
-      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
-        I was. But I've given it some thought, and I've decided I'm not cut out for science.
-      </div>
-      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
-        OK. So how can I help?
-      </div>
-      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
-        Well, I'd like to enroll in a good program. I was hoping you could steer me in the right direction.
-      </div>
-      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
-        Give me a day or two to look into it. I'll get back to you before the end of the week.
-      </div>
-      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
-        That's great.
-      </div>
-      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
-        My pleasure. And I'd be more than happy to write you a recommendation if you decide to apply.
-      </div>
-      <div style="clear: both;"></div>
-    </div>
-    <div style="text-align: right; margin-top: 10px;">
+   <div id="chatContainer" style="width: 500px; margin: auto; background-color: #f8f8f8; border: 1px solid #ccc; border-radius: 20px; padding: 10px;">
+  <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+    So, Andy, what brings you here today?
+  </div>
+  <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
+    I'd like some advice. I've been considering taking up hotel management.
+  </div>
+  <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+    Hotel management. Correct me if I'm wrong, but weren't you studying marine biology?
+  </div>
+  <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
+    I was. But I've given it some thought, and I've decided I'm not cut out for science.
+  </div>
+  <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+    OK. So how can I help?
+  </div>
+  <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
+    Well, I'd like to enroll in a good program. I was hoping you could steer me in the right direction.
+  </div>
+  <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+    Give me a day or two to look into it. I'll get back to you before the end of the week.
+  </div>
+  <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
+    That's great.
+  </div>
+  <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+    My pleasure. And I'd be more than happy to write you a recommendation if you decide to apply.
+  </div>
+  
       <button onclick="toggleChat()" style="background-color: #f8f9fa; color: #333; border: 1px solid #ccc; padding: 5px 10px; font-size: 12px; cursor: pointer; border-radius: 5px;">
         show | hide script
       </button>
