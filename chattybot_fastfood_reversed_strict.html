@@ -123,22 +123,40 @@
   recog.onerror = e => alert("Speech recognition error: " + e.error);
 }
     function submitStudentResponse() {
-      if (!tempUserText) return;
-      addMessage('user', tempUserText);
+  if (!tempUserText) return;
+  const expected = scriptLines[currentLine];
+  addMessage('user', tempUserText);
 
-      const expected = scriptLines[currentLine];
-      if (!isCloseEnough(tempUserText, expected)) {
-        addCorrection('correction', `The correct answer is: "${expected}"`);
-        addCorrection('tip', "Please try to match the example answer for practice.");
-      } else {
-        addCorrection('correction', "Good job!");
-        addCorrection('tip', "");
-      }
+  if (!isCloseEnough(tempUserText, expected)) {
+    addCorrection('correction', `The correct answer is: "${expected}"`);
+    addCorrection('tip', "Please try to match the example answer exactly.");
+  } else {
+    addCorrection('correction', "Good job!");
+    addCorrection('tip', "");
+  }
 
-      currentLine++;
-      if (currentLine < botLines.length) {
-        addMessage('bot', botLines[currentLine]);
-        speakWithLemonfox(botLines[currentLine]);
+  // Now: Bot responds for this line (customer line at same index)
+  if (currentLine < botLines.length) {
+    setTimeout(() => {
+      addMessage('bot', botLines[currentLine]);
+      speakWithLemonfox(botLines[currentLine]);
+    }, 900);
+  }
+
+  currentLine++; // <--- Move to the next line AFTER bot speaks
+
+  // End of conversation check
+  if (currentLine >= scriptLines.length) {
+    setTimeout(() => {
+      addMessage('bot', "Great work today! See you next time.");
+      speakWithLemonfox("Great work today! See you next time.");
+    }, 1200);
+  }
+
+  document.getElementById("studentInput").value = "";
+  tempUserText = "";
+  document.getElementById("sendButton").disabled = true;
+}
       } else {
         setTimeout(() => {
           addMessage('bot', "Great work today! See you next time.");
