@@ -114,18 +114,21 @@
       if (currentLine < botLines.length) {
         setTimeout(() => {
           addMessage('bot', botLines[currentLine]);
-          speakWithLemonfox(botLines[currentLine]);
+          speak(botLines[currentLine]);
         }, 900);
       }
 
-      currentLine++; // <-- Only increment after both have spoken
+      currentLine++; // Only increment after both have spoken
 
       // End of conversation check
       if (currentLine >= scriptLines.length) {
         setTimeout(() => {
           addMessage('bot', "bye! See you next time.");
-          speakWithLemonfox("bye! See you next time.");
+          speak("bye! See you next time.");
         }, 1200);
+        updatePrompt();
+      } else {
+        updatePrompt();
       }
 
       document.getElementById("studentInput").value = "";
