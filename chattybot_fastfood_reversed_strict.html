@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>ESL ChattyBot – Fast Food Restaurant (Cashier Version, Strict Correction)</title>
+  <title>ESL ChattyBot – Fast Food Restaurant (Cashier Version, Strict Correction, Fixed Sequence)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: Arial; padding: 20px; background: #f2f2f2; }
@@ -32,7 +32,7 @@
       <option value="santa">Santa</option>
     </select>
     <div style="margin: 12px 0; color: #007aff; background: #e6e6ff; border-radius: 6px; padding: 8px; max-width: 600px;">
-      <b>Instructions:</b> You are the cashier. Please read the <span style="color: #007aff;">green</span>
+      <b>Instructions:</b> You are the cashier. Please say the <span style="color: green;">green</span>
       part aloud each turn. ChattyBot will play the customer.
     </div>
     <div id="conversation"></div>
@@ -95,28 +95,24 @@
       }
     }
 
-    // === UTILITIES ===
-    function normalize(text) {
-      return (text || "").toLowerCase()
-        .replace(/[’'".,!?]/g,"")
-        .replace(/\s+/g," ").trim();
-    }
-
+    // === STRICT CORRECTION ===
     function isCloseEnough(answer, expected) {
-      const ans = normalize(answer), exp = normalize(expected);
-      if (ans === exp) return true;
-      const aw = ans.split(" "), ew = exp.split(" ");
-      let match = 0;
-      ew.forEach(w => { if (aw.includes(w)) match++; });
-      return (match / ew.length) > 0.7;
+      // Strict: ignores leading/trailing spaces and is case-insensitive, but otherwise exact
+      return answer.trim().toLowerCase() === expected.trim().toLowerCase();
     }
 
     // === FLOW ===
     function startRecording() {
       if (firstTurn) {
-        addMessage('bot', botLines[0]);
-        speakWithLemonfox(botLines[0]);
+        // Start with cashier prompt (student role)
+        addMessage('user', scriptLines[0]);
         firstTurn = false;
+        document.getElementById("recordButton").disabled = true;
+        setTimeout(() => {
+          addMessage('bot', botLines[0]);
+          speakWithLemonfox(botLines[0]);
+          document.getElementById("recordButton").disabled = false;
+        }, 800);
         return;
       }
       const recog = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
@@ -132,26 +128,31 @@
 
     function submitStudentResponse() {
       if (!tempUserText) return;
+      // 1. Check against the expected cashier line
+      const expected = scriptLines[currentLine];
       addMessage('user', tempUserText);
 
-      const expected = scriptLines[currentLine];
       if (!isCloseEnough(tempUserText, expected)) {
         addCorrection('correction', `The correct answer is: "${expected}"`);
-        addCorrection('tip', "Please try to match the example answer for practice.");
+        addCorrection('tip', "Please try to match the example answer exactly.");
+        // (optional: do not advance until correct, but for now, just proceed)
       } else {
         addCorrection('correction', "Good job!");
         addCorrection('tip', "");
       }
 
+      // 2. Advance to next step, play next bot line (customer)
       currentLine++;
       if (currentLine < botLines.length) {
-        addMessage('bot', botLines[currentLine]);
-        speakWithLemonfox(botLines[currentLine]);
+        setTimeout(() => {
+          addMessage('bot', botLines[currentLine]);
+          speakWithLemonfox(botLines[currentLine]);
+        }, 900);
       } else {
         setTimeout(() => {
           addMessage('bot', "Great work today! See you next time.");
           speakWithLemonfox("Great work today! See you next time.");
-        }, 800);
+        }, 900);
       }
 
       document.getElementById("studentInput").value = "";
@@ -205,7 +206,19 @@
       const fn = `${name.replace(/\s+/g,'_')}_${date.replace(/\//g,'-')}_fastfood_cashier.pdf`;
       doc.save(fn);
     }
-    </script>
+
+    // Start with first cashier line shown and spoken after bot
+    window.onload = () => {
+      // Only show first cashier line, bot will answer after student's first response
+      firstTurn = true;
+      conversationDiv.innerHTML = "";
+      transcript.length = 0;
+      currentLine = 0;
+      tempUserText = "";
+      addMessage('user', scriptLines[0]);
+      document.getElementById("studentInput").value = "";
+      document.getElementById("sendButton").disabled = true;
+    };</script>
 
   <!-- Script sample at the bottom for reference -->
   <div style="background-color: #f5f5f7; padding: 0 20px 20px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; font-size: 16px;">
