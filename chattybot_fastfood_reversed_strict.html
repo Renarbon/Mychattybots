@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>ESL ChattyBot – Fast Food Restaurant (Cashier Version, read the gray parts *)</title>
+  <title>ESL ChattyBot – Fast Food Restaurant (Cashier Version, read the gray parts **)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: Arial; padding: 20px; background: #f2f2f2; }
@@ -18,7 +18,7 @@
 </head>
 <body>
   <div id="chat">
-    <h2>🍔 ESL ChattyBot – Fast Food Restaurant (Cashier Version, read the gray parts *)</h2>
+    <h2>🍔 ESL ChattyBot – Fast Food Restaurant (Cashier Version, read the gray parts **)</h2>
     <label>Student Name: <input id="studentName" type="text" /></label><br>
     <label>Date: <input id="sessionDate" type="date" /></label><br>
     <label for="voice-select"><b>Voice:</b></label>
@@ -41,18 +41,7 @@
     <input type="text" id="studentInput" readonly />
     <button onclick="downloadPDF()">⬇️ Download PDF</button>
   </div>
-    <script>
-      window.onload = () => {
-  conversationDiv.innerHTML = "";
-  transcript.length = 0;
-  currentLine = 0;
-  tempUserText = "";
-  addMessage('user', scriptLines[0]);
-  document.getElementById("studentInput").value = "";
-  document.getElementById("sendButton").disabled = true;
-};
-
-    
+  <script>
     // === CONFIG: Set your backend URL here ===
     const BASE_URL = "https://chattybot-backend.onrender.com";
     const LEMONFOX_PROXY_URL = `${BASE_URL}/api/lemonfox-tts`;
@@ -76,12 +65,11 @@
       "With my credit card.",
       "Thank you!"
     ];
-        // === STATE ===
+    // === STATE ===
     const transcript = [];
     const conversationDiv = document.getElementById('conversation');
     let currentLine = 0;
     let tempUserText = "";
-    let firstTurn = true;
 
     // --- Lemonfox via backend proxy ---
     async function speakWithLemonfox(text) {
@@ -105,62 +93,45 @@
       }
     }
 
-    // === UTILITIES ===
-    function normalize(text) {
-      return (text || "").toLowerCase()
-        .replace(/[’'".,!?]/g,"")
-        .replace(/\s+/g," ").trim();
-    }
-
-    function isCloseEnough(answer, expected) {
-      const ans = normalize(answer), exp = normalize(expected);
-      if (ans === exp) return true;
-      const aw = ans.split(" "), ew = exp.split(" ");
-      let match = 0;
-      ew.forEach(w => { if (aw.includes(w)) match++; });
-      return (match / ew.length) > 0.7;
-    }
-
-    // === FLOW ===
     function startRecording() {
-  const recog = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-  recog.lang = 'en-US'; recog.interimResults = false; recog.maxAlternatives = 1;
-  recog.start();
-  recog.onresult = e => {
-    tempUserText = e.results[0][0].transcript;
-    document.getElementById("studentInput").value = tempUserText;
-    document.getElementById("sendButton").disabled = false;
-  };
-  recog.onerror = e => alert("Speech recognition error: " + e.error);
-}
-   function submitStudentResponse() {
-  if (!tempUserText) return;
-  const expected = scriptLines[currentLine];
-  addMessage('user', tempUserText);
+      const recog = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recog.lang = 'en-US'; recog.interimResults = false; recog.maxAlternatives = 1;
+      recog.start();
+      recog.onresult = e => {
+        tempUserText = e.results[0][0].transcript;
+        document.getElementById("studentInput").value = tempUserText;
+        document.getElementById("sendButton").disabled = false;
+      };
+      recog.onerror = e => alert("Speech recognition error: " + e.error);
+    }
 
-  // Bot replies with the matching customer line for this step
-  if (currentLine < botLines.length) {
-    setTimeout(() => {
-      addMessage('bot', botLines[currentLine]);
-      speakWithLemonfox(botLines[currentLine]);
-    }, 900);
-  }
+    function submitStudentResponse() {
+      if (!tempUserText) return;
+      const expected = scriptLines[currentLine];
+      addMessage('user', tempUserText);
 
-  currentLine++; // <-- Only increment after both have spoken
+      // Bot replies with the matching customer line for this step
+      if (currentLine < botLines.length) {
+        setTimeout(() => {
+          addMessage('bot', botLines[currentLine]);
+          speakWithLemonfox(botLines[currentLine]);
+        }, 900);
+      }
 
-  // End of conversation check
-  if (currentLine >= scriptLines.length) {
-    setTimeout(() => {
-      addMessage('bot', "bye! See you next time.");
-      speakWithLemonfox("bye! See you next time.");
-    }, 1200);
-  }
+      currentLine++; // <-- Only increment after both have spoken
 
-  document.getElementById("studentInput").value = "";
-  tempUserText = "";
-  document.getElementById("sendButton").disabled = true;
-}
+      // End of conversation check
+      if (currentLine >= scriptLines.length) {
+        setTimeout(() => {
+          addMessage('bot', "bye! See you next time.");
+          speakWithLemonfox("bye! See you next time.");
+        }, 1200);
+      }
 
+      document.getElementById("studentInput").value = "";
+      tempUserText = "";
+      document.getElementById("sendButton").disabled = true;
+    }
 
     // === DOM HELPERS ===
     function addMessage(who, text) {
@@ -171,16 +142,6 @@
       transcript.push({ who, text });
       conversationDiv.scrollTop = conversationDiv.scrollHeight;
     }
-    function addCorrection(type, text) {
-      if (!text) return;
-      const d = document.createElement('div');
-      d.className = `message ${type}`;
-      d.textContent = `${type.charAt(0).toUpperCase()+type.slice(1)}: ${text}`;
-      conversationDiv.appendChild(d);
-      transcript.push({ who: type, text });
-      conversationDiv.scrollTop = conversationDiv.scrollHeight;
-    }
-
     // === PDF EXPORT ===
     function downloadPDF() {
       const { jsPDF } = window.jspdf;
@@ -208,6 +169,17 @@
       const fn = `${name.replace(/\s+/g,'_')}_${date.replace(/\//g,'-')}_fastfood_cashier.pdf`;
       doc.save(fn);
     } 
+
+    // === ENSURE CORRECT CHAT START ===
+    window.onload = () => {
+      conversationDiv.innerHTML = "";
+      transcript.length = 0;
+      currentLine = 0;
+      tempUserText = "";
+      addMessage('user', scriptLines[0]);
+      document.getElementById("studentInput").value = "";
+      document.getElementById("sendButton").disabled = true;
+    };
     </script>
 
   <!-- Script sample at the bottom for reference -->
@@ -261,6 +233,6 @@
         const chatContainer = document.getElementById("chatContainer");
         chatContainer.style.display = chatContainer.style.display === "none" ? "block" : "none";
       }
-  </script>
+    </script>
 </body>
 </html>
