@@ -125,7 +125,8 @@
       if (currentLine >= scriptLines.length) {
         setTimeout(() => {
           addMessage('bot', "bye! See you next time.");
-                  
+          speakWithLemonfox("");
+        }, 1200);
       }
 
       document.getElementById("studentInput").value = "";
