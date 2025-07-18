@@ -64,7 +64,10 @@
         audio.play();
       } catch (e) {
         console.warn("Proxy fetch error:", e);
-      }
+      }function startBot() {
+      addMessage('bot', "Hello " + studentName + "! Let's practice English. I'll ask you some questions. Are you ready?");
+      speakWithLemonfox("Hello " + studentName + "! Let's practice English. I'll ask you some questions. Are you ready?");
+    }
     }
 
     let studentName = '';
@@ -92,10 +95,7 @@
       }
     });
 
-    function startBot() {
-      addMessage('bot', "Hello " + studentName + "! Let's practice English. I'll ask you some questions. Are you ready?");
-      speakWithLemonfox("Hello " + studentName + "! Let's practice English. I'll ask you some questions. Are you ready?");
-    }
+    
 
     function addMessage(role, text) {
       const msg = document.createElement('div');
