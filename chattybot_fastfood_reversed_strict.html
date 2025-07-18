@@ -34,6 +34,16 @@
     <button onclick="downloadPDF()">⬇️ Download PDF</button>
   </div>
   <script>
+    // === ENSURE CORRECT CHAT START ===
+    window.onload = () => {
+      conversationDiv.innerHTML = "";
+      transcript.length = 0;
+      currentLine = 0;
+      tempUserText = "";
+      document.getElementById("studentInput").value = "";
+      document.getElementById("sendButton").disabled = true;
+      updatePrompt();
+    };
     // === CONFIG: Set your backend URL here ===
     const BASE_URL = "https://chattybot-backend.onrender.com";
     const LEMONFOX_PROXY_URL = `${BASE_URL}/api/lemonfox-tts`;
@@ -169,18 +179,9 @@
       });
       const fn = `${name.replace(/\s+/g,'_')}_${date.replace(/\//g,'-')}_fastfood_cashier.pdf`;
       doc.save(fn);
-    } 
+    }; 
 
-    // === ENSURE CORRECT CHAT START ===
-    window.onload = () => {
-      conversationDiv.innerHTML = "";
-      transcript.length = 0;
-      currentLine = 0;
-      tempUserText = "";
-      document.getElementById("studentInput").value = "";
-      document.getElementById("sendButton").disabled = true;
-      updatePrompt();
-    };
+    
   </script>
 
 <!-- Script sample at the bottom for reference -->
