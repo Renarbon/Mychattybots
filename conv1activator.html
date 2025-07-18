@@ -86,27 +86,7 @@
       { role: "B", text: "That's great." },
       { role: "A", text: "My pleasure. And I'd be more than happy to write you a recommendation if you decide to apply." }
     ];
- // --- Lemonfox via backend proxy ---
-    async function speakWithLemonfox(text) {
-      const voice = document.getElementById('voice-select').value;
-      try {
-        const response = await fetch(LEMONFOX_PROXY_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text, voice })
-        });
-        if (!response.ok) {
-          alert("Lemonfox error: " + response.status + " - " + response.statusText);
-          return;
-        }
-        const audioBlob = await response.blob();
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const audio = new Audio(audioUrl);
-        audio.play();
-      } catch (e) {
-        alert("Lemonfox error: " + e);
-      }
-    }
+
     // ==== UI SETUP ====
     function replaceName(text) {
       const name = document.getElementById('studentName').value.trim() || "Andy";
