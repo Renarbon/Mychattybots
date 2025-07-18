@@ -50,6 +50,7 @@
     // === SCRIPT DATA ===
 // Bot (B) lines – blue
 const botLines = [
+  "Hi",
   "I'd like some advice. I've been considering taking up hotel management.",
   "I was. But I've given it some thought, and I've decided I'm not cut out for science.",
   "Well, I'd like to enroll in a good program. I was hoping you could steer me in the right direction.",
@@ -105,17 +106,7 @@ const scriptLines = [
       return (text || "").toLowerCase()
         .replace(/[’'".,!?]/g,"")
         .replace(/\s+/g," ").trim();
-    }
-
-    function isCloseEnough(answer, expected) {
-      const ans = normalize(answer), exp = normalize(expected);
-      if (ans === exp) return true;
-      const aw = ans.split(" "), ew = exp.split(" ");
-      let match = 0;
-      ew.forEach(w => { if (aw.includes(w)) match++; });
-      return (match / ew.length) > 0.7;
-    }
-
+    }    
     // === FLOW ===
     function startRecording() {
       if (firstTurn) {
