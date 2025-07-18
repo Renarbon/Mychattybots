@@ -120,11 +120,16 @@ const scriptLines = [
 
       currentLine++; // <-- Only increment after both have spoken
 
-      // End of conversation check
-      
-      document.getElementById("studentInput").value = "";
-      tempUserText = "";
-      document.getElementById("sendButton").disabled = true;
+     // End of conversation
+        await playBot('Great work today! See you next time.');
+        downloadBtn.style.display = 'inline-block';
+      }
+      // Update script prompt if ongoing
+      if (stage <= expectedAnswers.length - 1) {
+        scriptPrompt.textContent = expectedAnswers[stage];
+      } else {
+        scriptContainer.style.display = 'none';
+      }
     }
 
     // === DOM HELPERS ===
