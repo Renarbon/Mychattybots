@@ -2,274 +2,317 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>ESL ChattyBot (Backend Connected)</title>
+  <title>ESL ChattyBot – Fast Food Restaurant (Customer Version, Strict Correction)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; max-width: 600px; margin: 30px auto; background: #f9f9fc; }
-    #chat { background: #fff; border-radius: 10px; padding: 18px; min-height: 260px; margin-bottom: 16px; box-shadow: 0 2px 10px #2221; }
-    .bot { color: #1976d2; margin: 8px 0; }
-    .user { color: #333; margin: 8px 0; text-align: right; }
-    #input-area { display: flex; gap: 7px; }
-    #student-name { padding: 7px; margin-bottom: 8px; border-radius: 5px; border: 1px solid #bbb; }
-    #voice-select { margin-left: 10px; }
-    #user-input { flex: 1; padding: 8px; display: none; }
-    button { padding: 8px 14px; border-radius: 6px; border: none; background: #1976d2; color: #fff; cursor: pointer; }
-    button:disabled { background: #aaa; }
-    #status { margin: 8px 0; color: #999; }
-    #download-pdf { margin: 12px 0; background: #4caf50; }
+    body { font-family: Arial; padding: 20px; background: #f2f2f2; }
+    #chat { background: white; padding: 20px; max-width: 700px; margin: auto; border-radius: 10px; }
+    .message { margin: 10px 0; }
+    .user { color: green; }
+    .bot { color: blue; }
+    .correction, .tip { color: #b85c00; font-size: 0.98em; margin-left: 10px; }
+    input, button { padding: 10px; margin: 5px; }
+    input[readonly] { background-color: #eee; }
   </style>
 </head>
-<body>
-  <h2>ESL ChattyBot</h2>
-  <input id="student-name" placeholder="Enter your name and press Enter..." />
-  <label for="voice-select"><b>Voice:</b></label>
-  <select id="voice-select">
-    <option value="adam">Adam</option>
-    <option value="sarah">Sarah</option>
-    <option value="emily">Emily</option>
-    <option value="james">James</option>
-    <option value="jenny">Jenny</option>
-    <option value="nicole">Nicole</option>
-    <option value="santa">Santa</option>
-  </select>
-  <div id="chat"></div>
-  <div id="status"></div>
-  <div id="input-area">
-    <input id="user-input" style="display:none;" autocomplete="off" disabled />
-    <button id="send-btn" style="display:none;">Send</button>
-    <button id="mic-btn">🎤 Speak</button>
+  <!-- Script sample at the bottom for reference -->
+  <div style="background-color: #f5f5f7; padding: 0 20px 20px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; font-size: 16px;">
+    <div id="chatContainer" style="width: 500px; margin: auto; background-color: #f8f8f8; border: 1px solid #ccc; border-radius: 20px; padding: 10px;">
+      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+        Hello! Welcome to Burger Place. May I take your order?
+      </div>
+      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
+        Yes, I’d like a cheeseburger, please.
+      </div>
+      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+        Would you like fries or a drink with that?
+      </div>
+      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
+        Just fries, thank you.
+      </div>
+      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+        Is that for here or to go?
+      </div>
+      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
+        To go, please.
+      </div>
+      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+        Can I have your name for the order, please?
+      </div>
+      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
+        My name is ______.
+      </div>
+      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+        Your total is $7.50  How would you like to pay?
+      </div>
+      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
+        With my credit card.
+      </div>
+      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+        Thank you! Please wait while we prepare your order.
+      </div>
+      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
+        Thank you!
+      </div>
+      <div style="clear: both;"></div>
+    </div>
+    <div style="text-align: right; margin-top: 10px;">
+      <button onclick="toggleChat()" style="background-color: #f8f9fa; color: #333; border: 1px solid #ccc; padding: 5px 10px; font-size: 12px; cursor: pointer; border-radius: 5px;">
+        show | hide script
+      </button>
+    </div>
+    <script>
+      function toggleChat() {
+        const chatContainer = document.getElementById("chatContainer");
+        chatContainer.style.display = chatContainer.style.display === "none" ? "block" : "none";
+      }
+    </script>
   </div>
-  <button id="download-pdf" style="display:none;">Download PDF</button>
-  <script>
-    // === CONFIG: Set your backend URL here ===
-    const BASE_URL = "https://chattybot-backend.onrender.com"; // Change if your backend address is different!
-    const CHATBOT_API_URL = `${BASE_URL}/api/chatbot`;
-    const LEMONFOX_PROXY_URL = `${BASE_URL}/api/lemonfox-tts`;
-    const GRAMMAR_API_URL = `${BASE_URL}/api/grammar-correct`;
-    const MAX_QUESTIONS = 6;
+<body>
+  <div id="chat">
+    <h2>🍔 ESL ChattyBot – Fast Food Restaurant (Customer Version, Strict Correction)</h2>
+    <label>Student Name: <input id="studentName" type="text" /></label><br>
+    <label>Date: <input id="sessionDate" type="date" /></label><br>
+    <div style="margin: 12px 0; color: #007aff; background: #e6e6ff; border-radius: 6px; padding: 8px; max-width: 600px;">
+      <b>Instructions:</b> You are the customer. Please read the <span style="color: #007aff;">blue</span>
+      part aloud each turn. ChattyBot will play the cashier.
+    </div>
+    <div id="conversation"></div>
+    <button onclick="startRecording()">🎙️ Record</button>
+    <button onclick="submitStudentResponse()" id="sendButton" disabled>📨 Send</button>
+    <input type="text" id="studentInput" readonly style="width: 90%; padding: 8px;" />
+    <button onclick="downloadPDF()">⬇️ Download PDF</button>
+  </div>
 
-    // --- Lemonfox via backend proxy ---
-    async function speakWithLemonfox(text) {
-      const voice = document.getElementById('voice-select').value;
+  <script>
+    // === SCRIPT DATA ===
+    const botLines = [
+      "Hello! Welcome to Burger Place. May I take your order?",
+      "Would you like fries or a drink with that?",
+      "Is that for here or to go?",
+      "Can I have your name for the order, please?",
+      "Your total is $7 and 50 cents How would you like to pay?",
+      "Thank you! Please wait while we prepare your order."
+    ];
+    const scriptLines = [
+      "Yes, I’d like a cheeseburger, please.",
+      "Just fries, thank you.",
+      "To go, please.",
+      "My name is Sarah.",
+      "With my credit card.",
+      "Thank you!"
+    ];function startRecording() {
+  if (firstTurn) {
+    // --- DYNAMIC NAME PATCH ---
+    const nameInput = document.getElementById('studentName').value.trim();
+    const studentName = nameInput || 'Student';
+    scriptLines[3] = `My name is ${studentName}.`;
+    // ----------------------------
+
+    addMessage('bot', botLines[0]);
+    speak(botLines[0]);
+    firstTurn = false;
+    return;
+  }
+  // ... rest of your recording logic ...
+}
+
+    // === STATE ===
+    const transcript = [];
+    const conversationDiv = document.getElementById('conversation');
+    let currentLine = 0;
+    let tempUserText = "";
+    let firstTurn = true;
+
+    // === SPEAK via LemonFox API ===
+    async function speak(text) {
       try {
-        const response = await fetch(LEMONFOX_PROXY_URL, {
+        const res = await fetch("https://api.lemonfox.ai/v1/audio/speech", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text, voice })
+          headers: {
+            "Authorization": "pqT589X7JBTimS2MVoP1IyNOPD1iVwGX",
+            "Content-Type":  "application/json"
+          },
+          body: JSON.stringify({
+            input: text,
+            voice: "sarah",
+            response_format: "mp3"
+          })
         });
-        if (!response.ok) {
-          alert("Lemonfox error: " + response.status + " - " + response.statusText);
+        if (!res.ok) {
+          console.error("LemonFox error:", await res.text());
           return;
         }
-        const audioBlob = await response.blob();
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const audio = new Audio(audioUrl);
-        audio.play();
-      } catch (e) {
-        alert("Lemonfox error: " + e);
+        const blob = await res.blob();
+        const url  = URL.createObjectURL(blob);
+        new Audio(url).play();
+      } catch (err) {
+        console.error("Speak failed:", err);
       }
     }
 
-    // --- OpenAI via backend ---
-    async function getOpenAIResponse() {
-      try {
-        const response = await fetch(CHATBOT_API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: conversation })
-        });
-        const data = await response.json();
-        if (data.reply) {
-          const botMsg = data.reply.trim();
-          conversation.push({ role: "assistant", content: botMsg });
-          return botMsg;
-        } else {
-          return data.error || "Sorry, I didn't get that.";
-        }
-      } catch (e) {
-        return "Sorry, I couldn't connect to the chatbot backend: " + e;
+    // === UTILITIES ===
+    function normalize(text) {
+      return text.toLowerCase()
+        .replace(/[’'".,!?]/g,"")
+        .replace(/\s+/g," ").trim();
+    }
+
+    function isCloseEnough(answer, expected) {
+      const ans = normalize(answer), exp = normalize(expected);
+      if (ans === exp) return true;
+      const aw = ans.split(" "), ew = exp.split(" ");
+      let match = 0;
+      ew.forEach(w => { if (aw.includes(w)) match++; });
+      return (match / ew.length) > 0.7;
+    }
+
+    // === FLOW ===
+    function startRecording() {
+      if (firstTurn) {
+        addMessage('bot', botLines[0]);
+        speak(botLines[0]);
+        firstTurn = false;
+        return;
       }
+      const recog = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recog.lang = 'en-US'; recog.interimResults = false; recog.maxAlternatives = 1;
+      recog.start();
+      recog.onresult = e => {
+        tempUserText = e.results[0][0].transcript;
+        document.getElementById("studentInput").value = tempUserText;
+        document.getElementById("sendButton").disabled = false;
+      };
+      recog.onerror = e => alert("Speech recognition error: " + e.error);
     }
 
-    // --- Grammar correction via backend ---
-    async function correctGrammar(text) {
-      try {
-        const response = await fetch(GRAMMAR_API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text })
-        });
-        const data = await response.json();
-        if (data.corrected) {
-          return data.corrected.trim();
-        }
-        return text;
-      } catch (e) {
-        return text;
+    function submitStudentResponse() {
+      if (!tempUserText) return;
+      addMessage('user', tempUserText);
+
+      const expected = scriptLines[currentLine];
+      if (!isCloseEnough(tempUserText, expected)) {
+        addCorrection('correction', `The correct answer is: "${expected}"`);
+        addCorrection('tip', "Please try to match the example answer for practice.");
+      } else {
+        addCorrection('correction', "Good job!");
+        addCorrection('tip', "");
       }
-    }
 
-    let studentName = '';
-    let questionCount = 0;
-    let conversation = [
-      { role: "system", content: "You are a friendly English tutor for ESL students. Ask a question about daily life, hobbies, travel, or food. Wait for the student's answer, then reply naturally. After 6 exchanges, say only 'Great job! Conversation finished.' and do not ask any more questions." }
-    ];
-    let transcript = [];
-    let finished = false;
-
-    const chat = document.getElementById('chat');
-    const input = document.getElementById('user-input');
-    const sendBtn = document.getElementById('send-btn');
-    const micBtn = document.getElementById('mic-btn');
-    const status = document.getElementById('status');
-    const pdfBtn = document.getElementById('download-pdf');
-    const nameInput = document.getElementById('student-name');
-
-    nameInput.addEventListener('keyup', function(e) {
-      if (e.key === 'Enter' && nameInput.value.trim()) {
-        studentName = nameInput.value.trim();
-        nameInput.disabled = true;
-        micBtn.disabled = false;
-        startBot();
+      currentLine++;
+      if (currentLine < botLines.length) {
+        addMessage('bot', botLines[currentLine]);
+        speak(botLines[currentLine]);
+      } else {
+        setTimeout(() => {
+          addMessage('bot', "Great work today! See you next time.");
+          speak("Great work today! See you next time.");
+        }, 800);
       }
-    });
 
-    function startBot() {
-      addMessage('bot', "Hello " + studentName + "! Let's practice English. I'll ask you some questions. Are you ready?");
-      speakWithLemonfox("Hello " + studentName + "! Let's practice English. I'll ask you some questions. Are you ready?");
+      document.getElementById("studentInput").value = "";
+      tempUserText = "";
+      document.getElementById("sendButton").disabled = true;
     }
 
-    function addMessage(role, text) {
-      const msg = document.createElement('div');
-      msg.className = role;
-      msg.textContent = text;
-      chat.appendChild(msg);
-      chat.scrollTop = chat.scrollHeight;
+    // === DOM HELPERS ===
+    function addMessage(who, text) {
+      const d = document.createElement('div');
+      d.className = `message ${who}`;
+      d.textContent = `${who==='user'?'You':'Bot'}: ${text}`;
+      conversationDiv.appendChild(d);
+      transcript.push({ who, text });
+    }
+    function addCorrection(type, text) {
+      if (!text) return;
+      const d = document.createElement('div');
+      d.className = `message ${type}`;
+      d.textContent = `${type.charAt(0).toUpperCase()+type.slice(1)}: ${text}`;
+      conversationDiv.appendChild(d);
+      transcript.push({ who: type, text });
     }
 
-    // ---- Speech Recognition ----
-    let recognition;
-    if ('webkitSpeechRecognition' in window) {
-      recognition = new webkitSpeechRecognition();
-      recognition.continuous = false;
-      recognition.lang = 'en-US';
-
-      recognition.onresult = async function(event) {
-        if (finished) return;
-        const transcriptText = event.results[0][0].transcript;
-        addMessage('user', transcriptText);
-
-        // --- NO grammar correction here, just record answer ---
-        conversation.push({ role: "user", content: transcriptText });
-        status.textContent = "Bot is thinking...";
-
-        questionCount++;
-
-        // If this is the LAST answer, finish with Great Job and stop.
-        if (questionCount >= MAX_QUESTIONS) {
-          finished = true;
-          input.disabled = true;
-          sendBtn.disabled = true;
-          micBtn.disabled = true;
-          // Add "Great job!" to chat and speak it
-          setTimeout(() => {
-            addMessage('bot', "Great job! Conversation finished.");
-            speakWithLemonfox("Great job! Conversation finished.");
-            status.textContent = "Conversation finished. Download your PDF for submission.";
-            pdfBtn.style.display = '';
-          }, 600);
-          // Save for PDF, no bot reply this time
-          transcript.push({
-            question: conversation[conversation.length-2]?.content || "",
-            studentAnswer: transcriptText,
-            botReply: "Great job! Conversation finished."
-          });
-        } else {
-          // Normal bot reply, add to transcript
-          let botReply = await getOpenAIResponse();
-          addMessage('bot', botReply);
-          speakWithLemonfox(botReply);
-
-          transcript.push({
-            question: conversation[conversation.length-2]?.content || "",
-            studentAnswer: transcriptText,
-            botReply: botReply
-          });
-          status.textContent = "";
-        }
-      };
-      recognition.onerror = function(e) {
-        micBtn.disabled = false;
-        status.textContent = "Could not recognize speech. Try again.";
-      };
-      recognition.onstart = function() {
-        micBtn.disabled = true;
-        status.textContent = "Listening...";
-      };
-      recognition.onend = function() {
-        micBtn.disabled = false;
-        status.textContent = "";
-      };
-    }
-
-    micBtn.onclick = () => {
-      if (finished) return;
-      if (recognition) recognition.start();
-    };
-
-    // --- PDF Download: Grammar corrections are made HERE only! ---
-    pdfBtn.onclick = async () => {
+    // === PDF EXPORT ===
+    function downloadPDF() {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
-      doc.setFontSize(14);
-      doc.text("ESL Conversation Practice", 10, 12);
-      doc.text(`Student: ${studentName}`, 10, 20);
-
-      let y = 32;
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const margin = 10;
-      const maxLineWidth = pageWidth - 2 * margin;
-
-      function printParagraph(label, text, color = [33, 33, 33]) {
-        doc.setTextColor(...color);
-        let lines = doc.splitTextToSize(`${label} ${text}`, maxLineWidth);
+      const name = document.getElementById('studentName').value || 'Student';
+      const date = document.getElementById('sessionDate').value
+                    || new Date().toLocaleDateString();
+      doc.setTextColor(0,0,0);
+      doc.text(`Conversation Transcript\nName: ${name}\nDate: ${date}`, 10, 10);
+      let y = 30;
+      transcript.forEach(entry => {
+        let lbl = entry.who==='bot'?'Bot'
+                : entry.who==='user'?'You'
+                : entry.who.charAt(0).toUpperCase()+entry.who.slice(1);
+        if (entry.who==='user')       doc.setTextColor(0,150,0);
+        else if (entry.who==='correction') doc.setTextColor(0,0,200);
+        else if (entry.who==='tip')       doc.setTextColor(184,92,0);
+        else                             doc.setTextColor(0,0,0);
+        const lines = doc.splitTextToSize(`${lbl}: ${entry.text}`, 180);
         lines.forEach(line => {
-          doc.text(line, margin + 2, y);
-          y += 6;
+          doc.text(line, 10, y);
+          y+=10; if (y>280){ doc.addPage(); y=20; }
         });
-      }
-
-      for (let i = 0; i < transcript.length; i++) {
-        const entry = transcript[i];
-        doc.setFont(undefined, "bold");
-        printParagraph(`Q${i + 1}:`, entry.question);
-
-        doc.setFont(undefined, "normal");
-
-        // --- Grammar correction at PDF time ---
-        let correctedAnswer = entry.studentAnswer;
-        try {
-          correctedAnswer = await correctGrammar(entry.studentAnswer);
-        } catch (e) {}
-
-        if (entry.studentAnswer !== correctedAnswer) {
-          printParagraph("Your answer:", entry.studentAnswer, [229, 57, 53]);
-          printParagraph("Corrected:", correctedAnswer, [46, 125, 50]);
-        } else {
-          printParagraph("Your answer:", entry.studentAnswer, [46, 125, 50]);
-        }
-
-        printParagraph("Bot:", entry.botReply);
-
-        y += 2;
-        if (y > 270) { doc.addPage(); y = 18; }
-      }
-
-      const fileName = `${studentName.replace(/[^a-z0-9]/gi, '_')}_ESL_ChattyBot.pdf`;
-      doc.save(fileName);
-    };
-
-    micBtn.disabled = true;
+      });
+      const fn = `${name.replace(/\s+/g,'_')}_${date.replace(/\//g,'-')}_fastfood_strict.pdf`;
+      doc.save(fn);
+    }
   </script>
+
+  <!-- Script sample at the bottom for reference -->
+  <div style="background-color: #f5f5f7; padding: 0 20px 20px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; font-size: 16px;">
+    <div id="chatContainer" style="width: 500px; margin: auto; background-color: #f8f8f8; border: 1px solid #ccc; border-radius: 20px; padding: 10px;">
+      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+        Hello! Welcome to Burger Place. May I take your order?
+      </div>
+      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
+        Yes, I’d like a cheeseburger, please.
+      </div>
+      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+        Would you like fries or a drink with that?
+      </div>
+      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
+        Just fries, thank you.
+      </div>
+      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+        Is that for here or to go?
+      </div>
+      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
+        To go, please.
+      </div>
+      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+        Can I have your name for the order, please?
+      </div>
+      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
+        My name is _______.
+      </div>
+      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+        Your total is $7.50 How would you like to pay?
+      </div>
+      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
+        With my credit card.
+      </div>
+      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+        Thank you! Please wait while we prepare your order.
+      </div>
+      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
+        Thank you!
+      </div>
+      <div style="clear: both;"></div>
+    </div>
+    <div style="text-align: right; margin-top: 10px;">
+      <button onclick="toggleChat()" style="background-color: #f8f9fa; color: #333; border: 1px solid #ccc; padding: 5px 10px; font-size: 12px; cursor: pointer; border-radius: 5px;">
+        show | hide script
+      </button>
+    </div>
+    <script>
+      function toggleChat() {
+        const chatContainer = document.getElementById("chatContainer");
+        chatContainer.style.display = chatContainer.style.display === "none" ? "block" : "none";
+      }
+    </script>
+  </div>
 </body>
 </html>
