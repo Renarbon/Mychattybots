@@ -122,7 +122,7 @@
   };
   recog.onerror = e => alert("Speech recognition error: " + e.error);
 }
-    function submitStudentResponse() {
+   function submitStudentResponse() {
   if (!tempUserText) return;
   const expected = scriptLines[currentLine];
   addMessage('user', tempUserText);
@@ -157,6 +157,7 @@
   tempUserText = "";
   document.getElementById("sendButton").disabled = true;
 }
+
       } else {
         setTimeout(() => {
           addMessage('bot', "Great work today! See you next time.");
