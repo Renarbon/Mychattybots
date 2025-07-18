@@ -127,16 +127,7 @@
       // 1. Check against the expected cashier line
       const expected = scriptLines[currentLine];
       addMessage('user', tempUserText);
-
-      if (!isCloseEnough(tempUserText, expected)) {
-        addCorrection('correction', `The correct answer is: "${expected}"`);
-        addCorrection('tip', "Please try to match the example answer exactly.");
-        // (optional: do not advance until correct, but for now, just proceed)
-      } else {
-        addCorrection('correction', "Good job!");
-        addCorrection('tip', "");
-      }
-
+      
       // 2. Advance to next step, play next bot line (customer)
       currentLine++;
       if (currentLine < botLines.length) {
