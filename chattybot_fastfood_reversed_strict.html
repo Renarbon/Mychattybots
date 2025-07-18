@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>ESL ChattyBot – Fast Food Restaurant (Cashier Version,*)</title>
+  <title>ESL ChattyBot – Fast Food Restaurant (Cashier Version, read the gray parts **)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: Arial; padding: 20px; background: #f2f2f2; }
@@ -10,6 +10,7 @@
     .message { margin: 10px 0; }
     .user { color: green; }
     .bot { color: blue; }
+    .correction, .tip { color: #b85c00; font-size: 0.98em; margin-left: 10px; }
     input, button { padding: 10px; margin: 5px; }
     input[readonly] { background-color: #eee; }
     #studentInput { width: 90%; padding: 8px; }
@@ -17,15 +18,22 @@
 </head>
 <body>
   <div id="chat">
-    <h2>🍔 ESL ChattyBot – Fast Food Restaurant (Cashier Version,*)</h2>
+    <h2>🍔 ESL ChattyBot – Fast Food Restaurant (Cashier Version, read the gray parts **)</h2>
     <label>Student Name: <input id="studentName" type="text" /></label><br>
     <label>Date: <input id="sessionDate" type="date" /></label><br>
+    <label for="voice-select"><b>Voice:</b></label>
+    <select id="voice-select">
+      <option value="adam">Adam</option>
+      <option value="sarah">Sarah</option>
+      <option value="emily">Emily</option>
+      <option value="james">James</option>
+      <option value="jenny">Jenny</option>
+      <option value="nicole">Nicole</option>
+      <option value="santa">Santa</option>
+    </select>
     <div style="margin: 12px 0; color: #007aff; background: #e6e6ff; border-radius: 6px; padding: 8px; max-width: 600px;">
       <b>Instructions:</b> You are the cashier. Please read the <span style="color: #007aff;">green</span>
       part aloud each turn. ChattyBot will play the customer.
-    </div>
-    <div id="promptLine" style="margin: 10px 0; color: #555; background: #eee; border-radius: 6px; padding: 8px;">
-      Please say: <span id="promptText"></span>
     </div>
     <div id="conversation"></div>
     <button onclick="startRecording()" id="recordButton">🎙️ Record</button>
@@ -34,20 +42,9 @@
     <button onclick="downloadPDF()">⬇️ Download PDF</button>
   </div>
   <script>
-    // === ENSURE CORRECT CHAT START ===
-    window.onload = () => {
-      conversationDiv.innerHTML = "";
-      transcript.length = 0;
-      currentLine = 0;
-      tempUserText = "";
-      document.getElementById("studentInput").value = "";
-      document.getElementById("sendButton").disabled = true;
-      updatePrompt();
-    };
     // === CONFIG: Set your backend URL here ===
     const BASE_URL = "https://chattybot-backend.onrender.com";
     const LEMONFOX_PROXY_URL = `${BASE_URL}/api/lemonfox-tts`;
-    const LEMONFOX_VOICE = "adam"; // Change voice here if you like
 
     // === SCRIPT DATA ===
     // Student (cashier) lines – green
@@ -61,32 +58,28 @@
     ];
     // Bot (customer) lines – blue
     const botLines = [
-      "Hi",
+      "Hi"
       "Yes, I’d like a cheeseburger, please.",
       "Just fries, thank you.",
       "To go, please.",
       "My name is Andy.",
       "With my credit card.",
-      "Thank you!"
+      "ok, Thank you!"
     ];
-
     // === STATE ===
     const transcript = [];
     const conversationDiv = document.getElementById('conversation');
     let currentLine = 0;
     let tempUserText = "";
 
-    function updatePrompt() {
-      document.getElementById("promptText").textContent = scriptLines[currentLine] || '';
-    }
-
     // --- Lemonfox via backend proxy ---
-    async function speak(text) {
+    async function speakWithLemonfox(text) {
+      const voice = document.getElementById('voice-select').value;
       try {
         const response = await fetch(LEMONFOX_PROXY_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text, voice: LEMONFOX_VOICE })
+          body: JSON.stringify({ text, voice })
         });
         if (!response.ok) {
           alert("Lemonfox error: " + response.status + " - " + response.statusText);
@@ -122,21 +115,18 @@
       if (currentLine < botLines.length) {
         setTimeout(() => {
           addMessage('bot', botLines[currentLine]);
-          speak(botLines[currentLine]);
+          speakWithLemonfox(botLines[currentLine]);
         }, 900);
       }
 
-      currentLine++; // Only increment after both have spoken
+      currentLine++; // <-- Only increment after both have spoken
 
       // End of conversation check
       if (currentLine >= scriptLines.length) {
         setTimeout(() => {
           addMessage('bot', "bye! See you next time.");
-          speak("bye! See you next time.");
+          
         }, 1200);
-        updatePrompt();
-      } else {
-        updatePrompt();
       }
 
       document.getElementById("studentInput").value = "";
@@ -153,7 +143,6 @@
       transcript.push({ who, text });
       conversationDiv.scrollTop = conversationDiv.scrollHeight;
     }
-
     // === PDF EXPORT ===
     function downloadPDF() {
       const { jsPDF } = window.jspdf;
@@ -180,63 +169,71 @@
       });
       const fn = `${name.replace(/\s+/g,'_')}_${date.replace(/\//g,'-')}_fastfood_cashier.pdf`;
       doc.save(fn);
-    }; 
+    } 
 
-    
-  </script>
+    // === ENSURE CORRECT CHAT START ===
+    window.onload = () => {
+      conversationDiv.innerHTML = "";
+      transcript.length = 0;
+      currentLine = 0;
+      tempUserText = "";
+      addMessage('user', scriptLines[0]);
+      document.getElementById("studentInput").value = "";
+      document.getElementById("sendButton").disabled = true;
+    };
+    </script>
 
-<!-- Script sample at the bottom for reference -->
-<div style="background-color: #f5f5f7; padding: 0 20px 20px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; font-size: 16px;">
-  <div id="chatContainer" style="width: 500px; margin: auto; background-color: #f8f8f8; border: 1px solid #ccc; border-radius: 20px; padding: 10px;">
-    <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
-      Hello! Welcome to Burger Place. May I take your order?
+  <!-- Script sample at the bottom for reference -->
+  <div style="background-color: #f5f5f7; padding: 0 20px 20px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; font-size: 16px;">
+    <div id="chatContainer" style="width: 500px; margin: auto; background-color: #f8f8f8; border: 1px solid #ccc; border-radius: 20px; padding: 10px;">
+      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+        Hello! Welcome to Burger Place. May I take your order?
+      </div>
+      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
+        Yes, I’d like a cheeseburger, please.
+      </div>
+      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+        Would you like fries or a drink with that?
+      </div>
+      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
+        Just fries, thank you.
+      </div>
+      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+        Is that for here or to go?
+      </div>
+      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
+        To go, please.
+      </div>
+      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+        Can I have your name for the order, please?
+      </div>
+      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
+        My name is _______.
+      </div>
+      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+        Your total is $7.50 How would you like to pay?
+      </div>
+      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
+        With my credit card.
+      </div>
+      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+        Thank you! Please wait while we prepare your order.
+      </div>
+      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
+        Thank you!
+      </div>
+      <div style="clear: both;"></div>
     </div>
-    <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
-      Yes, I’d like a cheeseburger, please.
+    <div style="text-align: right; margin-top: 10px;">
+      <button onclick="toggleChat()" style="background-color: #f8f9fa; color: #333; border: 1px solid #ccc; padding: 5px 10px; font-size: 12px; cursor: pointer; border-radius: 5px;">
+        show | hide script
+      </button>
     </div>
-    <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
-      Would you like fries or a drink with that?
-    </div>
-    <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
-      Just fries, thank you.
-    </div>
-    <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
-      Is that for here or to go?
-    </div>
-    <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
-      To go, please.
-    </div>
-    <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
-      Can I have your name for the order, please?
-    </div>
-    <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
-      My name is _______.
-    </div>
-    <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
-      Your total is $7.50 How would you like to pay?
-    </div>
-    <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
-      With my credit card.
-    </div>
-    <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
-      Thank you! Please wait while we prepare your order.
-    </div>
-    <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
-      Thank you!
-    </div>
-    <div style="clear: both;"></div>
-  </div>
-  <div style="text-align: right; margin-top: 10px;">
-    <button onclick="toggleChat()" style="background-color: #f8f9fa; color: #333; border: 1px solid #ccc; padding: 5px 10px; font-size: 12px; cursor: pointer; border-radius: 5px;">
-      show | hide script
-    </button>
-  </div>
-  <script>
-    function toggleChat() {
-      const chatContainer = document.getElementById("chatContainer");
-      chatContainer.style.display = chatContainer.style.display === "none" ? "block" : "none";
-    }
-  </script>
-</div>
+    <script>
+      function toggleChat() {
+        const chatContainer = document.getElementById("chatContainer");
+        chatContainer.style.display = chatContainer.style.display === "none" ? "block" : "none";
+      }
+    </script>
 </body>
 </html>
