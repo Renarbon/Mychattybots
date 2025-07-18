@@ -124,27 +124,20 @@
     let tempUserText = "";
     let firstTurn = true;
 
-    // === SPEAK via LemonFox API ===
+    // === SPEAK via backend ===
     async function speak(text) {
       try {
-        const res = await fetch("https://api.lemonfox.ai/v1/audio/speech", {
+        const res = await fetch("https://chattybot-backend.onrender.com/api/lemonfox-voice", {
           method: "POST",
-          headers: {
-            "Authorization": "https://chattybot-backend.onrender.com/api/lemonfox-voice",
-            "Content-Type":  "application/json"
-          },
-          body: JSON.stringify({
-            input: text,
-            voice: "sarah",
-            response_format: "mp3"
-          })
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text })
         });
         if (!res.ok) {
-          console.error("LemonFox error:", await res.text());
+          console.error("Backend error:", await res.text());
           return;
         }
         const blob = await res.blob();
-        const url  = URL.createObjectURL(blob);
+        const url = URL.createObjectURL(blob);
         new Audio(url).play();
       } catch (err) {
         console.error("Speak failed:", err);
