@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>ESL ChattyBot – Fast Food Restaurant (Cashier Version, read the gray parts 1)</title>
+  <title>ESL ChattyBot – Fast Food Restaurant (Cashier Version, read the gray parts *)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: Arial; padding: 20px; background: #f2f2f2; }
@@ -18,7 +18,7 @@
 </head>
 <body>
   <div id="chat">
-    <h2>🍔 ESL ChattyBot – Fast Food Restaurant (Cashier Version, read the gray parts 1)</h2>
+    <h2>🍔 ESL ChattyBot – Fast Food Restaurant (Cashier Version, read the gray parts *)</h2>
     <label>Student Name: <input id="studentName" type="text" /></label><br>
     <label>Date: <input id="sessionDate" type="date" /></label><br>
     <label for="voice-select"><b>Voice:</b></label>
@@ -137,8 +137,8 @@
         }, 900);
       } else {
         setTimeout(() => {
-          addMessage('bot', "Great work today! See you next time.");
-          speakWithLemonfox("Great work today! See you next time.");
+          addMessage('bot', "bye! See you next time.");
+          speakWithLemonfox("bye! See you next time.");
         }, 900);
       }
 
