@@ -41,7 +41,18 @@
     <input type="text" id="studentInput" readonly />
     <button onclick="downloadPDF()">⬇️ Download PDF</button>
   </div>
-  <script>
+    <script>
+      window.onload = () => {
+  conversationDiv.innerHTML = "";
+  transcript.length = 0;
+  currentLine = 0;
+  tempUserText = "";
+  addMessage('user', scriptLines[0]);
+  document.getElementById("studentInput").value = "";
+  document.getElementById("sendButton").disabled = true;
+};
+
+    
     // === CONFIG: Set your backend URL here ===
     const BASE_URL = "https://chattybot-backend.onrender.com";
     const LEMONFOX_PROXY_URL = `${BASE_URL}/api/lemonfox-tts`;
@@ -123,29 +134,33 @@
   recog.onerror = e => alert("Speech recognition error: " + e.error);
 }
    function submitStudentResponse() {
-      if (!tempUserText) return;
-      // 1. Check against the expected cashier line
-      const expected = scriptLines[currentLine];
-      addMessage('user', tempUserText);
-      
-      // 2. Advance to next step, play next bot line (customer)
-      currentLine++;
-      if (currentLine < botLines.length) {
-        setTimeout(() => {
-          addMessage('bot', botLines[currentLine]);
-          speakWithLemonfox(botLines[currentLine]);
-        }, 900);
-      } else {
-        setTimeout(() => {
-          addMessage('bot', "bye! See you next time.");
-          speakWithLemonfox("bye! See you next time.");
-        }, 900);
-      }
+  if (!tempUserText) return;
+  const expected = scriptLines[currentLine];
+  addMessage('user', tempUserText);
 
-      document.getElementById("studentInput").value = "";
-      tempUserText = "";
-      document.getElementById("sendButton").disabled = true;
-    }
+  // Bot replies with the matching customer line for this step
+  if (currentLine < botLines.length) {
+    setTimeout(() => {
+      addMessage('bot', botLines[currentLine]);
+      speakWithLemonfox(botLines[currentLine]);
+    }, 900);
+  }
+
+  currentLine++; // <-- Only increment after both have spoken
+
+  // End of conversation check
+  if (currentLine >= scriptLines.length) {
+    setTimeout(() => {
+      addMessage('bot', "bye! See you next time.");
+      speakWithLemonfox("bye! See you next time.");
+    }, 1200);
+  }
+
+  document.getElementById("studentInput").value = "";
+  tempUserText = "";
+  document.getElementById("sendButton").disabled = true;
+}
+
 
     // === DOM HELPERS ===
     function addMessage(who, text) {
