@@ -124,23 +124,25 @@
     let tempUserText = "";
     let firstTurn = true;
 
-    // === SPEAK via backend ===
-    async function speak(text) {
+    // --- Lemonfox via backend proxy ---
+    async function speakWithLemonfox(text) {
+      const voice = document.getElementById('voice-select').value;
       try {
-        const res = await fetch("https://chattybot-backend.onrender.com/api/lemonfox-voice", {
+        const response = await fetch(LEMONFOX_PROXY_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text })
+          body: JSON.stringify({ text, voice })
         });
-        if (!res.ok) {
-          console.error("Backend error:", await res.text());
+        if (!response.ok) {
+          alert("Lemonfox error: " + response.status + " - " + response.statusText);
           return;
         }
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        new Audio(url).play();
-      } catch (err) {
-        console.error("Speak failed:", err);
+        const audioBlob = await response.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        audio.play();
+      } catch (e) {
+        alert("Lemonfox error: " + e);
       }
     }
 
