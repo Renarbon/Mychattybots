@@ -120,16 +120,17 @@ const scriptLines = [
 
       currentLine++; // <-- Only increment after both have spoken
 
-     // End of conversation
-        await playBot('Great work today! See you next time.');
-        downloadBtn.style.display = 'inline-block';
+     // End of conversation check
+      if (currentLine >= scriptLines.length) {
+        setTimeout(() => {
+          addMessage('bot', "bye! See you next time.");
+          speakWithLemonfox("oh");
+        }, 1200);
       }
-      // Update script prompt if ongoing
-      if (stage <= expectedAnswers.length - 1) {
-        scriptPrompt.textContent = expectedAnswers[stage];
-      } else {
-        scriptContainer.style.display = 'none';
-      }
+
+      document.getElementById("studentInput").value = "";
+      tempUserText = "";
+      document.getElementById("sendButton").disabled = true;
     }
 
     // === DOM HELPERS ===
