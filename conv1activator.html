@@ -13,6 +13,7 @@
     input, button { padding: 10px; margin: 5px; }
     input[readonly] { background-color: #eee; }
     #studentInput { width: 90%; padding: 8px; }
+    #pdfBtn:disabled { opacity: 0.5; }
   </style>
 </head>
 <body>
@@ -122,18 +123,21 @@
       document.getElementById("sendButton").disabled = true;
 
       if (currentLine < scriptLines.length) {
+        // Bot's turn again
         addMessage("bot", scriptLines[currentLine].text);
         speakWithLemonfox(scriptLines[currentLine].text);
         setTimeout(() => {
           document.getElementById("recordButton").disabled = false;
         }, 1600);
       } else {
-        // Conversation finished
-        document.getElementById("pdfBtn").style.display = "";
-        addMessage("bot", "Great work! Conversation complete.");
+        // Conversation finished: Disable input, enable PDF download
+        document.getElementById("recordButton").disabled = true;
         document.getElementById("recordButton").style.display = "none";
+        document.getElementById("sendButton").disabled = true;
         document.getElementById("sendButton").style.display = "none";
         document.getElementById("studentInput").style.display = "none";
+        document.getElementById("pdfBtn").style.display = "";
+        addMessage("bot", "Great work! Conversation complete.");
       }
     }
 
