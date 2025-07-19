@@ -165,18 +165,9 @@
       });
       const fn = `${name.replace(/\s+/g,'_')}_${date.replace(/\//g,'-')}_fastfood_cashier.pdf`;
       doc.save(fn);
-    } 
+    }; 
 
-    // === ENSURE CORRECT CHAT START ===
-    window.onload = () => {
-      conversationDiv.innerHTML = "";
-      transcript.length = 0;
-      currentLine = 0;
-      tempUserText = "";
-      addMessage('user', scriptLines[0]);
-      document.getElementById("studentInput").value = "";
-      document.getElementById("sendButton").disabled = true;
-    };
+  
     </script>
 
   <!-- Script sample at the bottom for reference -->
