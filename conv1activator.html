@@ -28,6 +28,7 @@
     <input type="text" id="studentInput" readonly style="width: 90%; padding: 8px; display:none;" />
     <button onclick="downloadPDF()" id="pdfBtn" style="display:none;">⬇️ Download PDF</button>
   </div>
+
   <script>
     // === CONFIG: Set your backend URL here ===
     const BASE_URL = "https://chattybot-backend.onrender.com";
@@ -139,71 +140,72 @@
         document.getElementById("pdfBtn").style.display = "";
         addMessage("bot", "Great work! Conversation complete.");
       }
-   // === PDF EXPORT ===
+    }
+
     function downloadPDF() {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
       const name = document.getElementById('studentName').value || 'Student';
-      const date = document.getElementById('sessionDate').value
-                    || new Date().toLocaleDateString();
-      doc.setTextColor(0,0,0);
+      const date = document.getElementById('sessionDate').value || new Date().toLocaleDateString();
+      doc.setTextColor(0, 0, 0);
       doc.text(`Conversation Transcript\nName: ${name}\nDate: ${date}`, 10, 10);
       let y = 30;
       transcript.forEach(entry => {
-        let lbl = entry.who==='bot'?'Bot'
-                : entry.who==='user'?'You'
-                : entry.who.charAt(0).toUpperCase()+entry.who.slice(1);
-        if (entry.who==='user')       doc.setTextColor(0,150,0);
-        else if (entry.who==='correction') doc.setTextColor(0,0,200);
-        else if (entry.who==='tip')       doc.setTextColor(184,92,0);
-        else                             doc.setTextColor(0,0,0);
-        const lines = doc.splitTextToSize(`${lbl}: ${entry.text}`, 180);
+        if (entry.who === 'user') {
+          doc.setTextColor(0, 150, 0);
+        } else if (entry.who === 'bot') {
+          doc.setTextColor(11, 46, 138);
+        } else {
+          doc.setTextColor(0, 0, 0);
+        }
+        const label = entry.who === 'bot' ? 'Bot' : 'Student';
+        const lines = doc.splitTextToSize(`${label}: ${entry.text}`, 180);
         lines.forEach(line => {
           doc.text(line, 10, y);
-          y+=10; if (y>280){ doc.addPage(); y=20; }
+          y += 10;
+          if (y > 280) {
+            doc.addPage();
+            y = 20;
+          }
         });
       });
-      const fn = `${name.replace(/\s+/g,'_')}_${date.replace(/\//g,'-')}_fastfood_cashier.pdf`;
-      doc.save(fn);
-    }; 
-
-  
-    </script>
+      const filename = `${name.replace(/\s+/g, '_')}_${date.replace(/[\/]/g, '-')}_hotel_roleplay.pdf`;
+      doc.save(filename);
+    }
+  </script>
 
   <!-- Script sample at the bottom for reference -->
   <div style="background-color: #f5f5f7; padding: 0 20px 20px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; font-size: 16px;">
     <div id="chatContainer" style="width: 500px; margin: auto; background-color: #f8f8f8; border: 1px solid #ccc; border-radius: 20px; padding: 10px;">
-     <div id="chatContainer" style="width: 500px; margin: auto; background-color: #f8f8f8; border: 1px solid #ccc; border-radius: 20px; padding: 10px;">
-  <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
-    So, Andy, what brings you here today?
-  </div>
-  <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
-    I'd like some advice. I've been considering taking up hotel management.
-  </div>
-  <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
-    Hotel management. Correct me if I'm wrong, but weren't you studying marine biology?
-  </div>
-  <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
-    I was. But I've given it some thought, and I've decided I'm not cut out for science.
-  </div>
-  <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
-    OK. So how can I help?
-  </div>
-  <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
-    Well, I'd like to enroll in a good program. I was hoping you could steer me in the right direction.
-  </div>
-  <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
-    Give me a day or two to look into it. I'll get back to you before the end of the week.
-  </div>
-  <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
-    That's great.
-  </div>
-  <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
-    My pleasure. And I'd be more than happy to write you a recommendation if you decide to apply.
-  </div>
-  <div style="clear: both;"></div>
-</div>
-
+      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+        So, Andy, what brings you here today?
+      </div>
+      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
+        I'd like some advice. I've been considering taking up hotel management.
+      </div>
+      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+        Hotel management. Correct me if I'm wrong, but weren't you studying marine biology?
+      </div>
+      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
+        I was. But I've given it some thought, and I've decided I'm not cut out for science.
+      </div>
+      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+        OK. So how can I help?
+      </div>
+      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
+        Well, I'd like to enroll in a good program. I was hoping you could steer me in the right direction.
+      </div>
+      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+        Give me a day or two to look into it. I'll get back to you before the end of the week.
+      </div>
+      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
+        That's great.
+      </div>
+      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+        My pleasure. And I'd be more than happy to write you a recommendation if you decide to apply.
+      </div>
+      <div style="clear: both;"></div>
+    </div>
     <div style="text-align: right; margin-top: 10px;">
       <button onclick="toggleChat()" style="background-color: #f8f9fa; color: #333; border: 1px solid #ccc; padding: 5px 10px; font-size: 12px; cursor: pointer; border-radius: 5px;">
         show | hide script
@@ -214,6 +216,7 @@
         const chatContainer = document.getElementById("chatContainer");
         chatContainer.style.display = chatContainer.style.display === "none" ? "block" : "none";
       }
-  </script>
+    </script>
+  </div>
 </body>
 </html>
