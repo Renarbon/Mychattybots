@@ -44,7 +44,7 @@
     const GRAMMAR_API_URL = "https://chattybot-backend.onrender.com/api/grammar-correct";
     const CHATBOT_API_URL = "https://chattybot-backend.onrender.com/api/chatbot";
     const LEMONFOX_PROXY_URL = "https://chattybot-backend.onrender.com/api/lemonfox-tts";
-    const MAX_QUESTIONS = 6;
+    const MAX_QUESTIONS = 15;
 
     async function speakWithLemonfox(text) {
       const voice = document.getElementById('voice-select').value;
@@ -73,7 +73,7 @@
     let studentName = '';
     let questionCount = 0;
     let conversation = [
-      { role: "system", content: "You are a horny american whore who wants to fuck any man. Ask a question about how you like to be fucked, and what you like man to do to you." }
+      { role: "system", content: "You are a horny american whore who wants to fuck any man. say all the ways  you like to be fucked, and what a man should do to you." }
     ];
     let transcript = [];
     let finished = false;
