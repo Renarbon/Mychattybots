@@ -2,85 +2,85 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>ESL ChatBot – The Counselor (Student reads the gray parts)</title>
+  <title>ESL ChattyBot – The Counselor (Student Role)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: Arial; padding: 20px; background: #f2f2f2; }
     #chat { background: white; padding: 20px; max-width: 700px; margin: auto; border-radius: 10px; }
     .message { margin: 10px 0; }
     .user { color: green; }
-    .bot { color: blue; }
-    .correction, .tip { color: #b85c00; font-size: 0.98em; margin-left: 10px; }
+    .bot { color: #0b2e8a; }
     input, button { padding: 10px; margin: 5px; }
     input[readonly] { background-color: #eee; }
     #studentInput { width: 90%; padding: 8px; }
+    #pdfBtn { margin-top: 10px; }
   </style>
 </head>
 <body>
   <div id="chat">
-    <h2>💬 ESL ChatBot – The Counselor (Student reads the gray parts)</h2>
-    <label>Student Name: <input id="studentName" type="text" /></label><br>
-    <div>
-      <b>Date:</b> <span id="autoDate"></span>
-    </div>
+    <h2>🧑‍🎓 ESL ChattyBot – The Counselor (Student reads gray parts)</h2>
+    <label>Student Name: <input id="studentName" type="text" autocomplete="off" /></label>
+    <button id="startBtn">Start</button>
+    <span style="margin-left:15px; font-size:0.98em;">Date: <span id="sessionDate"></span></span>
+    <br>
     <label for="voice-select"><b>Voice:</b></label>
     <select id="voice-select">
       <option value="adam">Adam</option>
       <option value="sarah">Sarah</option>
       <option value="emily">Emily</option>
       <option value="james">James</option>
-      <option value="jenny">Jenny</option>
-      <option value="nicole">Nicole</option>
-      <option value="santa">Santa</option>
     </select>
     <div style="margin: 12px 0; color: #007aff; background: #e6e6ff; border-radius: 6px; padding: 8px; max-width: 600px;">
-      <b>Instructions:</b> You are the <b>student</b> (read the <span style="color: #007aff;">gray</span> part aloud each turn). The ChatBot will play the <b>counselor</b>.
+      <b>Instructions:</b> You are the <b>student</b> (read the gray part aloud each turn). The ChatBot will play the <b>counselor</b>.
     </div>
     <div id="conversation"></div>
-    <button onclick="startRecording()" id="recordButton">🎙️ Record</button>
+    <button onclick="startRecording()" id="recordButton" disabled>🎙️ Record</button>
     <button onclick="submitStudentResponse()" id="sendButton" disabled>📨 Send</button>
     <input type="text" id="studentInput" readonly />
-    <button onclick="downloadPDF()" id="pdfBtn">⬇️ Download PDF</button>
+    <button onclick="downloadPDF()" id="pdfBtn" disabled>⬇️ Download PDF</button>
   </div>
   <script>
-    // === CONFIG: Set your backend URL here ===
+    // === CONFIG: Backend for Lemonfox (change if needed) ===
     const BASE_URL = "https://chattybot-backend.onrender.com";
     const LEMONFOX_PROXY_URL = `${BASE_URL}/api/lemonfox-tts`;
 
     // === SCRIPT DATA ===
-    // Counselor (Bot/B) lines – blue
+    // Bot (counselor) lines – blue
     const botLines = [
-      "So, {student}, what brings you here today?",
+      "So, Andy, what brings you here today?",
       "Hotel management. Correct me if I'm wrong, but weren't you studying marine biology?",
       "OK. So how can I help?",
       "Give me a day or two to look into it. I'll get back to you before the end of the week.",
       "My pleasure. And I'd be more than happy to write you a recommendation if you decide to apply."
     ];
-    // Student (A) lines – gray/left
+    // Student (student) lines – gray
     const scriptLines = [
       "I'd like some advice. I've been considering taking up hotel management.",
       "I was. But I've given it some thought, and I've decided I'm not cut out for science.",
       "Well, I'd like to enroll in a good program. I was hoping you could steer me in the right direction.",
       "That's great.",
-      "Thank you!"
     ];
 
     // === STATE ===
-    const transcript = [];
-    const conversationDiv = document.getElementById('conversation');
+    let studentName = "";
     let currentLine = 0;
     let tempUserText = "";
+    let awaitingUser = false;
+    let conversationStarted = false;
+    const transcript = [];
+    const conversationDiv = document.getElementById('conversation');
+
+    // Date auto-fill
+    document.getElementById("sessionDate").textContent = new Date().toLocaleDateString();
 
     // --- Lemonfox via backend proxy ---
     async function speakWithLemonfox(text) {
-      const studentName = document.getElementById('studentName').value || 'Andy';
-      const finalText = text.replace(/{student}/g, studentName);
       const voice = document.getElementById('voice-select').value;
       try {
         const response = await fetch(LEMONFOX_PROXY_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: finalText, voice })
+          body: JSON.stringify({ text, voice })
         });
         if (!response.ok) {
           alert("Lemonfox error: " + response.status + " - " + response.statusText);
@@ -89,9 +89,58 @@
         const audioBlob = await response.blob();
         const audioUrl = URL.createObjectURL(audioBlob);
         const audio = new Audio(audioUrl);
-        audio.play();
+        await audio.play();
       } catch (e) {
         alert("Lemonfox error: " + e);
+      }
+    }
+
+    function addMessage(who, text) {
+      const d = document.createElement('div');
+      d.className = `message ${who}`;
+      d.textContent = `${who==='user'?studentName||"You":"Bot"}: ${text}`;
+      conversationDiv.appendChild(d);
+      transcript.push({ who, text });
+      conversationDiv.scrollTop = conversationDiv.scrollHeight;
+    }
+
+    // --- Start conversation after name is entered & start pressed/Enter
+    document.getElementById("startBtn").onclick = startConversation;
+    document.getElementById("studentName").addEventListener("keydown", function(e) {
+      if (e.key === "Enter") startConversation();
+    });
+
+    function startConversation() {
+      if (conversationStarted) return;
+      studentName = document.getElementById("studentName").value.trim();
+      if (!studentName) {
+        alert("Please enter your name.");
+        return;
+      }
+      document.getElementById("startBtn").disabled = true;
+      document.getElementById("studentName").disabled = true;
+      document.getElementById("recordButton").disabled = true;
+      document.getElementById("sendButton").disabled = true;
+      document.getElementById("pdfBtn").disabled = true;
+      conversationDiv.innerHTML = "";
+      transcript.length = 0;
+      currentLine = 0;
+      conversationStarted = true;
+
+      // Bot starts
+      let botFirstLine = botLines[0].replace("Andy", studentName);
+      addMessage('bot', botFirstLine);
+      speakWithLemonfox(botFirstLine).then(() => {
+        showStudentPrompt();
+      });
+    }
+
+    // Show the student prompt (gray line), enable Record
+    function showStudentPrompt() {
+      if (currentLine < scriptLines.length) {
+        addMessage('user', scriptLines[currentLine]);
+        document.getElementById("recordButton").disabled = false;
+        awaitingUser = true;
       }
     }
 
@@ -108,90 +157,61 @@
     }
 
     function submitStudentResponse() {
-      if (!tempUserText) return;
-      // Student speaks: add to transcript
-      addMessage('user', tempUserText);
-
-      // Bot replies with the matching counselor line for this step
-      if (currentLine < botLines.length - 1) {
-        setTimeout(() => {
-          addMessage('bot', botLines[currentLine + 1]);
-          speakWithLemonfox(botLines[currentLine + 1]);
-        }, 900);
-      }
-
-      currentLine++; // <-- Only increment after both have spoken
-
-      // End of conversation check
-      if (currentLine >= scriptLines.length) {
-        document.getElementById("recordButton").disabled = true;
-        document.getElementById("recordButton").style.display = "none";
-        document.getElementById("sendButton").disabled = true;
-        document.getElementById("sendButton").style.display = "none";
-        document.getElementById("studentInput").style.display = "none";
-        addMessage('bot', "Great work! Conversation complete. Download your PDF and upload it to Google Classroom.");
-      }
-
+      if (!tempUserText || !awaitingUser) return;
+      // Save what student actually said
+      transcript.push({ who: "studentResponse", text: tempUserText });
       document.getElementById("studentInput").value = "";
       tempUserText = "";
       document.getElementById("sendButton").disabled = true;
+      document.getElementById("recordButton").disabled = true;
+      awaitingUser = false;
+
+      // Bot speaks next
+      if (currentLine + 1 < botLines.length) {
+        setTimeout(() => {
+          addMessage('bot', botLines[currentLine + 1].replace("Andy", studentName));
+          speakWithLemonfox(botLines[currentLine + 1].replace("Andy", studentName)).then(() => {
+            currentLine++;
+            showStudentPrompt();
+            if (currentLine >= scriptLines.length) {
+              // Enable PDF at end
+              document.getElementById("pdfBtn").disabled = false;
+            }
+          });
+        }, 900);
+      } else {
+        // Conversation finished
+        addMessage('bot', "Great job! Conversation finished.");
+        document.getElementById("pdfBtn").disabled = false;
+      }
     }
 
-    // === DOM HELPERS ===
-    function addMessage(who, text) {
-      const studentName = document.getElementById('studentName').value || 'Andy';
-      const finalText = text.replace(/{student}/g, studentName);
-      const d = document.createElement('div');
-      d.className = `message ${who}`;
-      d.textContent = `${who === 'user' ? 'You' : 'Bot'}: ${finalText}`;
-      conversationDiv.appendChild(d);
-      transcript.push({ who, text: finalText });
-      conversationDiv.scrollTop = conversationDiv.scrollHeight;
-    }
+    document.getElementById("sendButton").onclick = submitStudentResponse;
 
-    // === PDF EXPORT ===
+    // --- PDF EXPORT ---
     function downloadPDF() {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
-      const name = document.getElementById('studentName').value || 'Student';
-      const date = document.getElementById('autoDate').textContent
-                    || new Date().toLocaleDateString();
-      doc.setTextColor(0,0,0);
+      const name = studentName || 'Student';
+      const date = document.getElementById('sessionDate').textContent;
+      doc.setTextColor(0, 0, 0);
       doc.text(`Conversation Transcript\nName: ${name}\nDate: ${date}`, 10, 10);
       let y = 30;
       transcript.forEach(entry => {
-        let lbl = entry.who==='bot'?'Bot'
-                : entry.who==='user'?'You'
-                : entry.who.charAt(0).toUpperCase()+entry.who.slice(1);
-        if (entry.who==='user')       doc.setTextColor(0,150,0);
-        else if (entry.who==='correction') doc.setTextColor(0,0,200);
-        else if (entry.who==='tip')       doc.setTextColor(184,92,0);
-        else                             doc.setTextColor(0,0,0);
-        const lines = doc.splitTextToSize(`${lbl}: ${entry.text}`, 180);
+        let whoLabel = entry.who === 'bot' ? 'Counselor' : entry.who === 'user' ? 'Student (prompt)' : 'Student (spoken)';
+        doc.setTextColor(entry.who === 'bot' ? 11 : 0, entry.who === 'bot' ? 46 : 150, entry.who === 'bot' ? 138 : 0);
+        const lines = doc.splitTextToSize(`${whoLabel}: ${entry.text}`, 180);
         lines.forEach(line => {
           doc.text(line, 10, y);
-          y+=10; if (y>280){ doc.addPage(); y=20; }
+          y += 10;
+          if (y > 280) { doc.addPage(); y = 20; }
         });
       });
-      const fn = `${name.replace(/\s+/g,'_')}_${date.replace(/\//g,'-')}_counselor.pdf`;
-      doc.save(fn);
+      const filename = `${name.replace(/\s+/g, '_')}_${date.replace(/[\/]/g, '-')}_unit1.pdf`;
+      doc.save(filename);
     }
+    document.getElementById("pdfBtn").onclick = downloadPDF;
 
-    // === ENSURE CORRECT CHAT START ===
-    window.onload = () => {
-      // Set automatic date
-      document.getElementById("autoDate").textContent = new Date().toLocaleDateString();
-
-      conversationDiv.innerHTML = "";
-      transcript.length = 0;
-      currentLine = 0;
-      tempUserText = "";
-      // Bot starts the conversation
-      addMessage('bot', botLines[0]);
-      speakWithLemonfox(botLines[0]);
-      document.getElementById("studentInput").value = "";
-      document.getElementById("sendButton").disabled = true;
-    };
   </script>
 
   <!-- Script sample at the bottom for reference -->
@@ -226,7 +246,6 @@
       </div>
       <div style="clear: both;"></div>
     </div>
-
     <div style="text-align: right; margin-top: 10px;">
       <button onclick="toggleChat()" style="background-color: #f8f9fa; color: #333; border: 1px solid #ccc; padding: 5px 10px; font-size: 12px; cursor: pointer; border-radius: 5px;">
         show | hide script
@@ -238,5 +257,7 @@
         chatContainer.style.display = chatContainer.style.display === "none" ? "block" : "none";
       }
     </script>
+</div>
+
 </body>
 </html>
