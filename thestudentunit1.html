@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>ESL Roleplay – Unit1 (you are the studen)</title>
+  <title>ESL ChatBot – The Counselor (student reads the gray parts)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: Arial; padding: 20px; background: #f2f2f2; }
@@ -10,203 +10,220 @@
     .message { margin: 10px 0; }
     .user { color: green; }
     .bot { color: blue; }
+    .correction, .tip { color: #b85c00; font-size: 0.98em; margin-left: 10px; }
     input, button { padding: 10px; margin: 5px; }
     input[readonly] { background-color: #eee; }
     #studentInput { width: 90%; padding: 8px; }
-    #pdfBtn:disabled { opacity: 0.5; }
   </style>
 </head>
 <body>
   <div id="chat">
-    <h2>💼ESL Roleplay – Unit1 (you are the studen)</h2>
-    <label>Student Name: <input id="studentName" type="text" /></label>
-    <label>Date: <input id="sessionDate" type="date" /></label>
+    <h2>💬 ESL ChatBot – The Counselor (Student reads the gray parts)</h2>
+    <label>Student Name: <input id="studentName" type="text" /></label><br>
+    <div>
+      <b>Date:</b> <span id="autoDate"></span>
+    </div>
+    <label for="voice-select"><b>Voice:</b></label>
+    <select id="voice-select">
+      <option value="adam">Adam</option>
+      <option value="sarah">Sarah</option>
+      <option value="emily">Emily</option>
+      <option value="james">James</option>
+      <option value="jenny">Jenny</option>
+      <option value="nicole">Nicole</option>
+      <option value="santa">Santa</option>
+    </select>
+    <div style="margin: 12px 0; color: #007aff; background: #e6e6ff; border-radius: 6px; padding: 8px; max-width: 600px;">
+      <b>Instructions:</b> You are the <b>student</b> (read the <span style="color: #007aff;">gray</span> part aloud each turn). The ChatBot will play the <b>counselor</b>.
+    </div>
     <div id="conversation"></div>
-    <button onclick="startRoleplay()" id="startBtn">▶️ Start Roleplay</button>
-    <button onclick="startRecording()" id="recordButton" style="display:none;">🎙️ Record</button>
-    <button onclick="submitStudentResponse()" id="sendButton" style="display:none;" disabled>📨 Send</button>
-    <input type="text" id="studentInput" readonly style="width: 90%; padding: 8px; display:none;" />
+    <button onclick="startRecording()" id="recordButton">🎙️ Record</button>
+    <button onclick="submitStudentResponse()" id="sendButton" disabled>📨 Send</button>
+    <input type="text" id="studentInput" readonly />
     <button onclick="downloadPDF()" id="pdfBtn" style="display:none;">⬇️ Download PDF</button>
   </div>
-
   <script>
     // === CONFIG: Set your backend URL here ===
     const BASE_URL = "https://chattybot-backend.onrender.com";
     const LEMONFOX_PROXY_URL = `${BASE_URL}/api/lemonfox-tts`;
-    const LEMONFOX_VOICE_BOT = "adam"; // for the bot (A)
 
-    // Script: alternate bot/student lines
+    // === SCRIPT DATA ===
+    // Counselor (Bot/B) lines – blue
+    const botLines = [
+      "So, Andy, what brings you here today?",
+      "Hotel management. Correct me if I'm wrong, but weren't you studying marine biology?",
+      "OK. So how can I help?",
+      "Give me a day or two to look into it. I'll get back to you before the end of the week.",
+      "My pleasure. And I'd be more than happy to write you a recommendation if you decide to apply."
+    ];
+    // Student (A) lines – gray/left
     const scriptLines = [
-      { who: "bot", text: "So, Andy, what brings you here today?" },
-      { who: "user", text: "" },
-      { who: "bot", text: "Hotel management. Correct me if I'm wrong, but weren't you studying marine biology?" },
-      { who: "user", text: "" },
-      { who: "bot", text: "OK. So how can I help?" },
-      { who: "user", text: "" },
-      { who: "bot", text: "Give me a day or two to look into it. I'll get back to you before the end of the week." },
-      { who: "user", text: "" },
-      { who: "bot", text: "My pleasure. And I'd be more than happy to write you a recommendation if you decide to apply." }
+      "I'd like some advice. I've been considering taking up hotel management.",
+      "I was. But I've given it some thought, and I've decided I'm not cut out for science.",
+      "Well, I'd like to enroll in a good program. I was hoping you could steer me in the right direction.",
+      "That's great.",
+      "Thank you!"
     ];
 
-    let transcript = [];
+    // === STATE ===
+    const transcript = [];
+    const conversationDiv = document.getElementById('conversation');
     let currentLine = 0;
     let tempUserText = "";
-    const conversationDiv = document.getElementById('conversation');
 
-    function addMessage(who, text) {
-      const div = document.createElement('div');
-      div.className = `message ${who}`;
-      div.textContent = `${who === 'user' ? 'You' : 'Bot'}: ${text}`;
-      conversationDiv.appendChild(div);
-      conversationDiv.scrollTop = conversationDiv.scrollHeight;
-      transcript.push({ who, text });
-    }
-
-    // === Lemonfox via backend proxy ===
+    // --- Lemonfox via backend proxy ---
     async function speakWithLemonfox(text) {
+      const voice = document.getElementById('voice-select').value;
       try {
         const response = await fetch(LEMONFOX_PROXY_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text, voice: LEMONFOX_VOICE_BOT })
+          body: JSON.stringify({ text, voice })
         });
-        if (!response.ok) throw new Error("TTS error");
+        if (!response.ok) {
+          alert("Lemonfox error: " + response.status + " - " + response.statusText);
+          return;
+        }
         const audioBlob = await response.blob();
         const audioUrl = URL.createObjectURL(audioBlob);
         const audio = new Audio(audioUrl);
         audio.play();
       } catch (e) {
-        alert("Lemonfox TTS failed. Please check your backend or try again.");
+        alert("Lemonfox error: " + e);
       }
     }
 
-    function startRoleplay() {
-      document.getElementById("startBtn").style.display = "none";
-      conversationDiv.innerHTML = "";
-      transcript = [];
-      currentLine = 0;
-      addMessage("bot", scriptLines[0].text);
-      speakWithLemonfox(scriptLines[0].text);
-      document.getElementById("recordButton").style.display = "";
-      document.getElementById("studentInput").style.display = "";
-      document.getElementById("sendButton").style.display = "";
-      document.getElementById("pdfBtn").style.display = "none";
-      setTimeout(() => { 
-        document.getElementById("recordButton").disabled = false; 
-        document.getElementById("sendButton").disabled = true; 
-        document.getElementById("studentInput").value = ""; 
-      }, 1600);
-    }
-
     function startRecording() {
-      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-      recognition.lang = 'en-US';
-      recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
-      recognition.start();
-      recognition.onresult = function(event) {
-        tempUserText = event.results[0][0].transcript;
+      const recog = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recog.lang = 'en-US'; recog.interimResults = false; recog.maxAlternatives = 1;
+      recog.start();
+      recog.onresult = e => {
+        tempUserText = e.results[0][0].transcript;
         document.getElementById("studentInput").value = tempUserText;
         document.getElementById("sendButton").disabled = false;
       };
-      recognition.onerror = function(event) {
-        alert("Speech recognition error: " + event.error);
-      };
+      recog.onerror = e => alert("Speech recognition error: " + e.error);
     }
 
     function submitStudentResponse() {
       if (!tempUserText) return;
-      scriptLines[currentLine+1].text = tempUserText; // Save to script for transcript
-      addMessage("user", tempUserText);
-      currentLine += 2;
-      tempUserText = "";
-      document.getElementById("studentInput").value = "";
-      document.getElementById("sendButton").disabled = true;
+      // Student speaks: add to transcript
+      addMessage('user', tempUserText);
 
-      if (currentLine < scriptLines.length) {
-        // Bot's turn again
-        addMessage("bot", scriptLines[currentLine].text);
-        speakWithLemonfox(scriptLines[currentLine].text);
+      // Bot replies with the matching counselor line for this step
+      if (currentLine < botLines.length - 1) {
         setTimeout(() => {
-          document.getElementById("recordButton").disabled = false;
-        }, 1600);
-      } else {
-        // Conversation finished: Disable input, enable PDF download
+          addMessage('bot', botLines[currentLine + 1]);
+          speakWithLemonfox(botLines[currentLine + 1]);
+        }, 900);
+      }
+
+      currentLine++; // <-- Only increment after both have spoken
+
+      // End of conversation check
+      if (currentLine >= scriptLines.length) {
         document.getElementById("recordButton").disabled = true;
         document.getElementById("recordButton").style.display = "none";
         document.getElementById("sendButton").disabled = true;
         document.getElementById("sendButton").style.display = "none";
         document.getElementById("studentInput").style.display = "none";
-        addMessage("bot", "Great work! Conversation complete.");
         document.getElementById("pdfBtn").style.display = "";
-
+        addMessage('bot', "Great work! Conversation complete. Download your PDF and upload it to Google Classroom.");
       }
+
+      document.getElementById("studentInput").value = "";
+      tempUserText = "";
+      document.getElementById("sendButton").disabled = true;
     }
 
+    // === DOM HELPERS ===
+    function addMessage(who, text) {
+      const d = document.createElement('div');
+      d.className = `message ${who}`;
+      d.textContent = `${who === 'user' ? 'You' : 'Bot'}: ${text}`;
+      conversationDiv.appendChild(d);
+      transcript.push({ who, text });
+      conversationDiv.scrollTop = conversationDiv.scrollHeight;
+    }
+
+    // === PDF EXPORT ===
     function downloadPDF() {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
       const name = document.getElementById('studentName').value || 'Student';
-      const date = document.getElementById('sessionDate').value || new Date().toLocaleDateString();
-      doc.setTextColor(0, 0, 0);
+      const date = document.getElementById('autoDate').textContent
+                    || new Date().toLocaleDateString();
+      doc.setTextColor(0,0,0);
       doc.text(`Conversation Transcript\nName: ${name}\nDate: ${date}`, 10, 10);
       let y = 30;
       transcript.forEach(entry => {
-        if (entry.who === 'user') {
-          doc.setTextColor(0, 150, 0);
-        } else if (entry.who === 'bot') {
-          doc.setTextColor(11, 46, 138);
-        } else {
-          doc.setTextColor(0, 0, 0);
-        }
-        const label = entry.who === 'bot' ? 'Bot' : 'Student';
-        const lines = doc.splitTextToSize(`${label}: ${entry.text}`, 180);
+        let lbl = entry.who==='bot'?'Bot'
+                : entry.who==='user'?'You'
+                : entry.who.charAt(0).toUpperCase()+entry.who.slice(1);
+        if (entry.who==='user')       doc.setTextColor(0,150,0);
+        else if (entry.who==='correction') doc.setTextColor(0,0,200);
+        else if (entry.who==='tip')       doc.setTextColor(184,92,0);
+        else                             doc.setTextColor(0,0,0);
+        const lines = doc.splitTextToSize(`${lbl}: ${entry.text}`, 180);
         lines.forEach(line => {
           doc.text(line, 10, y);
-          y += 10;
-          if (y > 280) {
-            doc.addPage();
-            y = 20;
-          }
+          y+=10; if (y>280){ doc.addPage(); y=20; }
         });
       });
-      const filename = `${name.replace(/\s+/g, '_')}_${date.replace(/[\/]/g, '-')}_hotel_roleplay.pdf`;
-      doc.save(filename);
+      const fn = `${name.replace(/\s+/g,'_')}_${date.replace(/\//g,'-')}_counselor.pdf`;
+      doc.save(fn);
     }
+
+    // === ENSURE CORRECT CHAT START ===
+    window.onload = () => {
+      // Set automatic date
+      document.getElementById("autoDate").textContent = new Date().toLocaleDateString();
+
+      conversationDiv.innerHTML = "";
+      transcript.length = 0;
+      currentLine = 0;
+      tempUserText = "";
+      // Bot starts the conversation
+      addMessage('bot', botLines[0]);
+      speakWithLemonfox(botLines[0]);
+      document.getElementById("studentInput").value = "";
+      document.getElementById("sendButton").disabled = true;
+    };
   </script>
 
   <!-- Script sample at the bottom for reference -->
   <div style="background-color: #f5f5f7; padding: 0 20px 20px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; font-size: 16px;">
     <div id="chatContainer" style="width: 500px; margin: auto; background-color: #f8f8f8; border: 1px solid #ccc; border-radius: 20px; padding: 10px;">
-      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
         So, Andy, what brings you here today?
       </div>
-      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
+      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
         I'd like some advice. I've been considering taking up hotel management.
       </div>
-      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
         Hotel management. Correct me if I'm wrong, but weren't you studying marine biology?
       </div>
-      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
+      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
         I was. But I've given it some thought, and I've decided I'm not cut out for science.
       </div>
-      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
         OK. So how can I help?
       </div>
-      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
+      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
         Well, I'd like to enroll in a good program. I was hoping you could steer me in the right direction.
       </div>
-      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
         Give me a day or two to look into it. I'll get back to you before the end of the week.
       </div>
-      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
+      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
         That's great.
       </div>
-      <div style="max-width: 70%; background-color: #e6e6e6; color: #000; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: left; clear: both;">
+      <div style="max-width: 70%; background-color: #007aff; color: #fff; padding: 10px; margin-bottom: 10px; border-radius: 15px; float: right; clear: both;">
         My pleasure. And I'd be more than happy to write you a recommendation if you decide to apply.
       </div>
       <div style="clear: both;"></div>
     </div>
+
     <div style="text-align: right; margin-top: 10px;">
       <button onclick="toggleChat()" style="background-color: #f8f9fa; color: #333; border: 1px solid #ccc; padding: 5px 10px; font-size: 12px; cursor: pointer; border-radius: 5px;">
         show | hide script
@@ -218,6 +235,5 @@
         chatContainer.style.display = chatContainer.style.display === "none" ? "block" : "none";
       }
     </script>
-  </div>
 </body>
 </html>
