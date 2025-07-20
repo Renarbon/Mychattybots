@@ -54,7 +54,7 @@ const botLines = [
   "I was. But I've given it some thought, and I've decided I'm not cut out for science.",
   "Well, I'd like to enroll in a good program. I was hoping you could steer me in the right direction.",
   "That's great.",
-  "great!,"
+  "Great!. Now, download the pdf and upload it to google classroom."
 ];
 
 // Student (A) lines – gray/left
@@ -121,7 +121,19 @@ const scriptLines = [
 
       currentLine++; // <-- Only increment after both have spoken
 
-     
+    // End of conversation check
+      if (currentLine >= scriptLines.length) {
+        setTimeout(() => {
+          addMessage('bot', "Great!. Now, download the pdf and upload it to google classroom.");
+          
+        }, 1200);
+      }
+
+      document.getElementById("studentInput").value = "";
+      tempUserText = "";
+      document.getElementById("sendButton").disabled = true;
+    }
+ 
     // === DOM HELPERS ===
     function addMessage(who, text) {
       const d = document.createElement('div');
