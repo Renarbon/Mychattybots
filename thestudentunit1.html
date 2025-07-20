@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>ESL ChatBot – The Counselor (student reads the gray parts)</title>
+  <title>ESL ChatBot – The Counselor (Student reads the gray parts)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: Arial; padding: 20px; background: #f2f2f2; }
@@ -40,7 +40,7 @@
     <button onclick="startRecording()" id="recordButton">🎙️ Record</button>
     <button onclick="submitStudentResponse()" id="sendButton" disabled>📨 Send</button>
     <input type="text" id="studentInput" readonly />
-    <button onclick="downloadPDF()" id="pdfBtn" style="display:none;">⬇️ Download PDF</button>
+    <button onclick="downloadPDF()" id="pdfBtn">⬇️ Download PDF</button>
   </div>
   <script>
     // === CONFIG: Set your backend URL here ===
@@ -50,7 +50,7 @@
     // === SCRIPT DATA ===
     // Counselor (Bot/B) lines – blue
     const botLines = [
-      "So, Andy, what brings you here today?",
+      "So, {student}, what brings you here today?",
       "Hotel management. Correct me if I'm wrong, but weren't you studying marine biology?",
       "OK. So how can I help?",
       "Give me a day or two to look into it. I'll get back to you before the end of the week.",
@@ -73,12 +73,14 @@
 
     // --- Lemonfox via backend proxy ---
     async function speakWithLemonfox(text) {
+      const studentName = document.getElementById('studentName').value || 'Andy';
+      const finalText = text.replace(/{student}/g, studentName);
       const voice = document.getElementById('voice-select').value;
       try {
         const response = await fetch(LEMONFOX_PROXY_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text, voice })
+          body: JSON.stringify({ text: finalText, voice })
         });
         if (!response.ok) {
           alert("Lemonfox error: " + response.status + " - " + response.statusText);
@@ -127,7 +129,6 @@
         document.getElementById("sendButton").disabled = true;
         document.getElementById("sendButton").style.display = "none";
         document.getElementById("studentInput").style.display = "none";
-        document.getElementById("pdfBtn").style.display = "";
         addMessage('bot', "Great work! Conversation complete. Download your PDF and upload it to Google Classroom.");
       }
 
@@ -138,11 +139,13 @@
 
     // === DOM HELPERS ===
     function addMessage(who, text) {
+      const studentName = document.getElementById('studentName').value || 'Andy';
+      const finalText = text.replace(/{student}/g, studentName);
       const d = document.createElement('div');
       d.className = `message ${who}`;
-      d.textContent = `${who === 'user' ? 'You' : 'Bot'}: ${text}`;
+      d.textContent = `${who === 'user' ? 'You' : 'Bot'}: ${finalText}`;
       conversationDiv.appendChild(d);
-      transcript.push({ who, text });
+      transcript.push({ who, text: finalText });
       conversationDiv.scrollTop = conversationDiv.scrollHeight;
     }
 
