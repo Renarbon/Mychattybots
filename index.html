@@ -1,51 +1,191 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Welcome – ESL ChattyBot by Mr. Rene Arbon</title>
   <style>
+    /* Base Reset */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: Arial, sans-serif;
-      background: #f0f4f8;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f7;
+      color: #1d1d1f;
+      line-height: 1.6;
     }
-    h1 {
-      color: #333;
+    header {
+      background: #ffffff;
+      padding: 60px 20px;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 40px;
     }
-    a.button {
+    header h1 {
+      font-size: 2.5rem;
+      margin-bottom: 8px;
+    }
+    header p {
+      color: #6e6e73;
+      font-size: 1rem;
+    }
+    main {
+      max-width: 1200px;
+      margin: 0 auto 60px;
+      padding: 0 20px;
+    }
+    section + section {
+      margin-top: 40px;
+    }
+    section h2 {
+      font-size: 1.75rem;
+      margin-bottom: 16px;
+      color: #1d1d1f;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      background: #ffffff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      text-align: center;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    }
+    .card img {
+      width: 100%;
+      height: 140px;
+      object-fit: cover;
+    }
+    .card h3 {
+      font-size: 1.1rem;
+      margin: 16px 12px 8px;
+      color: #1d1d1f;
+    }
+    .card a {
       display: inline-block;
-      padding: 15px 30px;
-      background-color: #007bff;
-      color: white;
-      font-size: 18px;
+      margin: 0 0 16px;
+      padding: 8px 20px;
+      background: #007aff;
+      color: #ffffff;
       border-radius: 8px;
       text-decoration: none;
-      margin-top: 20px;
-      transition: background-color 0.3s ease;
+      font-weight: 500;
+      transition: background 0.3s ease;
     }
-    a.button:hover {
-      background-color: #0056b3;
+    .card a:hover {
+      background: #005ec2;
+    }
+    @media (max-width: 600px) {
+      header h1 { font-size: 2rem; }
+      section h2 { font-size: 1.5rem; }
     }
   </style>
 </head>
 <body>
-  <h1>🎤 Welcome to the ESL Chattybot (Created by Rene Arbon)</h1>
-  <a class="button" href="thecouncelorunit1.html"> Unit 1 "the councelor"</a>
-  <a class="button" href="thestudentunit1.html">   Unit 1 "the student"</a>
-  <a class="button" href="idiomsquiz.html">  Idioms quiz 1</a>
-  <a class="button" href="idiomsquiz2.html"> Idioms quiz 2</a>
-  <a class="button" href="idiomsquiz3.html"> Idioms quiz 3</a>
-  <a class="button" href="10_Idioms.html">   Idioms quiz 4</a>
-  <a class="button" href="chatbot.html">Open discussion</a>  
-  <a class="button" href="chattybot.html"> Ask for help at the airport</a>  
-  <a class="button" href="yourspeech.html">Practice – Your speech for graduration</a>
-  <a class="button" href="Peterframtom.html">Video-QUiz – The guitar story</a>
-  <a class="button" href="questgen.html">For teacher use only</a>
+  <header>
+    <h1>🎤 Welcome to ESL ChattyBot</h1>
+    <p>Created by Mr. Rene Arbon</p>
+  </header>
+  <main>
+    <!-- Units Section -->
+    <section>
+      <h2>Units</h2>
+      <div class="grid">
+        <div class="card">
+          <img src="https://via.placeholder.com/400x140?text=Counselor+Unit" alt="Unit 1: The Counselor" />
+          <h3>Unit 1: The Counselor</h3>
+          <a href="thecouncelorunit1.html">Open</a>
+        </div>
+        <div class="card">
+          <img src="https://via.placeholder.com/400x140?text=Student+Unit" alt="Unit 1: The Student" />
+          <h3>Unit 1: The Student</h3>
+          <a href="thestudentunit1.html">Open</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quizzes Section -->
+    <section>
+      <h2>Idioms Quizzes</h2>
+      <div class="grid">
+        <div class="card">
+          <img src="https://via.placeholder.com/400x140?text=Idioms+Quiz+1" alt="Idioms Quiz 1" />
+          <h3>Idioms Quiz 1</h3>
+          <a href="idiomsquiz.html">Open</a>
+        </div>
+        <div class="card">
+          <img src="https://via.placeholder.com/400x140?text=Idioms+Quiz+2" alt="Idioms Quiz 2" />
+          <h3>Idioms Quiz 2</h3>
+          <a href="idiomsquiz2.html">Open</a>
+        </div>
+        <div class="card">
+          <img src="https://via.placeholder.com/400x140?text=Idioms+Quiz+3" alt="Idioms Quiz 3" />
+          <h3>Idioms Quiz 3</h3>
+          <a href="idiomsquiz3.html">Open</a>
+        </div>
+        <div class="card">
+          <img src="https://via.placeholder.com/400x140?text=Idioms+Quiz+4" alt="Idioms Quiz 4" />
+          <h3>Idioms Quiz 4</h3>
+          <a href="10_Idioms.html">Open</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Chatbots & Exercises -->
+    <section>
+      <h2>Chatbots & Exercises</h2>
+      <div class="grid">
+        <div class="card">
+          <img src="https://via.placeholder.com/400x140?text=Open+Discussion" alt="Open Discussion" />
+          <h3>Open Discussion</h3>
+          <a href="chatbot.html">Start</a>
+        </div>
+        <div class="card">
+          <img src="https://via.placeholder.com/400x140?text=Airport+Help" alt="Airport Help" />
+          <h3>Help at the Airport</h3>
+          <a href="chattybot.html">Start</a>
+        </div>
+        <div class="card">
+          <img src="https://via.placeholder.com/400x140?text=Graduation+Speech" alt="Practice Your Speech" />
+          <h3>Practice Your Speech</h3>
+          <a href="yourspeech.html">Start</a>
+        </div>
+        <div class="card">
+          <img src="https://via.placeholder.com/400x140?text=Guitar+Story" alt="Video Quiz: The Guitar Story" />
+          <h3>Video Quiz: The Guitar Story</h3>
+          <a href="Peterframtom.html">Start</a>
+        </div>
+        <div class="card">
+          <img src="https://via.placeholder.com/400x140?text=Fast+Food+Customer" alt="Fast Food Customer" />
+          <h3>Fast Food: Customer</h3>
+          <a href="chattybot_fastfood_strict.html">Start</a>
+        </div>
+        <div class="card">
+          <img src="https://via.placeholder.com/400x140?text=Fast+Food+Cashier" alt="Fast Food Cashier" />
+          <h3>Fast Food: Cashier</h3>
+          <a href="chattybot_fastfood_reversed_strict.html">Start</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Teacher Tools -->
+    <section>
+      <h2>Teacher Tools</h2>
+      <div class="grid">
+        <div class="card">
+          <img src="https://via.placeholder.com/400x140?text=Teacher+Only+Tools" alt="For Teacher Use Only" />
+          <h3>For Teacher Use Only</h3>
+          <a href="questgen.html">Access</a>
+        </div>
+      </div>
+    </section>
+  </main>
 </body>
-</html><a class="button" href="chattybot_fastfood_strict.html">🍔 Practice – Fast Food Restaurant Customer</a>
-<a class="button" href="chattybot_fastfood_reversed_strict.html">🍔 Practice – Fast Food Restaurant Cashier</a>
+</html>
