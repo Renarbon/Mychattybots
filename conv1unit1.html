@@ -121,19 +121,7 @@ const scriptLines = [
 
       currentLine++; // <-- Only increment after both have spoken
 
-     // End of conversation check
-      if (currentLine >= scriptLines.length) {
-        setTimeout(() => {
-          addMessage('bot', "Great!. Now download the pdf now and upload it to google classroom.");
-          speakWithLemonfox("Great!. Now download the pdf now and upload it to google classroom.");
-        }, 1200);
-      }
-
-      document.getElementById("studentInput").value = "";
-      tempUserText = "";
-      document.getElementById("sendButton").disabled = true;
-    }
-
+     
     // === DOM HELPERS ===
     function addMessage(who, text) {
       const d = document.createElement('div');
