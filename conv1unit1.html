@@ -32,8 +32,8 @@
       <option value="santa">Santa</option>
     </select>
     <div style="margin: 12px 0; color: #007aff; background: #e6e6ff; border-radius: 6px; padding: 8px; max-width: 600px;">
-      <b>Instructions:</b> You are the cashier. Please read the <span style="color: #007aff;">green</span>
-      part aloud each turn. ChattyBot will play the customer.
+      <b>Instructions:</b> You are the student counselor read the <span style="color: #007aff;">gray</span>
+      part aloud each turn. The ChatBot you pick will play the student.
     </div>
     <div id="conversation"></div>
     <button onclick="startRecording()" id="recordButton">🎙️ Record</button>
@@ -123,8 +123,8 @@ const scriptLines = [
      // End of conversation check
       if (currentLine >= scriptLines.length) {
         setTimeout(() => {
-          addMessage('bot', "bye! See you next time.");
-          speakWithLemonfox("bye! See you next time.");
+          addMessage('bot', "Great! Download the pdf now and upload it to google classroom.");
+          speakWithLemonfox("Great! Download the pdf now and upload it to google classroom.");
         }, 1200);
       }
 
