@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>ESL ChattyBot – The Counselor (Student Role)</title>
+  <title>ESL ChattyBot – The Career Advisor (Student Role)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: Arial; padding: 20px; background: #f2f2f2; }
@@ -18,7 +18,7 @@
 </head>
 <body>
   <div id="chat">
-    <h2>🧑‍🎓 ESL ChattyBot – The Counselor (Student reads gray parts)</h2>
+    <h2>🧑‍🎓 ESL ChattyBot – The Career Advisor (Student reads the green lines)</h2>
     <label>Student Name: <input id="studentName" type="text" autocomplete="off" /></label>
     <button id="startBtn">Start</button>
     <span style="margin-left:15px; font-size:0.98em;">Date: <span id="sessionDate"></span></span>
@@ -34,7 +34,7 @@
     <option value="santa">Santa</option>
     </select>
     <div style="margin: 12px 0; color: #007aff; background: #e6e6ff; border-radius: 6px; padding: 8px; max-width: 600px;">
-      <b>Instructions:</b> You are the <b>student</b> (read the green part aloud each turn). The ChatBot will play the <b>career advisor</b>.
+      <b>Instructions:</b> You are the <b>student</b> (read the green parts aloud each turn). The ChatBot will play the <b>career advisor</b>.
     </div>
     <div id="conversation"></div>
     <button onclick="startRecording()" id="recordButton" disabled>🎙️ Record</button>
