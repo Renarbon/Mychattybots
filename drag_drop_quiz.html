@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drag-and-Drop Phrase Quiz</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        .phrase-box {
+            padding: 8px;
+            margin: 5px;
+            background-color: #007BFF;
+            color: white;
+            display: inline-block;
+            border-radius: 4px;
+            cursor: move;
+        }
+        .drop-target {
+            border-bottom: 2px dashed #aaa;
+            display: inline-block;
+            min-width: 150px;
+            min-height: 24px;
+        }
+        .question {
+            margin-bottom: 20px;
+        }
+        .correct {
+            border-bottom: 2px solid green;
+        }
+        .wrong {
+            border-bottom: 2px solid red;
+        }
+        button {
+            padding: 10px;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Drag-and-Drop Phrase Quiz</h2>
+<div id="phrases">
+    <span class="phrase-box" draggable="true">a snitch</span>
+    <span class="phrase-box" draggable="true">got carried away</span>
+    <span class="phrase-box" draggable="true">it serves him right</span>
+    <span class="phrase-box" draggable="true">make things right</span>
+    <span class="phrase-box" draggable="true">own up to</span>
+    <span class="phrase-box" draggable="true">tell on me</span>
+    <span class="phrase-box" draggable="true">that's not the worst of it</span>
+    <span class="phrase-box" draggable="true">things got out of hand</span>
+</div>
+
+<div class="quiz">
+    <div class="question">
+        <b>1.</b> A: I'm in trouble. I just broke mom's favorite vase. Please don't <span class="drop-target" data-answer="tell on me"></span>, OK?<br>
+        B: Don't worry. Your secret is safe with me. I'm not <span class="drop-target" data-answer="a snitch"></span>!
+    </div>
+    <div class="question">
+        <b>2.</b> A: Oh, no! I messed up big time. I forgot to hand in my final assignment.<br>
+        B: Well, can you email the professor and ask if you can hand it in today?<br>
+        A: But <span class="drop-target" data-answer="that's not the worst of it"></span>. I haven't even started the assignment!
+    </div>
+    <div class="question">
+        <b>3.</b> A: Who ate all the cake? Billy?<br>
+        B: I'm sorry, Mom. I <span class="drop-target" data-answer="got carried away"></span>. It was so good!<br>
+    </div>
+    <div class="question">
+        <b>4.</b> A: Brenda, I'm so sorry I forgot your birthday!<br>
+        B: Oh Amy, that's OK.<br>
+        A: Still, let me <span class="drop-target" data-answer="make things right"></span>. Can I buy you dinner this week?<br>
+        B: Well, you certainly don't need to, but yes, I'd enjoy that.
+    </div>
+</div>
+
+<button onclick="checkAnswers()">Check Answers</button>
+
+<script>
+    const phrases = document.querySelectorAll('.phrase-box');
+    let dragged = null;
+
+    phrases.forEach(box => {
+        box.addEventListener('dragstart', (e) => {
+            dragged = e.target;
+        });
+    });
+
+    const targets = document.querySelectorAll('.drop-target');
+
+    targets.forEach(target => {
+        target.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+
+        target.addEventListener('drop', (e) => {
+            e.preventDefault();
+            if (dragged) {
+                if (target.firstChild) {
+                    document.getElementById('phrases').appendChild(target.firstChild);
+                }
+                target.textContent = dragged.textContent;
+                dragged.parentNode.removeChild(dragged);
+                dragged = null;
+            }
+        });
+    });
+
+    function checkAnswers() {
+        targets.forEach(target => {
+            if (target.textContent.trim() === target.dataset.answer) {
+                target.classList.add('correct');
+                target.classList.remove('wrong');
+            } else {
+                target.classList.add('wrong');
+                target.classList.remove('correct');
+            }
+        });
+    }
+</script>
+
+</body>
+</html>
