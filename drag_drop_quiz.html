@@ -38,11 +38,25 @@
             padding: 10px;
             margin-top: 15px;
         }
+        form {
+            margin-top: 30px;
+        }
     </style>
 </head>
 <body>
 
 <h2>Drag-and-Drop Phrase Quiz</h2>
+<p>Please enter your name and email before submitting:</p>
+<form name="drag-quiz" method="POST" data-netlify="true">
+    <input type="hidden" name="form-name" value="drag-quiz">
+    <label for="student">Name:</label>
+    <input type="text" id="student" name="student" required><br><br>
+    <label for="email">Email:</label>
+    <input type="email" id="email" name="email" required><br><br>
+    <input type="hidden" name="score" id="scoreInput">
+    <button type="button" onclick="checkAnswers()">Check Answers and Submit</button>
+</form>
+
 <div id="phrases">
     <span class="phrase-box" draggable="true">a snitch</span>
     <span class="phrase-box" draggable="true">got carried away</span>
@@ -76,8 +90,6 @@
     </div>
 </div>
 
-<button onclick="checkAnswers()">Check Answers</button>
-
 <script>
     const phrases = document.querySelectorAll('.phrase-box');
     let dragged = null;
@@ -109,15 +121,24 @@
     });
 
     function checkAnswers() {
+        let score = 0;
         targets.forEach(target => {
             if (target.textContent.trim() === target.dataset.answer) {
                 target.classList.add('correct');
                 target.classList.remove('wrong');
+                score++;
             } else {
                 target.classList.add('wrong');
                 target.classList.remove('correct');
             }
         });
+
+        document.getElementById('scoreInput').value = score + "/" + targets.length;
+
+        // Submit form automatically
+        setTimeout(() => {
+            document.forms["drag-quiz"].submit();
+        }, 1000);
     }
 </script>
 
