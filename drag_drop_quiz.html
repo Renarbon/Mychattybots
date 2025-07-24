@@ -20,19 +20,25 @@
             cursor: move;
         }
         .drop-target {
-            border-bottom: 2px dashed #aaa;
+            border: 2px dashed #aaa;
             display: inline-block;
             min-width: 150px;
             min-height: 24px;
+            vertical-align: middle;
+            padding: 5px;
+            border-radius: 4px;
+            background-color: #fff;
         }
         .question {
             margin-bottom: 20px;
         }
         .correct {
-            border-bottom: 2px solid green;
+            border: 2px solid green;
+            background-color: #e0ffe0;
         }
         .wrong {
-            border-bottom: 2px solid red;
+            border: 2px solid red;
+            background-color: #ffe0e0;
         }
         button {
             padding: 10px;
@@ -41,19 +47,21 @@
         form {
             margin-top: 30px;
         }
+        textarea {
+            display: none;
+        }
     </style>
 </head>
 <body>
 
 <h2>Drag-and-Drop Phrase Quiz</h2>
-<p>Please enter your name and email before submitting:</p>
+<p>Please enter your name before submitting:</p>
 <form name="drag-quiz" method="POST" data-netlify="true">
     <input type="hidden" name="form-name" value="drag-quiz">
     <label for="student">Name:</label>
     <input type="text" id="student" name="student" required><br><br>
-    <label for="email">Email:</label>
-    <input type="email" id="email" name="email" required><br><br>
     <input type="hidden" name="score" id="scoreInput">
+    <textarea name="answers" id="answers"></textarea>
     <button type="button" onclick="checkAnswers()">Check Answers and Submit</button>
 </form>
 
@@ -113,7 +121,12 @@
                 if (target.firstChild) {
                     document.getElementById('phrases').appendChild(target.firstChild);
                 }
-                target.textContent = dragged.textContent;
+                const newBox = document.createElement('span');
+                newBox.className = 'phrase-box';
+                newBox.textContent = dragged.textContent;
+                newBox.setAttribute('draggable', 'true');
+                target.textContent = '';
+                target.appendChild(newBox);
                 dragged.parentNode.removeChild(dragged);
                 dragged = null;
             }
@@ -122,8 +135,12 @@
 
     function checkAnswers() {
         let score = 0;
-        targets.forEach(target => {
-            if (target.textContent.trim() === target.dataset.answer) {
+        let answersList = [];
+
+        targets.forEach((target, index) => {
+            const answer = target.dataset.answer;
+            const content = target.textContent.trim();
+            if (content === answer) {
                 target.classList.add('correct');
                 target.classList.remove('wrong');
                 score++;
@@ -131,9 +148,12 @@
                 target.classList.add('wrong');
                 target.classList.remove('correct');
             }
+            answersList.push(`Q${index + 1}: "${content}" (Correct: "${answer}")`);
         });
 
-        document.getElementById('scoreInput').value = score + "/" + targets.length;
+        const percentage = Math.round((score / targets.length) * 100);
+        document.getElementById('scoreInput').value = percentage + "%";
+        document.getElementById('answers').value = answersList.join('\n');
 
         // Submit form automatically
         setTimeout(() => {
