@@ -202,7 +202,7 @@
       doc.text(`Conversation Transcript\nA: ${name}\nB: ${botName}\nDate: ${date}`, 10, 10);
       let y = 35;
       transcript.forEach(entry => {
-        let whoLabel = entry.who === 'bot' ? botName : entry.who === 'user' ? name : 'Counselor (spoken)';
+        let whoLabel = entry.who === 'bot' ? botName : entry.who === 'user' ? name : 'A';
         doc.setTextColor(entry.who === 'bot' ? 0 : 11, entry.who === 'bot' ? 150 : 46, entry.who === 'bot' ? 0 : 138);
         const lines = doc.splitTextToSize(`${whoLabel}: ${entry.text}`, 180);
         lines.forEach(line => {
