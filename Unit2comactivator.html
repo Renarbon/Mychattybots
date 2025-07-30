@@ -56,7 +56,7 @@
     ];
     // User (counselor) lines – gray
     const scriptLines = [
-     "	I'm really sorry, but I have some bad news.",
+     "I'm really sorry, but I have some bad news.",
       "I'm afraid I just backed into your car while I was parking mine. It was totally my fault.",
       "Pretty bad. It's going to be expensive to fix. I'm so embarrassed.",
       "Well, I insist on paying for it. And please accept my apology. I feel awful about it."
@@ -101,7 +101,7 @@
       const d = document.createElement('div');
       d.className = `message ${who}`;
       // who=='user' = counselor; who=='bot' = student
-      let label = who === 'user' ? userName || "Counselor" : botName || "Student";
+      let label = who === 'user' ? userName || "A" : botName || "B";
       d.textContent = `${label}: ${text}`;
       conversationDiv.appendChild(d);
       transcript.push({ who, text });
@@ -199,7 +199,7 @@
       const name = userName || 'A';
       const date = document.getElementById('sessionDate').textContent;
       doc.setTextColor(0, 0, 0);
-      doc.text(`Conversation Transcript\nCounselor: ${name}\nStudent: ${botName}\nDate: ${date}`, 10, 10);
+      doc.text(`Conversation Transcript\nA: ${name}\nB: ${botName}\nDate: ${date}`, 10, 10);
       let y = 35;
       transcript.forEach(entry => {
         let whoLabel = entry.who === 'bot' ? botName : entry.who === 'user' ? name : 'Counselor (spoken)';
