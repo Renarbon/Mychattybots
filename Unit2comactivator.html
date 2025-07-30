@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ESL ChattyBot – You are the advisor (Bot is Student)</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    body { font-family: Arial; padding: 20px; background: #f2f2f2; }
+    #chat { background: white; padding: 20px; max-width: 700px; margin: auto; border-radius: 10px; }
+    .message { margin: 10px 0; }
+    .user { color: #0b2e8a; } /* Counselor */
+    .bot { color: green; }    /* Student (bot) */
+    input, button { padding: 10px; margin: 5px; }
+    input[readonly] { background-color: #eee; }
+    #studentInput { width: 90%; padding: 8px; }
+    #pdfBtn { margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div id="chat">
+    <h2>🧑‍💼 ESL ChattyBot – You are the career advisor (read the blue parts, you might need to wait 50 seconds for the voice to start)</h2>
+    <label>Your Name: <input id="studentName" type="text" autocomplete="off" /></label>
+    <button id="startBtn">Start</button>
+    <span style="margin-left:15px; font-size:0.98em;">Date: <span id="sessionDate"></span></span>
+    <br>
+    <label for="voice-select"><b>Student Voice:</b></label>
+    <select id="voice-select">
+       <option value="adam">Adam</option>
+    <option value="sarah">Sarah</option>
+    <option value="emily">Emily</option>
+    <option value="james">James</option>
+    <option value="jenny">Jenny</option>
+    <option value="nicole">Nicole</option>
+    <option value="santa">Santa</option>
+    </select>
+    <div style="margin: 12px 0; color: #007aff; background: #e6e6ff; border-radius: 6px; padding: 8px; max-width: 600px;">
+      <b>Instructions:</b> <b>You</b> are the <b>career advisor</b> (read the green part aloud each turn). ChattyBot will play the <b>student</b> with the selected voice.
+    </div>
+    <div id="conversation"></div>
+    <button onclick="startRecording()" id="recordButton" disabled>🎙️ Record</button>
+    <button onclick="submitUserResponse()" id="sendButton" disabled>📨 Send</button>
+    <input type="text" id="studentInput" readonly />
+    <button onclick="downloadPDF()" id="pdfBtn" disabled>⬇️ Download PDF</button>
+  </div>
+  <script>
+    // === CONFIG: Backend for Lemonfox (change if needed) ===
+    const BASE_URL = "https://chattybot-backend.onrender.com";
+    const LEMONFOX_PROXY_URL = `${BASE_URL}/api/lemonfox-tts`;
+
+    // === SCRIPT DATA ===
+    // Bot (student) lines – green
+    const botLines = [
+      "	What happened?",
+      "	How bad is it?",
+      "Look, these things happen. I'm sure we can work something out."    
+    ];
+    // User (counselor) lines – gray
+    const scriptLines = [
+     "	I'm really sorry, but I have some bad news.",
+      "I'm afraid I just backed into your car while I was parking mine. It was totally my fault.",
+      "Pretty bad. It's going to be expensive to fix. I'm so embarrassed.",
+      "Well, I insist on paying for it. And please accept my apology. I feel awful about it."
+    ];
+
+    // === STATE ===
+    let userName = "";
+    let botName = ""; // The bot's name matches the voice (capitalized)
+    let currentLine = 0;
+    let tempUserText = "";
+    let awaitingUser = false;
+    let conversationStarted = false;
+    const transcript = [];
+    const conversationDiv = document.getElementById('conversation');
+
+    // Date auto-fill
+    document.getElementById("sessionDate").textContent = new Date().toLocaleDateString();
+
+    // --- Lemonfox via backend proxy ---
+    async function speakWithLemonfox(text) {
+      const voice = document.getElementById('voice-select').value;
+      try {
+        const response = await fetch(LEMONFOX_PROXY_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text, voice })
+        });
+        if (!response.ok) {
+          alert("Lemonfox error: " + response.status + " - " + response.statusText);
+          return;
+        }
+        const audioBlob = await response.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        await audio.play();
+      } catch (e) {
+        alert("Lemonfox error: " + e);
+      }
+    }
+
+    function addMessage(who, text) {
+      const d = document.createElement('div');
+      d.className = `message ${who}`;
+      // who=='user' = counselor; who=='bot' = student
+      let label = who === 'user' ? userName || "Counselor" : botName || "Student";
+      d.textContent = `${label}: ${text}`;
+      conversationDiv.appendChild(d);
+      transcript.push({ who, text });
+      conversationDiv.scrollTop = conversationDiv.scrollHeight;
+    }
+
+    // --- Start conversation after name is entered & start pressed/Enter
+    document.getElementById("startBtn").onclick = startConversation;
+    document.getElementById("studentName").addEventListener("keydown", function(e) {
+      if (e.key === "Enter") startConversation();
+    });
+
+    function capitalize(str) {
+      return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    function startConversation() {
+      if (conversationStarted) return;
+      userName = document.getElementById("studentName").value.trim();
+      if (!userName) {
+        alert("Please enter your name.");
+        return;
+      }
+      botName = capitalize(document.getElementById('voice-select').value);
+      document.getElementById("startBtn").disabled = true;
+      document.getElementById("studentName").disabled = true;
+      document.getElementById("recordButton").disabled = true;
+      document.getElementById("sendButton").disabled = true;
+      document.getElementById("pdfBtn").disabled = true;
+      conversationDiv.innerHTML = "";
+      transcript.length = 0;
+      currentLine = 0;
+      conversationStarted = true;
+
+      // User (counselor) starts
+      let firstLine = scriptLines[0].replace("NAME", botName);
+      addMessage('user', firstLine);
+      document.getElementById("recordButton").disabled = false;
+      awaitingUser = true;
+    }
+
+    // Show bot (student) reply and prepare next line
+    function showBotReply() {
+      if (currentLine < botLines.length) {
+        setTimeout(() => {
+          addMessage('bot', botLines[currentLine]);
+          speakWithLemonfox(botLines[currentLine]).then(() => {
+            currentLine++;
+            if (currentLine < scriptLines.length) {
+              // Show next user prompt (counselor line)
+              addMessage('user', scriptLines[currentLine].replace("NAME", botName));
+              document.getElementById("recordButton").disabled = false;
+              awaitingUser = true;
+            } else {
+              // End: enable PDF
+              document.getElementById("pdfBtn").disabled = false;
+            }
+          });
+        }, 900);
+      } else {
+        document.getElementById("pdfBtn").disabled = false;
+      }
+    }
+
+    function startRecording() {
+      const recog = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recog.lang = 'en-US'; recog.interimResults = false; recog.maxAlternatives = 1;
+      recog.start();
+      recog.onresult = e => {
+        tempUserText = e.results[0][0].transcript;
+        document.getElementById("studentInput").value = tempUserText;
+        document.getElementById("sendButton").disabled = false;
+      };
+      recog.onerror = e => alert("Speech recognition error: " + e.error);
+    }
+
+    function submitUserResponse() {
+      if (!tempUserText || !awaitingUser) return;
+      // Save what user (counselor) actually said
+      transcript.push({ who: "counselorResponse", text: tempUserText });
+      document.getElementById("studentInput").value = "";
+      document.getElementById("sendButton").disabled = true;
+      document.getElementById("recordButton").disabled = true;
+      tempUserText = "";
+      awaitingUser = false;
+      showBotReply();
+    }
+
+    document.getElementById("sendButton").onclick = submitUserResponse;
+
+    // --- PDF EXPORT ---
+    function downloadPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const name = userName || 'Counselor';
+      const date = document.getElementById('sessionDate').textContent;
+      doc.setTextColor(0, 0, 0);
+      doc.text(`Conversation Transcript\nCounselor: ${name}\nStudent: ${botName}\nDate: ${date}`, 10, 10);
+      let y = 35;
+      transcript.forEach(entry => {
+        let whoLabel = entry.who === 'bot' ? botName : entry.who === 'user' ? name : 'Counselor (spoken)';
+        doc.setTextColor(entry.who === 'bot' ? 0 : 11, entry.who === 'bot' ? 150 : 46, entry.who === 'bot' ? 0 : 138);
+        const lines = doc.splitTextToSize(`${whoLabel}: ${entry.text}`, 180);
+        lines.forEach(line => {
+          doc.text(line, 10, y);
+          y += 10;
+          if (y > 280) { doc.addPage(); y = 20; }
+        });
+      });
+      const filename = `${name.replace(/\s+/g, '_')}_${date.replace(/[\/]/g, '-')}_unit1_student.pdf`;
+      doc.save(filename);
+    }
+    document.getElementById("pdfBtn").onclick = downloadPDF;
+  </script>
+</body>
+</html>
