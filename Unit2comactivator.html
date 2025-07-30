@@ -196,7 +196,7 @@
     function downloadPDF() {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
-      const name = userName || 'Counselor';
+      const name = userName || 'A';
       const date = document.getElementById('sessionDate').textContent;
       doc.setTextColor(0, 0, 0);
       doc.text(`Conversation Transcript\nCounselor: ${name}\nStudent: ${botName}\nDate: ${date}`, 10, 10);
@@ -211,7 +211,7 @@
           if (y > 280) { doc.addPage(); y = 20; }
         });
       });
-      const filename = `${name.replace(/\s+/g, '_')}_${date.replace(/[\/]/g, '-')}_unit1_student.pdf`;
+      const filename = `${name.replace(/\s+/g, '_')}_${date.replace(/[\/]/g, '-')}_unit2_student.pdf`;
       doc.save(filename);
     }
     document.getElementById("pdfBtn").onclick = downloadPDF;
