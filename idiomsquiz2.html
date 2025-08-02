@@ -56,35 +56,61 @@
   <script>
     // ------ 1. YOUR QUIZ DATA HERE ------
     const scriptLines = [
-      {
-        phrase: "let me sleep on it",
-        options: [
-          "Think about it for a while",
-          "Literally shatter frozen water",
-          "Become very sleepy suddenly"
-        ],
-        correct: 0
-      },
-      {
-        phrase: "Hit the sack",
-        options: [
-          "Go to bed",
-          "Punch a pillow",
-          "Pack your bags"
-        ],
-        correct: 0
-      },
-      {
-        phrase: "you nailed it",
-        options: [
-          "you did a great job",
-          "During the night",
-          "When the sky is clear"
-        ],
-        correct: 0
-      }
-    ];
-
+  {
+    phrase: "lost my cool",
+    options: [
+      "got very angry",
+      "felt cold suddenly",
+      "became confused"
+    ],
+    correct: 0
+  },
+  {
+    phrase: "flew off the handle",
+    options: [
+      "became extremely angry",
+      "started flying",
+      "broke a handle"
+    ],
+    correct: 0
+  },
+  {
+    phrase: "set her off",
+    options: [
+      "triggered an emotional reaction",
+      "gave her directions",
+      "sent her on a trip"
+    ],
+    correct: 0
+  },
+  {
+    phrase: "tell me off",
+    options: [
+      "scold or criticize me",
+      "dismiss me from work",
+      "tell me a secret"
+    ],
+    correct: 0
+  },
+  {
+    phrase: "made a big issue of it",
+    options: [
+      "exaggerated the problem",
+      "printed a magazine",
+      "solved a puzzle"
+    ],
+    correct: 0
+  },
+  {
+    phrase: "make up",
+    options: [
+      "become friends again",
+      "create a new game",
+      "put on makeup"
+    ],
+    correct: 0
+  }
+];
     function shuffleOptionsAndCorrectIndex() {
       scriptLines.forEach(q => {
         let arr = q.options.map((opt, idx) => ({opt, idx}));
