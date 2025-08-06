@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Class Time & Attendance Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            color: #333;
+        }
+        h1 {
+            margin-bottom: 10px;
+        }
+        input[type="file"] {
+            margin-right: 10px;
+        }
+        button {
+            margin-right: 10px;
+            padding: 6px 12px;
+            font-size: 14px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr.failing td {
+            background-color: #ffe6e6;
+        }
+        td.trophy {
+            text-align: center;
+        }
+        .hidden {
+            display: none;
+        }
+        #teacherInfo {
+            margin-top: 15px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Class Time & Attendance Tracker</h1>
+    <p>Select one or more participant CSV files exported from Zoom. The app will aggregate participants across all files, exclude the teacher from the ranking, calculate attendance information, and identify the most punctual student with a trophy.</p>
+    <input type="file" id="fileInput" multiple accept=".csv">
+    <button id="processBtn">Process Data</button>
+    <button id="downloadCsvBtn" disabled>Download CSV</button>
+    <button id="downloadPdfBtn" disabled>Download PDF</button>
+    <div id="teacherInfo"></div>
+    <table id="resultsTable" class="hidden"></table>
+
+    <!-- External libraries for CSV parsing and PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/5.0.2/jspdf.plugin.autotable.min.js"></script>
+
+    <script>
+    (function() {
+        // Teacher's name and optional email used to exclude them from rankings. Case-insensitive.
+        const TEACHER_NAME = 'Rene Arbon';
+        const TEACHER_EMAIL = '';
+
+        const fileInput = document.getElementById('fileInput');
+        const processBtn = document.getElementById('processBtn');
+        const downloadCsvBtn = document.getElementById('downloadCsvBtn');
+        const downloadPdfBtn = document.getElementById('downloadPdfBtn');
+        const resultsTable = document.getElementById('resultsTable');
+        const teacherInfo = document.getElementById('teacherInfo');
+
+        // Data structures used across files
+        let participants = {};
+        let teacherRecord = null;
+        let teacherDays = 0;
+        let teacherDates = new Set();
+
+        processBtn.addEventListener('click', handleFiles);
+        downloadCsvBtn.addEventListener('click', downloadCsv);
+        downloadPdfBtn.addEventListener('click', downloadPdf);
+
+        function handleFiles() {
+            const files = fileInput.files;
+            if (!files || files.length === 0) {
+                alert('Please select one or more CSV files.');
+                return;
+            }
+
+            // Reset state
+            participants = {};
+            teacherRecord = null;
+            teacherDays = 0;
+
+            const filePromises = [];
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                filePromises.push(parseFile(file));
+            }
+
+            Promise.all(filePromises).then(() => {
+                finalizeResults();
+            }).catch((err) => {
+                console.error(err);
+                alert('An error occurred while processing the files.');
+            });
+        }
+
+        // Parse a single CSV file and update aggregates
+        function parseFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const csvText = e.target.result;
+                    Papa.parse(csvText, {
+                        header: true,
+                        skipEmptyLines: true,
+                        complete: function(results) {
+                            processRows(results.data, file.name);
+                            resolve();
+                        },
+                        error: function(err) {
+                            reject(err);
+                        }
+                    });
+                };
+                reader.onerror = function(err) {
+                    reject(err);
+                };
+                reader.readAsText(file);
+            });
+        }
+
+        // Extract date from filename e.g. participants_94181672501_2025_07_31.csv => 2025-07-31
+        function extractDateFromFilename(filename) {
+            const dateMatch = filename.match(/(\d{4})_(\d{2})_(\d{2})/);
+            if (dateMatch) {
+                return `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}`;
+            }
+            // Fallback: use file modification time if available via File API; else random
+            return filename;
+        }
+
+        // Process parsed rows for a single meeting
+        function processRows(rows, filename) {
+            const meetingDate = extractDateFromFilename(filename);
+            let teacherPresentInThisFile = false;
+            let teacherMinutes = 0;
+            let teacherFirstJoin = null;
+            let teacherLastLeave = null;
+
+            rows.forEach(row => {
+                // Normalize column names to simplify extraction
+                const normalizedRow = {};
+                for (const key in row) {
+                    if (!row.hasOwnProperty(key)) continue;
+                    // Normalize key: trim whitespace, lowercase and remove any BOM character
+                    const cleanedKey = key.replace(/^\uFEFF/, '');
+                    const lower = cleanedKey.trim().toLowerCase();
+                    normalizedRow[lower] = row[key];
+                }
+                const name = (normalizedRow['name (original name)'] || normalizedRow['name'] || '').trim();
+                const email = (normalizedRow['email'] || normalizedRow['user email'] || '').trim();
+                const duration = parseFloat(normalizedRow['duration (minutes)'] || normalizedRow['duration'] || normalizedRow['duration(minutes)'] || 0) || 0;
+                const joinTime = (normalizedRow['join time'] || normalizedRow['first join time'] || '').trim();
+                const leaveTime = (normalizedRow['leave time'] || normalizedRow['last leave time'] || '').trim();
+
+                if (!name && !email) {
+                    return;
+                }
+
+                const isTeacher = matchTeacher(name, email);
+                if (isTeacher) {
+                    teacherPresentInThisFile = true;
+                    teacherMinutes += duration;
+                    teacherFirstJoin = earliestTime(teacherFirstJoin, joinTime);
+                    teacherLastLeave = latestTime(teacherLastLeave, leaveTime);
+                    return;
+                }
+
+                // Determine unique key (prefer email if available)
+                const key = name.toLowerCase();
+                if (!participants[key]) {
+                    participants[key] = {
+                        name: name || '(No Name)',
+                        email: email,
+                        totalMinutes: 0,
+                        daysPresentSet: new Set(),
+                        firstJoin: null,
+                        lastLeave: null
+                    };
+                }
+                const participant = participants[key];
+                participant.totalMinutes += duration;
+                participant.daysPresentSet.add(meetingDate);
+                participant.firstJoin = earliestTime(participant.firstJoin, joinTime);
+                participant.lastLeave = latestTime(participant.lastLeave, leaveTime);
+            });
+
+            if (teacherPresentInThisFile) {
+                teacherDays++;
+                teacherDates.add(meetingDate);
+                if (!teacherRecord) {
+                    teacherRecord = {
+                        name: TEACHER_NAME,
+                        email: TEACHER_EMAIL,
+                        totalMinutes: 0,
+                        firstJoin: null,
+                        lastLeave: null
+                    };
+                }
+                teacherRecord.totalMinutes += teacherMinutes;
+                teacherRecord.firstJoin = earliestTime(teacherRecord.firstJoin, teacherFirstJoin);
+                teacherRecord.lastLeave = latestTime(teacherRecord.lastLeave, teacherLastLeave);
+            }
+        }
+
+        // Helper: compare times and return earliest non-empty string (times are Zoom strings)
+        function earliestTime(a, b) {
+            if (!a) return b || null;
+            if (!b) return a;
+            const aDate = new Date(a);
+            const bDate = new Date(b);
+            return aDate <= bDate ? a : b;
+        }
+        // Helper: compare times and return latest
+        function latestTime(a, b) {
+            if (!a) return b || null;
+            if (!b) return a;
+            const aDate = new Date(a);
+            const bDate = new Date(b);
+            return aDate >= bDate ? a : b;
+        }
+
+        // Determine if row belongs to teacher
+        function matchTeacher(name, email) {
+            const nameLower = name ? name.toLowerCase() : '';
+            const emailLower = email ? email.toLowerCase() : '';
+            const teacherNameLower = TEACHER_NAME.toLowerCase();
+            const teacherEmailLower = TEACHER_EMAIL.toLowerCase();
+            return (teacherEmailLower && emailLower === teacherEmailLower) || (!teacherEmailLower && nameLower === teacherNameLower);
+        }
+
+        // Finalize aggregated results and render table
+        function finalizeResults() {
+            // Build sorted list of teacher session dates
+            const teacherDatesArr = Array.from(teacherDates);
+            teacherDatesArr.sort();
+
+            // Helper to format absent dates grouped by month e.g. "Feb: 2, 5 | Mar: 1, 3"
+            function formatAbsentDaysByMonth(absentDateList) {
+                if (!absentDateList || absentDateList.length === 0) return '';
+                const monthMap = new Map(); // key: 'YYYY-MM', value: array of day numbers
+                for (const d of absentDateList) {
+                    const [y, m, day] = d.split('-');
+                    const key = `${y}-${m}`;
+                    const dayNum = parseInt(day, 10);
+                    if (!monthMap.has(key)) monthMap.set(key, []);
+                    monthMap.get(key).push(dayNum);
+                }
+                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                const parts = [];
+                const sortedMonthKeys = Array.from(monthMap.keys()).sort();
+                for (const key of sortedMonthKeys) {
+                    const [y, m] = key.split('-');
+                    const monthLabel = `${monthNames[parseInt(m,10)-1]}`;
+                    const days = monthMap.get(key).sort((a,b)=>a-b).join(', ');
+                    parts.push(`${monthLabel}: ${days}`);
+                }
+                return parts.join(' | ');
+            }
+
+            // Convert participants object to array
+            const rows = [];
+            for (const key in participants) {
+                const p = participants[key];
+                const daysPresent = p.daysPresentSet.size;
+                const daysAbsent = Math.max(teacherDays - daysPresent, 0);
+                const attendancePercent = teacherDays > 0 ? (daysPresent / teacherDays * 100) : 0;
+                rows.push({
+                    key: key,
+                    name: p.name,
+                    email: p.email,
+                    totalMinutes: p.totalMinutes,
+                    daysPresent: daysPresent,
+                    daysAbsent: daysAbsent,
+                    attendancePercent: attendancePercent,
+                    firstJoin: p.firstJoin || '',
+                    lastLeave: p.lastLeave || '',
+                    absentDaysDetail: formatAbsentDaysByMonth(
+                        Array.from(teacherDatesArr.filter(d => !p.daysPresentSet.has(d)))
+                    )
+                });
+            }
+            // Sort by totalMinutes descending
+            rows.sort((a, b) => b.totalMinutes - a.totalMinutes);
+
+            // Determine top participant (if any)
+            let topKey = null;
+            if (rows.length > 0) {
+                topKey = rows[0].key;
+            }
+
+            // Build HTML table
+            const header = ['Rank', 'Name', 'Email', 'Total Minutes', 'Days Present', 'Days Absent', 'Attendance %', 'Absent Days (by Month)', 'First Join', 'Last Leave', ''];
+            let html = '<tr>';
+            header.forEach(h => {
+                html += `<th>${h}</th>`;
+            });
+            html += '</tr>';
+
+            rows.forEach((row, index) => {
+                const failing = row.attendancePercent < 80;
+                html += `<tr${failing ? ' class="failing"' : ''}>`;
+                html += `<td>${index + 1}</td>`;
+                html += `<td>${escapeHtml(row.name)}</td>`;
+                html += `<td>${escapeHtml(row.email || '')}</td>`;
+                html += `<td>${row.totalMinutes.toFixed(1)}</td>`;
+                html += `<td>${row.daysPresent}</td>`;
+                html += `<td>${row.daysAbsent}</td>`;
+                html += `<td>${row.attendancePercent.toFixed(1)}%</td>`;
+                html += `<td>${escapeHtml(row.absentDaysDetail)}</td>`;
+                html += `<td>${escapeHtml(row.firstJoin)}</td>`;
+                html += `<td>${escapeHtml(row.lastLeave)}</td>`;
+                // Trophy column
+                if (row.key === topKey) {
+                    html += `<td class="trophy">🏆</td>`;
+                } else {
+                    html += '<td></td>';
+                }
+                html += '</tr>';
+            });
+            resultsTable.innerHTML = html;
+            resultsTable.classList.remove('hidden');
+
+            // Teacher info
+            let teacherMsg = '';
+            if (teacherRecord) {
+                const totalHours = (teacherRecord.totalMinutes / 60).toFixed(2);
+                teacherMsg = `You (the teacher) were present for ${teacherDays} session${teacherDays !== 1 ? 's' : ''}, totalling ${teacherRecord.totalMinutes.toFixed(1)} minutes (${totalHours} hours).`;
+            } else {
+                teacherMsg = 'The teacher was not detected in the uploaded files.';
+            }
+            teacherInfo.textContent = teacherMsg;
+
+            // Enable download buttons
+            downloadCsvBtn.disabled = rows.length === 0;
+            downloadPdfBtn.disabled = rows.length === 0;
+        }
+
+        // Escape HTML special characters
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        // Download CSV of results
+        function downloadCsv() {
+            const rows = [];
+            const header = ['Rank','Name','Email','Total Minutes','Days Present','Days Absent','Attendance %','Absent Days (by Month)','First Join','Last Leave','Trophy'];
+            rows.push(header);
+            const tableRows = resultsTable.querySelectorAll('tr');
+            // Skip header row in tableRows[0]
+            for (let i = 1; i < tableRows.length; i++) {
+                const cells = tableRows[i].children;
+                const row = [];
+                for (let j = 0; j < cells.length; j++) {
+                    // Remove % sign in Attendance column for CSV clarity
+                    let text = cells[j].textContent;
+                    if (header[j] === 'Attendance %') {
+                        text = text.replace('%','');
+                    }
+                    row.push('"' + text.replace(/"/g, '""') + '"');
+                }
+                rows.push(row);
+            }
+            const csvContent = rows.map(r => r.join(',')).join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.setAttribute('href', URL.createObjectURL(blob));
+            link.setAttribute('download', 'class_time_report.csv');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Download PDF of results using jsPDF and autoTable
+        function downloadPdf() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: 'landscape' });
+            doc.setFontSize(12);
+            doc.text('Class Time & Attendance Report', 14, 14);
+            if (teacherRecord) {
+                const teacherText = `Teacher: ${teacherRecord.name} | Sessions: ${teacherDays} | Total Minutes: ${teacherRecord.totalMinutes.toFixed(1)}`;
+                doc.setFontSize(10);
+                doc.text(teacherText, 14, 22);
+            }
+            const tableBody = [];
+            const headerRow = ['Rank', 'Name', 'Email', 'Total Minutes', 'Days Present', 'Days Absent', 'Attendance %', 'Absent Days (by Month)', 'First Join', 'Last Leave', ''];
+            const tableRows = resultsTable.querySelectorAll('tr');
+            // Skip the first header row in the table
+            for (let i = 1; i < tableRows.length; i++) {
+                const cells = tableRows[i].children;
+                const row = [];
+                for (let j = 0; j < cells.length; j++) {
+                    let text = cells[j].textContent;
+                    if (headerRow[j] === 'Attendance %') {
+                        // Remove the percent sign for PDF but keep numeric value with sign for clarity
+                        text = text;
+                    }
+                    row.push(text);
+                }
+                tableBody.push(row);
+            }
+            doc.autoTable({
+                head: [headerRow],
+                body: tableBody,
+                startY: 28,
+                styles: { fontSize: 8 },
+                headStyles: { fillColor: [242, 242, 242] },
+                didParseCell: function (data) {
+                    // Highlight failing rows in PDF by changing background color to light red
+                    if (data.section === 'body' && data.column.index >= 0) {
+                        const attendanceColIndex = 6; // index of 'Attendance %'
+                        const attendancePercent = parseFloat(data.row.raw[attendanceColIndex]);
+                        if (!isNaN(attendancePercent) && attendancePercent < 80) {
+                            data.cell.styles.fillColor = [255, 230, 230];
+                        }
+                    }
+                }
+            });
+            doc.save('class_time_report.pdf');
+        }
+    })();
+    </script>
+</body>
+</html>
