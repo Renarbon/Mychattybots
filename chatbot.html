@@ -20,7 +20,7 @@
   </style>
 </head>
 <body>
-  <h2>ESL ChattyBot-"Start by selecting the voice you want, and then greet the bot"</h2>
+  <h2>ESL ChattyBot-"Start by selecting the voice you want, and then greet the bot, you may have to wait more than 35 seconds for a response, be patient"</h2>
   <input id="student-name" placeholder="Enter your name and press Enter..." />
   <label for="voice-select"><b>Voice:</b></label>
   <select id="voice-select">
@@ -73,7 +73,7 @@
     let studentName = '';
     let questionCount = 0;
     let conversation = [
-      { role: "system", content: "You are a person who knows about the political and social situation in the US and want to know how much the students know about this" }
+      { role: "system", content: "You are an employer and will ask the student who pretends to be looking for a job 6 simple questions related to his previous job or jobs and also about his or her skills and at the end you will tell him or her if she qualifies for the job possition" }
     ];
     let transcript = [];
     let finished = false;
