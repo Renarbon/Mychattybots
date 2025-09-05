@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>ESL ChattyBot</title>
+  <title>ESL ChattyBot (Improved Speak Button)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; max-width: 600px; margin: 30px auto; background: #f9f9fc; }
@@ -12,14 +12,15 @@
     #input-area { display: flex; gap: 7px; }
     #student-name { padding: 7px; margin-bottom: 8px; border-radius: 5px; border: 1px solid #bbb; }
     #voice-select { margin-left: 10px; }
+    #user-input { flex: 1; padding: 8px; display: none; }
     button { padding: 8px 14px; border-radius: 6px; border: none; background: #1976d2; color: #fff; cursor: pointer; }
     button:disabled { background: #aaa; }
     #status { margin: 8px 0; color: #999; }
-    #download-pdf { margin: 12px 0; background: #4caf50; display:none; }
+    #download-pdf { margin: 12px 0; background: #4caf50; }
   </style>
 </head>
 <body>
-  <h2>ESL ChattyBot - Enter your name, select a voice, then greet the bot.</h2>
+  <h2>ESL ChattyBot - "Select a voice, then greet the bot. It may take 30+ seconds for the first reply, be patient."</h2>
   <input id="student-name" placeholder="Enter your name and press Enter..." />
   <label for="voice-select"><b>Voice:</b></label>
   <select id="voice-select">
@@ -31,34 +32,35 @@
     <option value="nicole">Nicole</option>
     <option value="santa">Santa</option>
   </select>
-
   <div id="chat"></div>
   <div id="status"></div>
   <div id="input-area">
+    <input id="user-input" style="display:none;" autocomplete="off" disabled />
+    <button id="send-btn" style="display:none;">Send</button>
     <button id="mic-btn" disabled>🎤 Speak</button>
-    <button id="download-pdf">Download PDF</button>
   </div>
+  <button id="download-pdf" style="display:none;">Download PDF</button>
 
   <script>
     const GRAMMAR_API_URL = "https://chattybot-backend.onrender.com/api/grammar-correct";
     const CHATBOT_API_URL = "https://chattybot-backend.onrender.com/api/chatbot";
     const LEMONFOX_PROXY_URL = "https://chattybot-backend.onrender.com/api/lemonfox-tts";
-    const MAX_QUESTIONS = 15;
-
-    const chat = document.getElementById('chat');
-    const status = document.getElementById('status');
-    const micBtn = document.getElementById('mic-btn');
-    const pdfBtn = document.getElementById('download-pdf');
-    const nameInput = document.getElementById('student-name');
+    const MAX_QUESTIONS = 6;
 
     let studentName = '';
     let questionCount = 0;
+    let finished = false;
+
     let conversation = [
-      { role: "system", content: "You are an employer and will ask the student who pretends to be looking for a job 6 simple questions about previous jobs and skills, then tell if they qualify." }
+      { role: "system", content: "You are an employer and will ask the student who pretends to be looking for a job 6 simple questions related to his/her previous job or skills. At the end, tell the student if they qualify for the job position." }
     ];
     let transcript = [];
-    let finished = false;
-    let recognition;
+
+    const chat = document.getElementById('chat');
+    const status = document.getElementById('status');
+    const pdfBtn = document.getElementById('download-pdf');
+    const nameInput = document.getElementById('student-name');
+    const micBtn = document.getElementById('mic-btn');
 
     function addMessage(role, text) {
       const msg = document.createElement('div');
@@ -81,7 +83,9 @@
         const audioUrl = URL.createObjectURL(audioBlob);
         const audio = new Audio(audioUrl);
         audio.play();
-      } catch (e) { console.warn(e); }
+      } catch (e) {
+        console.warn("Speech error:", e);
+      }
     }
 
     async function getOpenAIResponse() {
@@ -95,76 +99,97 @@
         const botMsg = data.reply?.trim() || "Sorry, I didn't get that.";
         conversation.push({ role: "assistant", content: botMsg });
         return botMsg;
-      } catch (e) {
+      } catch {
         return "Sorry, I couldn't connect to the server.";
       }
     }
 
     function startBot() {
-      addMessage('bot', "Hello " + studentName + "! Let's practice English. I'll ask some questions.");
-      speakWithLemonfox("Hello " + studentName + "! Let's practice English. I'll ask some questions.");
+      const greeting = `Hello ${studentName}! Let's practice English. Are you ready?`;
+      addMessage('bot', greeting);
+      speakWithLemonfox(greeting);
+      conversation.push({ role: "assistant", content: greeting });
     }
 
-    // --- Speech Recognition ---
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognition = new SpeechRec();
-      recognition.continuous = false;
-      recognition.lang = 'en-US';
-
-      recognition.onresult = async function(event) {
-        if (finished) return;
-        const transcriptText = event.results[0][0].transcript;
-        addMessage('user', transcriptText);
-        conversation.push({ role: "user", content: transcriptText });
-        status.textContent = "Bot is thinking...";
-        questionCount++;
-
-        let botReply = "Great job! Conversation finished.";
-        if (questionCount < MAX_QUESTIONS) {
-          botReply = await getOpenAIResponse();
-        } else {
-          finished = true;
-          micBtn.disabled = true;
-        }
-
-        addMessage('bot', botReply);
-        speakWithLemonfox(botReply);
-        transcript.push({
-          question: conversation[conversation.length-2]?.content || "",
-          studentAnswer: transcriptText,
-          botReply: botReply
-        });
-        status.textContent = finished ? "Conversation finished. Download your PDF." : "";
-      };
-
-      recognition.onerror = () => { micBtn.disabled = false; status.textContent = "Speech recognition error."; };
-      recognition.onend = () => { micBtn.disabled = false; };
-    } else {
-      micBtn.disabled = true;
-      alert("Speech Recognition not supported in this browser.");
-    }
-
-    micBtn.onclick = () => { if (recognition && !finished) recognition.start(); };
-
-    // --- Show PDF and enable mic after name ---
+    // ---- Name input ----
     nameInput.addEventListener('keyup', function(e) {
       if (e.key === 'Enter' && nameInput.value.trim()) {
         studentName = nameInput.value.trim();
         nameInput.disabled = true;
         micBtn.disabled = false;
-        pdfBtn.style.display = 'inline-block';
         startBot();
       }
     });
 
-    // --- PDF download ---
+    // ---- Speech Recognition with toggle ----
+    let recognition;
+    let recognizing = false;
+
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SpeechRec();
+      recognition.continuous = true;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+
+      recognition.onstart = () => {
+        recognizing = true;
+        micBtn.textContent = "🛑 Stop";
+        micBtn.style.backgroundColor = "red";
+        status.textContent = "Listening...";
+      };
+
+      recognition.onend = () => {
+        recognizing = false;
+        micBtn.textContent = "🎤 Speak";
+        micBtn.style.backgroundColor = "";
+        status.textContent = "";
+      };
+
+      recognition.onresult = async (event) => {
+        if (finished) return;
+        const transcriptText = event.results[event.results.length - 1][0].transcript;
+        addMessage('user', transcriptText);
+        conversation.push({ role: "user", content: transcriptText });
+
+        questionCount++;
+
+        if (questionCount >= MAX_QUESTIONS) {
+          finished = true;
+          const closing = "Great job! Conversation finished.";
+          addMessage('bot', closing);
+          speakWithLemonfox(closing);
+          transcript.push({ question: conversation[conversation.length-2]?.content || "", studentAnswer: transcriptText, botReply: closing });
+          status.textContent = "Conversation finished. Download your PDF.";
+          pdfBtn.style.display = '';
+        } else {
+          let botReply = await getOpenAIResponse();
+          addMessage('bot', botReply);
+          speakWithLemonfox(botReply);
+
+          transcript.push({
+            question: conversation[conversation.length-2]?.content || "",
+            studentAnswer: transcriptText,
+            botReply
+          });
+        }
+      };
+    }
+
+    micBtn.onclick = () => {
+      if (!recognition) return;
+      if (recognizing) recognition.stop();
+      else recognition.start();
+    };
+
+    // ---- PDF generation ----
     pdfBtn.onclick = async () => {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
       doc.setFontSize(14);
       doc.text("ESL Conversation Practice", 10, 12);
       doc.text(`Student: ${studentName}`, 10, 20);
+
       let y = 32;
       const pageWidth = doc.internal.pageSize.getWidth();
       const margin = 10;
@@ -176,10 +201,11 @@
         lines.forEach(line => { doc.text(line, margin+2, y); y += 6; });
       }
 
-      for (let i=0; i<transcript.length; i++) {
+      for (let i = 0; i < transcript.length; i++) {
         const entry = transcript[i];
         doc.setFont(undefined, "bold");
         printParagraph(`Q${i+1}:`, entry.question);
+
         doc.setFont(undefined, "normal");
 
         let correctedAnswer = entry.studentAnswer;
@@ -190,10 +216,10 @@
             body: JSON.stringify({ text: entry.studentAnswer })
           });
           const data = await res.json();
-          if (data?.corrected) correctedAnswer = data.corrected;
-        } catch(e){}
+          if (data && data.corrected) correctedAnswer = data.corrected;
+        } catch {}
 
-        if (correctedAnswer !== entry.studentAnswer) {
+        if (entry.studentAnswer !== correctedAnswer) {
           printParagraph("Your answer:", entry.studentAnswer, [229,57,53]);
           printParagraph("Corrected:", correctedAnswer, [46,125,50]);
         } else {
@@ -205,7 +231,8 @@
         if (y > 270) { doc.addPage(); y = 18; }
       }
 
-      doc.save(`${studentName.replace(/[^a-z0-9]/gi,'_')}_ESL_ChattyBot.pdf`);
+      const fileName = `${studentName.replace(/[^a-z0-9]/gi, '_')}_ESL_ChattyBot.pdf`;
+      doc.save(fileName);
     };
   </script>
 </body>
