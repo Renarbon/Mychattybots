@@ -16,7 +16,7 @@
     button { padding: 8px 14px; border-radius: 6px; border: none; background: #1976d2; color: #fff; cursor: pointer; }
     button:disabled { background: #aaa; }
     #status { margin: 8px 0; color: #999; }
-    #download-pdf { margin: 12px 0; background: #4caf50; }
+    #download-pdf { margin: 12px 0; background: #4caf50; display:none; }
   </style>
 </head>
 <body>
@@ -39,36 +39,13 @@
     <button id="send-btn" style="display:none;">Send</button>
     <button id="mic-btn">🎤 Speak</button>
   </div>
-  <button id="download-pdf" style="display:none;">Download PDF</button>
+  <button id="download-pdf">Download PDF</button>
+
   <script>
     const GRAMMAR_API_URL = "https://chattybot-backend.onrender.com/api/grammar-correct";
     const CHATBOT_API_URL = "https://chattybot-backend.onrender.com/api/chatbot";
     const LEMONFOX_PROXY_URL = "https://chattybot-backend.onrender.com/api/lemonfox-tts";
     const MAX_QUESTIONS = 15;
-
-    async function speakWithLemonfox(text) {
-      const voice = document.getElementById('voice-select').value;
-      try {
-        const response = await fetch(LEMONFOX_PROXY_URL, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ text: text, voice: voice })   // <--- Corrected!
-});
-        if (!response.ok) {
-          console.warn("Proxy error:", response.status, response.statusText);
-          return;
-        }
-        const audioBlob = await response.blob();
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const audio = new Audio(audioUrl);
-        audio.play();
-      } catch (e) {
-        console.warn("Proxy fetch error:", e);
-      }function startBot() {
-      addMessage('bot', "Hello " + studentName + "! Let's practice English. I'll ask you some questions. Are you ready?");
-      speakWithLemonfox("Hello " + studentName + "! Let's practice English. I'll ask you some questions. Are you ready?");
-    }
-    }
 
     let studentName = '';
     let questionCount = 0;
@@ -86,17 +63,6 @@
     const pdfBtn = document.getElementById('download-pdf');
     const nameInput = document.getElementById('student-name');
 
-    nameInput.addEventListener('keyup', function(e) {
-      if (e.key === 'Enter' && nameInput.value.trim()) {
-        studentName = nameInput.value.trim();
-        nameInput.disabled = true;
-        micBtn.disabled = false;
-        startBot();
-      }
-    });
-
-    
-
     function addMessage(role, text) {
       const msg = document.createElement('div');
       msg.className = role;
@@ -105,75 +71,36 @@
       chat.scrollTop = chat.scrollHeight;
     }
 
-    // ---- Speech Recognition ----
-    let recognition;
-    if ('webkitSpeechRecognition' in window) {
-      recognition = new webkitSpeechRecognition();
-      recognition.continuous = false;
-      recognition.lang = 'en-US';
-
-      recognition.onresult = async function(event) {
-        if (finished) return;
-        const transcriptText = event.results[0][0].transcript;
-        addMessage('user', transcriptText);
-
-        // --- NO grammar correction here, just record answer ---
-        conversation.push({ role: "user", content: transcriptText });
-        status.textContent = "Bot is thinking...";
-
-        questionCount++;
-
-        // If this is the LAST answer, finish with Great Job and stop.
-        if (questionCount >= MAX_QUESTIONS) {
-          finished = true;
-          input.disabled = true;
-          sendBtn.disabled = true;
-          micBtn.disabled = true;
-          // Add "Great job!" to chat and speak it
-          setTimeout(() => {
-            addMessage('bot', "Great job! Conversation finished.");
-            speakWithLemonfox("Great job! Conversation finished.");
-            status.textContent = "Conversation finished. Download your PDF for submission.";
-            pdfBtn.style.display = '';
-          }, 600);
-          // Save for PDF, no bot reply this time
-          transcript.push({
-            question: conversation[conversation.length-2]?.content || "",
-            studentAnswer: transcriptText,
-            botReply: "Great job! Conversation finished." // Only this as the reply for Q6
-          });
-        } else {
-          // Normal bot reply, add to transcript
-          let botReply = await getOpenAIResponse();
-          addMessage('bot', botReply);
-          speakWithLemonfox(botReply);
-
-          transcript.push({
-            question: conversation[conversation.length-2]?.content || "",
-            studentAnswer: transcriptText,
-            botReply: botReply
-          });
-          status.textContent = "";
-        }
-      };
-      recognition.onerror = function(e) {
-        micBtn.disabled = false;
-        status.textContent = "Could not recognize speech. Try again.";
-      };
-      recognition.onstart = function() {
-        micBtn.disabled = true;
-        status.textContent = "Listening...";
-      };
-      recognition.onend = function() {
-        micBtn.disabled = false;
-        status.textContent = "";
-      };
+    async function speakWithLemonfox(text) {
+      const voice = document.getElementById('voice-select').value;
+      try {
+        const response = await fetch(LEMONFOX_PROXY_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: text, voice: voice })
+        });
+        if (!response.ok) return;
+        const audioBlob = await response.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        audio.play();
+      } catch (e) { console.warn(e); }
     }
 
-    micBtn.onclick = () => {
-      if (finished) return;
-      if (recognition) recognition.start();
-    };
+    function startBot() {
+      addMessage('bot', "Hello " + studentName + "! Let's practice English. I'll ask you some questions. Are you ready?");
+      speakWithLemonfox("Hello " + studentName + "! Let's practice English. I'll ask you some questions. Are you ready?");
+    }
+
+    nameInput.addEventListener('keyup', function(e) {
+      if (e.key === 'Enter' && nameInput.value.trim()) {
+        studentName = nameInput.value.trim();
+        nameInput.disabled = true;
+        micBtn.disabled = false;
+        pdfBtn.style.display = ''; // 👈 show PDF button after name entered
+        startBot();
+      }
+    });
 
     // --- Chatbot via Backend ---
     async function getOpenAIResponse() {
@@ -181,10 +108,7 @@
         const response = await fetch(CHATBOT_API_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model: "gpt-4o",
-            messages: conversation
-          })
+          body: JSON.stringify({ model: "gpt-4o", messages: conversation })
         });
         const data = await response.json();
         const botMsg = data.reply?.trim() || "Sorry, I didn't get that.";
@@ -195,7 +119,7 @@
       }
     }
 
-    // --- PDF Download: Grammar corrections are made HERE only! ---
+    // --- PDF Download ---
     pdfBtn.onclick = async () => {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
@@ -224,7 +148,6 @@
 
         doc.setFont(undefined, "normal");
 
-        // --- Grammar correction at PDF time ---
         let correctedAnswer = entry.studentAnswer;
         try {
           const res = await fetch(GRAMMAR_API_URL, {
@@ -233,9 +156,7 @@
             body: JSON.stringify({ text: entry.studentAnswer })
           });
           const data = await res.json();
-          if (data && data.corrected) {
-            correctedAnswer = data.corrected;
-          }
+          if (data && data.corrected) correctedAnswer = data.corrected;
         } catch (e) {}
 
         if (entry.studentAnswer !== correctedAnswer) {
