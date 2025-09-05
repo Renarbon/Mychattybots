@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>ESL ChattyBot (Clean Ending, Fast, End Corrections)</title>
+  <title>ESL ChattyBot</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; max-width: 600px; margin: 30px auto; background: #f9f9fc; }
@@ -12,7 +12,6 @@
     #input-area { display: flex; gap: 7px; }
     #student-name { padding: 7px; margin-bottom: 8px; border-radius: 5px; border: 1px solid #bbb; }
     #voice-select { margin-left: 10px; }
-    #user-input { flex: 1; padding: 8px; display: none; }
     button { padding: 8px 14px; border-radius: 6px; border: none; background: #1976d2; color: #fff; cursor: pointer; }
     button:disabled { background: #aaa; }
     #status { margin: 8px 0; color: #999; }
@@ -20,7 +19,7 @@
   </style>
 </head>
 <body>
-  <h2>ESL ChattyBot-"Start by selecting the voice you want, and then greet the bot, you may have to wait more than 35 seconds for a response, be patient"</h2>
+  <h2>ESL ChattyBot - Enter your name, select a voice, then greet the bot.</h2>
   <input id="student-name" placeholder="Enter your name and press Enter..." />
   <label for="voice-select"><b>Voice:</b></label>
   <select id="voice-select">
@@ -32,14 +31,13 @@
     <option value="nicole">Nicole</option>
     <option value="santa">Santa</option>
   </select>
+
   <div id="chat"></div>
   <div id="status"></div>
   <div id="input-area">
-    <input id="user-input" style="display:none;" autocomplete="off" disabled />
-    <button id="send-btn" style="display:none;">Send</button>
-    <button id="mic-btn">🎤 Speak</button>
+    <button id="mic-btn" disabled>🎤 Speak</button>
+    <button id="download-pdf">Download PDF</button>
   </div>
-  <button id="download-pdf">Download PDF</button>
 
   <script>
     const GRAMMAR_API_URL = "https://chattybot-backend.onrender.com/api/grammar-correct";
@@ -47,21 +45,20 @@
     const LEMONFOX_PROXY_URL = "https://chattybot-backend.onrender.com/api/lemonfox-tts";
     const MAX_QUESTIONS = 15;
 
+    const chat = document.getElementById('chat');
+    const status = document.getElementById('status');
+    const micBtn = document.getElementById('mic-btn');
+    const pdfBtn = document.getElementById('download-pdf');
+    const nameInput = document.getElementById('student-name');
+
     let studentName = '';
     let questionCount = 0;
     let conversation = [
-      { role: "system", content: "You are an employer and will ask the student who pretends to be looking for a job 6 simple questions related to his previous job or jobs and also about his or her skills and at the end you will tell him or her if she qualifies for the job possition" }
+      { role: "system", content: "You are an employer and will ask the student who pretends to be looking for a job 6 simple questions about previous jobs and skills, then tell if they qualify." }
     ];
     let transcript = [];
     let finished = false;
-
-    const chat = document.getElementById('chat');
-    const input = document.getElementById('user-input');
-    const sendBtn = document.getElementById('send-btn');
-    const micBtn = document.getElementById('mic-btn');
-    const status = document.getElementById('status');
-    const pdfBtn = document.getElementById('download-pdf');
-    const nameInput = document.getElementById('student-name');
+    let recognition;
 
     function addMessage(role, text) {
       const msg = document.createElement('div');
@@ -77,7 +74,7 @@
         const response = await fetch(LEMONFOX_PROXY_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: text, voice: voice })
+          body: JSON.stringify({ text, voice })
         });
         if (!response.ok) return;
         const audioBlob = await response.blob();
@@ -87,22 +84,6 @@
       } catch (e) { console.warn(e); }
     }
 
-    function startBot() {
-      addMessage('bot', "Hello " + studentName + "! Let's practice English. I'll ask you some questions. Are you ready?");
-      speakWithLemonfox("Hello " + studentName + "! Let's practice English. I'll ask you some questions. Are you ready?");
-    }
-
-    nameInput.addEventListener('keyup', function(e) {
-      if (e.key === 'Enter' && nameInput.value.trim()) {
-        studentName = nameInput.value.trim();
-        nameInput.disabled = true;
-        micBtn.disabled = false;
-        pdfBtn.style.display = ''; // 👈 show PDF button after name entered
-        startBot();
-      }
-    });
-
-    // --- Chatbot via Backend ---
     async function getOpenAIResponse() {
       try {
         const response = await fetch(CHATBOT_API_URL, {
@@ -119,33 +100,86 @@
       }
     }
 
-    // --- PDF Download ---
+    function startBot() {
+      addMessage('bot', "Hello " + studentName + "! Let's practice English. I'll ask some questions.");
+      speakWithLemonfox("Hello " + studentName + "! Let's practice English. I'll ask some questions.");
+    }
+
+    // --- Speech Recognition ---
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SpeechRec();
+      recognition.continuous = false;
+      recognition.lang = 'en-US';
+
+      recognition.onresult = async function(event) {
+        if (finished) return;
+        const transcriptText = event.results[0][0].transcript;
+        addMessage('user', transcriptText);
+        conversation.push({ role: "user", content: transcriptText });
+        status.textContent = "Bot is thinking...";
+        questionCount++;
+
+        let botReply = "Great job! Conversation finished.";
+        if (questionCount < MAX_QUESTIONS) {
+          botReply = await getOpenAIResponse();
+        } else {
+          finished = true;
+          micBtn.disabled = true;
+        }
+
+        addMessage('bot', botReply);
+        speakWithLemonfox(botReply);
+        transcript.push({
+          question: conversation[conversation.length-2]?.content || "",
+          studentAnswer: transcriptText,
+          botReply: botReply
+        });
+        status.textContent = finished ? "Conversation finished. Download your PDF." : "";
+      };
+
+      recognition.onerror = () => { micBtn.disabled = false; status.textContent = "Speech recognition error."; };
+      recognition.onend = () => { micBtn.disabled = false; };
+    } else {
+      micBtn.disabled = true;
+      alert("Speech Recognition not supported in this browser.");
+    }
+
+    micBtn.onclick = () => { if (recognition && !finished) recognition.start(); };
+
+    // --- Show PDF and enable mic after name ---
+    nameInput.addEventListener('keyup', function(e) {
+      if (e.key === 'Enter' && nameInput.value.trim()) {
+        studentName = nameInput.value.trim();
+        nameInput.disabled = true;
+        micBtn.disabled = false;
+        pdfBtn.style.display = 'inline-block';
+        startBot();
+      }
+    });
+
+    // --- PDF download ---
     pdfBtn.onclick = async () => {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
       doc.setFontSize(14);
       doc.text("ESL Conversation Practice", 10, 12);
       doc.text(`Student: ${studentName}`, 10, 20);
-
       let y = 32;
       const pageWidth = doc.internal.pageSize.getWidth();
       const margin = 10;
       const maxLineWidth = pageWidth - 2 * margin;
 
-      function printParagraph(label, text, color = [33, 33, 33]) {
+      function printParagraph(label, text, color = [33,33,33]) {
         doc.setTextColor(...color);
         let lines = doc.splitTextToSize(`${label} ${text}`, maxLineWidth);
-        lines.forEach(line => {
-          doc.text(line, margin + 2, y);
-          y += 6;
-        });
+        lines.forEach(line => { doc.text(line, margin+2, y); y += 6; });
       }
 
-      for (let i = 0; i < transcript.length; i++) {
+      for (let i=0; i<transcript.length; i++) {
         const entry = transcript[i];
         doc.setFont(undefined, "bold");
-        printParagraph(`Q${i + 1}:`, entry.question);
-
+        printParagraph(`Q${i+1}:`, entry.question);
         doc.setFont(undefined, "normal");
 
         let correctedAnswer = entry.studentAnswer;
@@ -156,27 +190,23 @@
             body: JSON.stringify({ text: entry.studentAnswer })
           });
           const data = await res.json();
-          if (data && data.corrected) correctedAnswer = data.corrected;
-        } catch (e) {}
+          if (data?.corrected) correctedAnswer = data.corrected;
+        } catch(e){}
 
-        if (entry.studentAnswer !== correctedAnswer) {
-          printParagraph("Your answer:", entry.studentAnswer, [229, 57, 53]);
-          printParagraph("Corrected:", correctedAnswer, [46, 125, 50]);
+        if (correctedAnswer !== entry.studentAnswer) {
+          printParagraph("Your answer:", entry.studentAnswer, [229,57,53]);
+          printParagraph("Corrected:", correctedAnswer, [46,125,50]);
         } else {
-          printParagraph("Your answer:", entry.studentAnswer, [46, 125, 50]);
+          printParagraph("Your answer:", entry.studentAnswer, [46,125,50]);
         }
 
         printParagraph("Bot:", entry.botReply);
-
         y += 2;
         if (y > 270) { doc.addPage(); y = 18; }
       }
 
-      const fileName = `${studentName.replace(/[^a-z0-9]/gi, '_')}_ESL_ChattyBot.pdf`;
-      doc.save(fileName);
+      doc.save(`${studentName.replace(/[^a-z0-9]/gi,'_')}_ESL_ChattyBot.pdf`);
     };
-
-    micBtn.disabled = true;
   </script>
 </body>
 </html>
