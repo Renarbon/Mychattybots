@@ -36,7 +36,7 @@
   <script>
     const GRAMMAR_API_URL = "https://chattybot-backend.onrender.com/api/grammar-correct";
     const CHATBOT_API_URL = "https://chattybot-backend.onrender.com/api/chatbot";
-    const MAX_QUESTIONS = 6;
+    const MAX_QUESTIONS = 7;
 
     let studentName = '';
     let questionCount = 0;
@@ -56,15 +56,13 @@
 
     // ---- Browser Voices ----
     let voices = [];
-    function loadVoices() {
-      voices = speechSynthesis.getVoices();
-      voiceSelect.innerHTML = "";
-      voices.forEach((v, i) => {
-        const opt = document.createElement("option");
-        opt.value = i;
-        opt.textContent = `${v.name} (${v.lang})`;
-        voiceSelect.appendChild(opt);
-      });
+    voices.forEach((v, i) => {
+  const opt = document.createElement("option");
+  opt.value = i;
+  opt.textContent = `${v.name} (${v.lang})`;
+  voiceSelect.appendChild(opt);
+});
+
     }
     window.speechSynthesis.onvoiceschanged = loadVoices;
 
