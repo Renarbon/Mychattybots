@@ -1,65 +1,62 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>ESL Job Interview Bot</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <meta charset="UTF-8">
+  <title>ESL Job Interview Practice</title>
   <style>
-    body { font-family: Arial, sans-serif; max-width: 650px; margin: 30px auto; background: #f9f9fc; }
-    #chat { background: #fff; border-radius: 10px; padding: 18px; min-height: 260px; margin-bottom: 16px; box-shadow: 0 2px 10px #2221; }
-    .bot { color: #1976d2; margin: 8px 0; }
-    .user { color: #333; margin: 8px 0; text-align: right; }
-    #student-name { padding: 7px; margin-bottom: 8px; border-radius: 5px; border: 1px solid #bbb; }
-    #voice-select { margin-left: 10px; }
-    #input-area { display: flex; gap: 7px; }
-    #user-input { flex: 1; padding: 8px; display: none; }
-    button { padding: 8px 14px; border-radius: 6px; border: none; background: #1976d2; color: #fff; cursor: pointer; }
-    button:disabled { background: #aaa; }
-    #status { margin: 8px 0; color: #999; }
-    #download-pdf { margin: 12px 0; background: #4caf50; }
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    #chat { border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: auto; margin-bottom: 10px; }
+    .bot { color: blue; margin: 5px 0; }
+    .student { color: green; margin: 5px 0; }
+    button { margin-right: 5px; padding: 5px 10px; }
   </style>
 </head>
 <body>
-  <h2>ESL ChattyBot - Job Interview Practice (6 Questions)</h2>
-  <input id="student-name" placeholder="Enter your name and press Enter..." />
-  <label for="voice-select"><b>Voice:</b></label>
+  <h2>ESL Job Interview Practice</h2>
+
+  <label for="voice-select">Choose a voice:</label>
   <select id="voice-select"></select>
+  <br><br>
+
   <div id="chat"></div>
-  <div id="status"></div>
-  <div id="input-area">
-    <button id="mic-btn" disabled>🎤 Speak</button>
-  </div>
-  <button id="download-pdf" style="display:none;">Download PDF</button>
 
+  <button id="speak-btn">🎤 Speak</button>
+  <button id="pdf-btn" style="display:none;">📄 Download PDF</button>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script>
-    const GRAMMAR_API_URL = "https://chattybot-backend.onrender.com/api/grammar-correct";
+    const chat = document.getElementById("chat");
+    const speakBtn = document.getElementById("speak-btn");
+    const pdfBtn = document.getElementById("pdf-btn");
+    const voiceSelect = document.getElementById("voice-select");
 
-    let studentName = '';
+    let recognition;
+    let listening = false;
+    let voices = [];
     let currentQuestion = 0;
-    let finished = false;
-
+    const transcript = [];
     const questions = [
       "Can you tell me a little about yourself?",
-      "Why do you want to work for our company?",
-      "What are your main strengths?",
-      "Can you describe a challenge you faced at work and how you solved it?",
-      "How do you usually work in a team?",
-      "Where do you see yourself in five years?"
+      "Why are you interested in this job?",
+      "What are your strengths and weaknesses?",
+      "Can you describe a challenge you faced and how you handled it?",
+      "Where do you see yourself in five years?",
+      "Do you have any questions for us?"
     ];
 
-    let transcript = [];
-
-    const chat = document.getElementById('chat');
-    const status = document.getElementById('status');
-    const pdfBtn = document.getElementById('download-pdf');
-    const nameInput = document.getElementById('student-name');
-    const micBtn = document.getElementById('mic-btn');
-    const voiceSelect = document.getElementById('voice-select');
-
-    // ---- Browser Voices ----
-    let voices = [];
+    // ✅ Voice setup (Google voices first, only English)
     function loadVoices() {
-      voices = speechSynthesis.getVoices();
+      voices = speechSynthesis.getVoices()
+        .filter(v => v.lang.toLowerCase().startsWith("en"));
+
+      voices.sort((a, b) => {
+        const aGoogle = a.name.toLowerCase().includes("google");
+        const bGoogle = b.name.toLowerCase().includes("google");
+        if (aGoogle && !bGoogle) return -1;
+        if (!aGoogle && bGoogle) return 1;
+        return a.name.localeCompare(b.name);
+      });
+
       voiceSelect.innerHTML = "";
       voices.forEach((v, i) => {
         const opt = document.createElement("option");
@@ -67,12 +64,12 @@
         opt.textContent = `${v.name} (${v.lang})`;
         voiceSelect.appendChild(opt);
       });
-      // Pick Google US English if available
-      let defaultIndex = voices.findIndex(v => v.lang === "en-US" && v.name.includes("Google"));
-      if (defaultIndex === -1) defaultIndex = voices.findIndex(v => v.lang.startsWith("en"));
-      if (defaultIndex !== -1) voiceSelect.value = defaultIndex;
+
+      let defaultIndex = voices.findIndex(v => v.name.includes("Google US English"));
+      if (defaultIndex === -1) defaultIndex = 0;
+      voiceSelect.value = defaultIndex;
     }
-    window.speechSynthesis.onvoiceschanged = loadVoices;
+    speechSynthesis.onvoiceschanged = loadVoices;
 
     function speakWithBrowser(text) {
       if (!voices.length) loadVoices();
@@ -82,48 +79,79 @@
       speechSynthesis.speak(utterance);
     }
 
-    function addMessage(role, text) {
-      const msg = document.createElement('div');
-      msg.className = role;
-      msg.textContent = text;
-      chat.appendChild(msg);
+    // ✅ Chat functions
+    function addMessage(sender, text) {
+      const div = document.createElement("div");
+      div.className = sender;
+      div.textContent = (sender === "bot" ? "Bot: " : "You: ") + text;
+      chat.appendChild(div);
       chat.scrollTop = chat.scrollHeight;
+      transcript.push(div.textContent);
     }
 
-    function askNextQuestion() {
+    function askQuestion() {
       if (currentQuestion < questions.length) {
         const q = questions[currentQuestion];
-        addMessage('bot', q);
+        addMessage("bot", q);
         speakWithBrowser(q);
       } else {
-        finished = true;
-        const closing = "Thank you for answering my questions. You did a great job!";
-        addMessage('bot', closing);
-        speakWithBrowser(closing);
-        status.textContent = "Conversation finished. Download your PDF.";
-        pdfBtn.style.display = '';
+        addMessage("bot", "Great job! The interview is finished.");
+        speakWithBrowser("Great job! The interview is finished.");
+        pdfBtn.style.display = "inline-block";
       }
     }
 
-    // ---- Name input ----
-    nameInput.addEventListener('keyup', function(e) {
-      if (e.key === 'Enter' && nameInput.value.trim()) {
-        studentName = nameInput.value.trim();
-        nameInput.disabled = true;
-        micBtn.disabled = false;
-        addMessage('bot', `Hello ${studentName}, welcome to your job interview simulation.`);
-        speakWithBrowser(`Hello ${studentName}, welcome to your job interview simulation.`);
-        setTimeout(askNextQuestion, 2500);
+    // ✅ Speech Recognition
+    if ("webkitSpeechRecognition" in window) {
+      recognition = new webkitSpeechRecognition();
+      recognition.lang = "en-US";
+      recognition.interimResults = false;
+      recognition.continuous = false;
+
+      recognition.onresult = function(event) {
+        const text = event.results[0][0].transcript;
+        addMessage("student", text);
+        currentQuestion++;
+        askQuestion();
+      };
+
+      recognition.onend = function() {
+        if (listening) recognition.start();
+      };
+    } else {
+      alert("Speech recognition not supported in this browser.");
+    }
+
+    // ✅ Button events
+    speakBtn.addEventListener("click", () => {
+      if (!listening) {
+        recognition.start();
+        listening = true;
+        speakBtn.textContent = "⏹ Stop";
+      } else {
+        recognition.stop();
+        listening = false;
+        speakBtn.textContent = "🎤 Speak";
       }
     });
 
-    // ---- Speech Recognition with toggle ----
-    let recognition;
-    let recognizing = false;
+    pdfBtn.addEventListener("click", () => {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      let y = 10;
+      transcript.forEach(line => {
+        doc.text(line, 10, y);
+        y += 10;
+        if (y > 280) { doc.addPage(); y = 10; }
+      });
+      doc.save("interview_practice.pdf");
+    });
 
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognition = new SpeechRec();
-      recognition.continuous = true;
-      recognition.interimResults = false;
-      recognition.la
+    // ✅ Start interview
+    window.onload = () => {
+      loadVoices();
+      askQuestion();
+    };
+  </script>
+</body>
+</html>
