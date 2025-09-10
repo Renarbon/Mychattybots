@@ -135,22 +135,55 @@
       }
     });
 
-    pdfBtn.addEventListener("click", () => {
+     // ---- PDF generation ----
+    pdfBtn.onclick = async () => {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
-      let y = 10;
-      transcript.forEach(line => {
-        doc.text(line, 10, y);
-        y += 10;
-        if (y > 280) { doc.addPage(); y = 10; }
-      });
-      doc.save("interview_practice.pdf");
-    });
+      doc.setFontSize(14);
+      doc.text("Job Interview Practice", 10, 12);
+      doc.text(`Student: ${studentName}`, 10, 20);
 
-    // ✅ Start interview
-    window.onload = () => {
-      loadVoices();
-      askQuestion();
+      let y = 32;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 10;
+      const maxLineWidth = pageWidth - 2 * margin;
+
+      function printParagraph(label, text, color = [33,33,33]) {
+        doc.setTextColor(...color);
+        let lines = doc.splitTextToSize(`${label} ${text}`, maxLineWidth);
+        lines.forEach(line => { doc.text(line, margin+2, y); y += 6; });
+      }
+
+      for (let i = 0; i < transcript.length; i++) {
+        const entry = transcript[i];
+        doc.setFont(undefined, "bold");
+        printParagraph(`Q${i+1}:`, entry.question);
+        doc.setFont(undefined, "normal");
+
+        let correctedAnswer = entry.studentAnswer;
+        try {
+          const res = await fetch(GRAMMAR_API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text: entry.studentAnswer })
+          });
+          const data = await res.json();
+          if (data && data.corrected) correctedAnswer = data.corrected;
+        } catch {}
+
+        if (entry.studentAnswer !== correctedAnswer) {
+          printParagraph("Your answer:", entry.studentAnswer, [229,57,53]);
+          printParagraph("Corrected:", correctedAnswer, [46,125,50]);
+        } else {
+          printParagraph("Your answer:", entry.studentAnswer, [46,125,50]);
+        }
+
+        y += 2;
+        if (y > 270) { doc.addPage(); y = 18; }
+      }
+
+      const fileName = `${studentName.replace(/[^a-z0-9]/gi, '_')}_Job_Interview.pdf`;
+      doc.save(fileName);
     };
   </script>
 </body>
