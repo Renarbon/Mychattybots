@@ -2,16 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>ESL ChattyBot (Browser Voices)</title>
+  <title>ESL Job Interview Bot</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; max-width: 600px; margin: 30px auto; background: #f9f9fc; }
+    body { font-family: Arial, sans-serif; max-width: 650px; margin: 30px auto; background: #f9f9fc; }
     #chat { background: #fff; border-radius: 10px; padding: 18px; min-height: 260px; margin-bottom: 16px; box-shadow: 0 2px 10px #2221; }
     .bot { color: #1976d2; margin: 8px 0; }
     .user { color: #333; margin: 8px 0; text-align: right; }
-    #input-area { display: flex; gap: 7px; }
     #student-name { padding: 7px; margin-bottom: 8px; border-radius: 5px; border: 1px solid #bbb; }
     #voice-select { margin-left: 10px; }
+    #input-area { display: flex; gap: 7px; }
     #user-input { flex: 1; padding: 8px; display: none; }
     button { padding: 8px 14px; border-radius: 6px; border: none; background: #1976d2; color: #fff; cursor: pointer; }
     button:disabled { background: #aaa; }
@@ -20,31 +20,33 @@
   </style>
 </head>
 <body>
-  <h2>ESL ChattyBot - "Select a voice, then greet the bot. It may take 30+ seconds for the first reply, be patient."</h2>
+  <h2>ESL ChattyBot - Job Interview Practice (6 Questions)</h2>
   <input id="student-name" placeholder="Enter your name and press Enter..." />
   <label for="voice-select"><b>Voice:</b></label>
   <select id="voice-select"></select>
   <div id="chat"></div>
   <div id="status"></div>
   <div id="input-area">
-    <input id="user-input" style="display:none;" autocomplete="off" disabled />
-    <button id="send-btn" style="display:none;">Send</button>
     <button id="mic-btn" disabled>🎤 Speak</button>
   </div>
   <button id="download-pdf" style="display:none;">Download PDF</button>
 
   <script>
     const GRAMMAR_API_URL = "https://chattybot-backend.onrender.com/api/grammar-correct";
-    const CHATBOT_API_URL = "https://chattybot-backend.onrender.com/api/chatbot";
-    const MAX_QUESTIONS = 6;
 
     let studentName = '';
-    let questionCount = 0;
+    let currentQuestion = 0;
     let finished = false;
 
-    let conversation = [
-      { role: "system", content: "You are an Human Resources manager and will ask an intermedite ESL student 7 questions that may qualify him or her for the possition, wait for a full answer from them before you go onto the next question at the end tell him or her you will call them if they qualify for the job" }
+    const questions = [
+      "Can you tell me a little about yourself?",
+      "Why do you want to work for our company?",
+      "What are your main strengths?",
+      "Can you describe a challenge you faced at work and how you solved it?",
+      "How do you usually work in a team?",
+      "Where do you see yourself in five years?"
     ];
+
     let transcript = [];
 
     const chat = document.getElementById('chat');
@@ -65,6 +67,10 @@
         opt.textContent = `${v.name} (${v.lang})`;
         voiceSelect.appendChild(opt);
       });
+      // Pick Google US English if available
+      let defaultIndex = voices.findIndex(v => v.lang === "en-US" && v.name.includes("Google"));
+      if (defaultIndex === -1) defaultIndex = voices.findIndex(v => v.lang.startsWith("en"));
+      if (defaultIndex !== -1) voiceSelect.value = defaultIndex;
     }
     window.speechSynthesis.onvoiceschanged = loadVoices;
 
@@ -84,27 +90,19 @@
       chat.scrollTop = chat.scrollHeight;
     }
 
-    async function getOpenAIResponse() {
-      try {
-        const response = await fetch(CHATBOT_API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ model: "gpt-4o", messages: conversation })
-        });
-        const data = await response.json();
-        const botMsg = data.reply?.trim() || "Sorry, I didn't get that.";
-        conversation.push({ role: "assistant", content: botMsg });
-        return botMsg;
-      } catch {
-        return "Sorry, I couldn't connect to the server.";
+    function askNextQuestion() {
+      if (currentQuestion < questions.length) {
+        const q = questions[currentQuestion];
+        addMessage('bot', q);
+        speakWithBrowser(q);
+      } else {
+        finished = true;
+        const closing = "Thank you for answering my questions. You did a great job!";
+        addMessage('bot', closing);
+        speakWithBrowser(closing);
+        status.textContent = "Conversation finished. Download your PDF.";
+        pdfBtn.style.display = '';
       }
-    }
-
-    function startBot() {
-      const greeting = `Hello ${studentName}! Let's practice English. Are you ready?`;
-      addMessage('bot', greeting);
-      speakWithBrowser(greeting);
-      conversation.push({ role: "assistant", content: greeting });
     }
 
     // ---- Name input ----
@@ -113,7 +111,9 @@
         studentName = nameInput.value.trim();
         nameInput.disabled = true;
         micBtn.disabled = false;
-        startBot();
+        addMessage('bot', `Hello ${studentName}, welcome to your job interview simulation.`);
+        speakWithBrowser(`Hello ${studentName}, welcome to your job interview simulation.`);
+        setTimeout(askNextQuestion, 2500);
       }
     });
 
@@ -126,110 +126,4 @@
       recognition = new SpeechRec();
       recognition.continuous = true;
       recognition.interimResults = false;
-      recognition.lang = 'en-US';
-
-      recognition.onstart = () => {
-        recognizing = true;
-        micBtn.textContent = "🛑 Stop";
-        micBtn.style.backgroundColor = "red";
-        status.textContent = "Listening...";
-      };
-
-      recognition.onend = () => {
-        recognizing = false;
-        micBtn.textContent = "🎤 Speak";
-        micBtn.style.backgroundColor = "";
-        status.textContent = "";
-      };
-
-      recognition.onresult = async (event) => {
-        if (finished) return;
-        const transcriptText = event.results[event.results.length - 1][0].transcript;
-        addMessage('user', transcriptText);
-        conversation.push({ role: "user", content: transcriptText });
-
-        questionCount++;
-
-        if (questionCount >= MAX_QUESTIONS) {
-          finished = true;
-          const closing = "Great job! Conversation finished.";
-          addMessage('bot', closing);
-          speakWithBrowser(closing);
-          transcript.push({ question: conversation[conversation.length-2]?.content || "", studentAnswer: transcriptText, botReply: closing });
-          status.textContent = "Conversation finished. Download your PDF.";
-          pdfBtn.style.display = '';
-        } else {
-          let botReply = await getOpenAIResponse();
-          addMessage('bot', botReply);
-          speakWithBrowser(botReply);
-
-          transcript.push({
-            question: conversation[conversation.length-2]?.content || "",
-            studentAnswer: transcriptText,
-            botReply
-          });
-        }
-      };
-    }
-
-    micBtn.onclick = () => {
-      if (!recognition) return;
-      if (recognizing) recognition.stop();
-      else recognition.start();
-    };
-
-    // ---- PDF generation ----
-    pdfBtn.onclick = async () => {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      doc.setFontSize(14);
-      doc.text("ESL Conversation Practice", 10, 12);
-      doc.text(`Student: ${studentName}`, 10, 20);
-
-      let y = 32;
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const margin = 10;
-      const maxLineWidth = pageWidth - 2 * margin;
-
-      function printParagraph(label, text, color = [33,33,33]) {
-        doc.setTextColor(...color);
-        let lines = doc.splitTextToSize(`${label} ${text}`, maxLineWidth);
-        lines.forEach(line => { doc.text(line, margin+2, y); y += 6; });
-      }
-
-      for (let i = 0; i < transcript.length; i++) {
-        const entry = transcript[i];
-        doc.setFont(undefined, "bold");
-        printParagraph(`Q${i+1}:`, entry.question);
-
-        doc.setFont(undefined, "normal");
-
-        let correctedAnswer = entry.studentAnswer;
-        try {
-          const res = await fetch(GRAMMAR_API_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text: entry.studentAnswer })
-          });
-          const data = await res.json();
-          if (data && data.corrected) correctedAnswer = data.corrected;
-        } catch {}
-
-        if (entry.studentAnswer !== correctedAnswer) {
-          printParagraph("Your answer:", entry.studentAnswer, [229,57,53]);
-          printParagraph("Corrected:", correctedAnswer, [46,125,50]);
-        } else {
-          printParagraph("Your answer:", entry.studentAnswer, [46,125,50]);
-        }
-
-        printParagraph("Bot:", entry.botReply);
-        y += 2;
-        if (y > 270) { doc.addPage(); y = 18; }
-      }
-
-      const fileName = `${studentName.replace(/[^a-z0-9]/gi, '_')}_ESL_ChattyBot.pdf`;
-      doc.save(fileName);
-    };
-  </script>
-</body>
-</html>
+      recognition.la
