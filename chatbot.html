@@ -56,12 +56,15 @@
 
     // ---- Browser Voices ----
     let voices = [];
-    voices.forEach((v, i) => {
-  const opt = document.createElement("option");
-  opt.value = i;
-  opt.textContent = `${v.name} (${v.lang})`;
-  voiceSelect.appendChild(opt);
-});
+  function loadVoices() {
+      voices = speechSynthesis.getVoices();
+      voiceSelect.innerHTML = "";
+      voices.forEach((v, i) => {
+        const opt = document.createElement("option");
+        opt.value = i;
+        opt.textContent = `${v.name} (${v.lang})`;
+        voiceSelect.appendChild(opt);
+      });
 
     }
     window.speechSynthesis.onvoiceschanged = loadVoices;
