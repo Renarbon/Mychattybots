@@ -56,7 +56,7 @@
 
     // ---- Browser Voices ----
     let voices = [];
-  function loadVoices() {
+    function loadVoices() {
       voices = speechSynthesis.getVoices();
       voiceSelect.innerHTML = "";
       voices.forEach((v, i) => {
@@ -66,6 +66,10 @@
         voiceSelect.appendChild(opt);
       });
 
+      // Auto-select English voice if available
+      let defaultIndex = voices.findIndex(v => v.lang.startsWith("en") && v.name.toLowerCase().includes("google"));
+      if (defaultIndex === -1) defaultIndex = voices.findIndex(v => v.lang.startsWith("en"));
+      if (defaultIndex !== -1) voiceSelect.value = defaultIndex;
     }
     window.speechSynthesis.onvoiceschanged = loadVoices;
 
