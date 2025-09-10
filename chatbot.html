@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>ESL ChattyBot (Improved Speak Button)</title>
+  <title>ESL ChattyBot (Browser Voices)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; max-width: 600px; margin: 30px auto; background: #f9f9fc; }
@@ -23,15 +23,7 @@
   <h2>ESL ChattyBot - "Select a voice, then greet the bot. It may take 30+ seconds for the first reply, be patient."</h2>
   <input id="student-name" placeholder="Enter your name and press Enter..." />
   <label for="voice-select"><b>Voice:</b></label>
-  <select id="voice-select">
-    <option value="adam">Adam</option>
-    <option value="sarah">Sarah</option>
-    <option value="emily">Emily</option>
-    <option value="james">James</option>
-    <option value="jenny">Jenny</option>
-    <option value="nicole">Nicole</option>
-    <option value="santa">Santa</option>
-  </select>
+  <select id="voice-select"></select>
   <div id="chat"></div>
   <div id="status"></div>
   <div id="input-area">
@@ -44,8 +36,7 @@
   <script>
     const GRAMMAR_API_URL = "https://chattybot-backend.onrender.com/api/grammar-correct";
     const CHATBOT_API_URL = "https://chattybot-backend.onrender.com/api/chatbot";
-    const LEMONFOX_PROXY_URL = "https://chattybot-backend.onrender.com/api/lemonfox-tts";
-    const MAX_QUESTIONS = 7;
+    const MAX_QUESTIONS = 6;
 
     let studentName = '';
     let questionCount = 0;
@@ -61,6 +52,29 @@
     const pdfBtn = document.getElementById('download-pdf');
     const nameInput = document.getElementById('student-name');
     const micBtn = document.getElementById('mic-btn');
+    const voiceSelect = document.getElementById('voice-select');
+
+    // ---- Browser Voices ----
+    let voices = [];
+    function loadVoices() {
+      voices = speechSynthesis.getVoices();
+      voiceSelect.innerHTML = "";
+      voices.forEach((v, i) => {
+        const opt = document.createElement("option");
+        opt.value = i;
+        opt.textContent = `${v.name} (${v.lang})`;
+        voiceSelect.appendChild(opt);
+      });
+    }
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+
+    function speakWithBrowser(text) {
+      if (!voices.length) loadVoices();
+      const utterance = new SpeechSynthesisUtterance(text);
+      const selectedIndex = voiceSelect.value;
+      if (voices[selectedIndex]) utterance.voice = voices[selectedIndex];
+      speechSynthesis.speak(utterance);
+    }
 
     function addMessage(role, text) {
       const msg = document.createElement('div');
@@ -68,24 +82,6 @@
       msg.textContent = text;
       chat.appendChild(msg);
       chat.scrollTop = chat.scrollHeight;
-    }
-
-    async function speakWithLemonfox(text) {
-      const voice = document.getElementById('voice-select').value;
-      try {
-        const response = await fetch(LEMONFOX_PROXY_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text, voice })
-        });
-        if (!response.ok) return;
-        const audioBlob = await response.blob();
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const audio = new Audio(audioUrl);
-        audio.play();
-      } catch (e) {
-        console.warn("Speech error:", e);
-      }
     }
 
     async function getOpenAIResponse() {
@@ -107,7 +103,7 @@
     function startBot() {
       const greeting = `Hello ${studentName}! Let's practice English. Are you ready?`;
       addMessage('bot', greeting);
-      speakWithLemonfox(greeting);
+      speakWithBrowser(greeting);
       conversation.push({ role: "assistant", content: greeting });
     }
 
@@ -158,14 +154,14 @@
           finished = true;
           const closing = "Great job! Conversation finished.";
           addMessage('bot', closing);
-          speakWithLemonfox(closing);
+          speakWithBrowser(closing);
           transcript.push({ question: conversation[conversation.length-2]?.content || "", studentAnswer: transcriptText, botReply: closing });
           status.textContent = "Conversation finished. Download your PDF.";
           pdfBtn.style.display = '';
         } else {
           let botReply = await getOpenAIResponse();
           addMessage('bot', botReply);
-          speakWithLemonfox(botReply);
+          speakWithBrowser(botReply);
 
           transcript.push({
             question: conversation[conversation.length-2]?.content || "",
