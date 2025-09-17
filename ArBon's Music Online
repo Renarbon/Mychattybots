@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>My Music & Videos</title>
+  <style>
+    :root{
+      --bg:#0f172a; /* slate-900 */
+      --card:#111827; /* gray-900 */
+      --muted:#64748b; /* slate-500 */
+      --text:#e5e7eb; /* gray-200 */
+      --accent:#22d3ee; /* cyan-400 */
+      --accent-2:#a78bfa; /* violet-400 */
+      --radius:18px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font:16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 800px at 20% -10%, #1f2937 0%, transparent 60%),
+                  radial-gradient(800px 600px at 120% 10%, #0e7490 0%, transparent 40%),
+                  var(--bg);
+      color:var(--text);
+    }
+    .wrap{max-width:1000px; margin:24px auto; padding:0 16px}
+    header{
+      display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px
+    }
+    h1{font-size:clamp(22px, 3vw, 34px); margin:0; letter-spacing:0.3px}
+    .hint{color:var(--muted); font-size:0.95rem}
+    .board{display:grid; grid-template-columns: 1fr 380px; gap:16px}
+    @media (max-width: 900px){ .board{grid-template-columns: 1fr} }
+
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+      border:1px solid rgba(255,255,255,0.09);
+      border-radius:var(--radius);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+      backdrop-filter: blur(6px);
+    }
+
+    /* Player */
+    .player{padding:16px}
+    .title{font-weight:600; font-size:1.05rem; margin:0 0 6px}
+    .meta{color:var(--muted); font-size:0.92rem; margin-bottom:10px}
+    .thumb{width:100%; aspect-ratio:16/9; background:#0b1220; border-radius:12px; overflow:hidden; display:grid; place-items:center; margin-bottom:12px}
+    .thumb img{width:100%; height:100%; object-fit:cover}
+    .av{width:100%}
+    audio, video{width:100%; outline:none; border-radius:10px; background:#000}
+
+    .controls{display:flex; gap:8px; flex-wrap:wrap; margin-top:12px}
+    .btn{appearance:none; border:1px solid rgba(255,255,255,0.12); color:var(--text); background:#0b1220; padding:10px 12px; border-radius:12px; cursor:pointer}
+    .btn:hover{border-color:rgba(255,255,255,0.22)}
+    .btn[aria-pressed="true"]{border-color:var(--accent); box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.25) inset}
+
+    /* Sidebar */
+    .side{padding:12px}
+    .search{display:flex; gap:8px; margin-bottom:10px}
+    .search input{flex:1; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,0.12); background:#0b1220; color:var(--text)}
+    .list{ max-height:62vh; overflow:auto; padding:4px}
+    .row{display:grid; grid-template-columns:auto 1fr auto; gap:10px; align-items:center; padding:10px; border-radius:12px; cursor:pointer}
+    .row:hover{background:rgba(255,255,255,0.06)}
+    .row.active{background:linear-gradient(90deg, rgba(167,139,250,0.15), rgba(34,211,238,0.12))}
+    .row .dot{width:10px; height:10px; border-radius:50%}
+    .dot.audio{background:var(--accent)}
+    .dot.video{background:var(--accent-2)}
+    .row .name{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+    .row .dur{color:var(--muted); font-variant-numeric:tabular-nums}
+
+    footer{margin-top:18px; color:var(--muted); font-size:0.9rem}
+    a{color:var(--accent)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>My Music & Videos</h1>
+        <div class="hint">Drop this <code>index.html</code> in a GitHub Pages repo. Put your media in a <code>media/</code> folder and list them in <code>playlist.json</code> (or edit the built‑in list below).</div>
+      </div>
+      <div class="hint">Shortcuts: <kbd>Space</kbd>/<kbd>P</kbd> play‑pause · <kbd>N</kbd> next · <kbd>B</kbd> back</div>
+    </header>
+
+    <div class="board">
+      <!-- PLAYER CARD -->
+      <section class="card player" aria-label="Player">
+        <div class="thumb" id="thumb">
+          <svg width="60" height="60" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M10 17l6-5-6-5v10z"></path>
+          </svg>
+        </div>
+        <h2 class="title" id="title">Nothing playing</h2>
+        <div class="meta" id="meta">—</div>
+        <div class="av">
+          <audio id="audio" controls preload="metadata" style="display:none"></audio>
+          <video id="video" controls preload="metadata" playsinline style="display:none"></video>
+        </div>
+        <div class="controls">
+          <button class="btn" id="prevBtn" title="Previous (B)">⏮️ Prev</button>
+          <button class="btn" id="playBtn" title="Play/Pause (Space/P)">⏯️ Play/Pause</button>
+          <button class="btn" id="nextBtn" title="Next (N)">⏭️ Next</button>
+          <button class="btn" id="shuffleBtn" aria-pressed="false" title="Shuffle">🔀 Shuffle</button>
+          <button class="btn" id="loopBtn" aria-pressed="false" title="Loop one">🔁 Loop</button>
+          <a class="btn" id="downloadLink" download title="Download current">⬇️ Download</a>
+        </div>
+      </section>
+
+      <!-- SIDEBAR / PLAYLIST -->
+      <aside class="card side" aria-label="Playlist">
+        <div class="search">
+          <input id="search" type="search" placeholder="Search…" aria-label="Search playlist" />
+          <button class="btn" id="clearBtn" title="Clear search">✖</button>
+        </div>
+        <div class="list" id="list" role="listbox" aria-label="Tracks"></div>
+        <footer>
+          <div>Tip: Create <code>playlist.json</code> next to this file:
+<pre style="white-space:pre-wrap; background:#0b1220; padding:10px; border-radius:12px; overflow:auto">[
+  {"title":"My Song","src":"media/mysong.mp3","type":"audio","artist":"Me"},
+  {"title":"My Video","src":"media/myvideo.mp4","type":"video","poster":"media/myvideo.jpg"}
+]</pre>
+          </div>
+          <div>Files should be in your repo with correct paths. For external URLs, ensure CORS allows it.</div>
+        </footer>
+      </aside>
+    </div>
+  </div>
+
+<script>
+// --- Default playlist (edit or replace with playlist.json) ---
+const DEFAULT_PLAYLIST = [
+  { title: "Sample Audio", src: "media/sample.mp3", type: "audio", artist: "Artist" },
+  { title: "Sample Video", src: "media/sample.mp4", type: "video", poster: "", artist: "" }
+];
+
+let playlist = [];
+let currentIndex = 0;
+let shuffle = false;
+
+const els = {
+  audio: document.getElementById('audio'),
+  video: document.getElementById('video'),
+  title: document.getElementById('title'),
+  meta: document.getElementById('meta'),
+  list: document.getElementById('list'),
+  search: document.getElementById('search'),
+  clearBtn: document.getElementById('clearBtn'),
+  prevBtn: document.getElementById('prevBtn'),
+  nextBtn: document.getElementById('nextBtn'),
+  playBtn: document.getElementById('playBtn'),
+  shuffleBtn: document.getElementById('shuffleBtn'),
+  loopBtn: document.getElementById('loopBtn'),
+  downloadLink: document.getElementById('downloadLink'),
+  thumb: document.getElementById('thumb'),
+};
+
+async function fetchPlaylist(){
+  try{
+    const res = await fetch('playlist.json', {cache:'no-store'});
+    if(res.ok){
+      const data = await res.json();
+      if(Array.isArray(data) && data.length) return data;
+    }
+  }catch(e){/* ignore, fallback */}
+  return DEFAULT_PLAYLIST;
+}
+
+function msToClock(ms){
+  const s = Math.floor(ms/1000);
+  const m = Math.floor(s/60);
+  const r = s % 60;
+  return `${m}:${String(r).padStart(2,'0')}`;
+}
+
+function renderList(filter=""){
+  els.list.innerHTML = '';
+  const q = filter.trim().toLowerCase();
+  playlist.forEach((item, i)=>{
+    const hay = `${item.title||''} ${item.artist||''}`.toLowerCase();
+    if(q && !hay.includes(q)) return;
+    const row = document.createElement('div');
+    row.className = 'row' + (i===currentIndex?' active':'');
+    row.role = 'option';
+    row.tabIndex = 0;
+    row.dataset.index = i;
+
+    const dot = document.createElement('div');
+    dot.className = 'dot ' + (item.type === 'video' ? 'video':'audio');
+
+    const name = document.createElement('div');
+    name.className = 'name';
+    name.textContent = item.title || item.src.split('/').pop();
+
+    const dur = document.createElement('div');
+    dur.className = 'dur';
+    dur.textContent = item.type==='audio'?'MP3':'MP4';
+
+    row.append(dot, name, dur);
+    row.addEventListener('click', ()=> load(i, true));
+    row.addEventListener('keydown', (e)=>{ if(e.key==='Enter' || e.key===' '){ e.preventDefault(); load(i, true);} });
+    els.list.appendChild(row);
+  });
+}
+
+function updateActiveRow(){
+  [...els.list.children].forEach((row)=>{
+    row.classList.toggle('active', Number(row.dataset.index)===currentIndex);
+  });
+}
+
+function setThumb(poster){
+  if(poster){
+    els.thumb.innerHTML = `<img alt="cover art" src="${poster}">`;
+  } else {
+    els.thumb.innerHTML = `<svg width="60" height="60" viewBox="0 0 24 24" fill="currentColor"><path d="M10 17l6-5-6-5v10z"/></svg>`;
+  }
+}
+
+function setMediaSession(item){
+  if('mediaSession' in navigator){
+    try{
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: item.title || '',
+        artist: item.artist || '',
+        album: item.album || '',
+        artwork: item.poster ? [{src:item.poster, sizes:'512x288', type:'image/jpeg'}] : []
+      });
+      navigator.mediaSession.setActionHandler('previoustrack', prev);
+      navigator.mediaSession.setActionHandler('nexttrack', next);
+      navigator.mediaSession.setActionHandler('play', ()=> playPause(true));
+      navigator.mediaSession.setActionHandler('pause', ()=> playPause(false));
+    }catch(e){}
+  }
+}
+
+function saveState(){
+  const el = getActiveEl();
+  const currentTime = el ? el.currentTime : 0;
+  localStorage.setItem('mediaState', JSON.stringify({ index: currentIndex, currentTime }));
+}
+
+function restoreState(){
+  try{ return JSON.parse(localStorage.getItem('mediaState')||'{}'); }catch{ return {}; }
+}
+
+function getActiveEl(){ return els.audio.style.display!=='none' ? els.audio : (els.video.style.display!=='none' ? els.video : null); }
+
+function playPause(forcePlay){
+  const el = getActiveEl();
+  if(!el) return;
+  if(forcePlay===true){ el.play(); return; }
+  if(forcePlay===false){ el.pause(); return; }
+  if(el.paused) el.play(); else el.pause();
+}
+
+function load(i, autoplay=false, resumeSec=0){
+  currentIndex = i;
+  const item = playlist[i];
+  if(!item) return;
+  updateActiveRow();
+  els.title.textContent = item.title || item.src.split('/').pop();
+  els.meta.textContent = `${item.artist? item.artist+' · ' : ''}${item.type==='audio'?'Audio':'Video'}`;
+  els.downloadLink.href = item.src;
+  setThumb(item.poster);
+  setMediaSession(item);
+
+  const isVideo = item.type==='video' || /\.mp4($|\?)/i.test(item.src);
+  if(isVideo){
+    els.audio.pause(); els.audio.removeAttribute('src'); els.audio.style.display='none';
+    els.video.style.display='block'; els.video.src = item.src;
+    els.video.loop = els.loopBtn.getAttribute('aria-pressed')==='true';
+    els.video.onended = handleEnded;
+    if(autoplay){ els.video.play().catch(()=>{}); }
+    if(resumeSec){ els.video.currentTime = resumeSec; }
+  } else {
+    els.video.pause(); els.video.removeAttribute('src'); els.video.style.display='none';
+    els.audio.style.display='block'; els.audio.src = item.src;
+    els.audio.loop = els.loopBtn.getAttribute('aria-pressed')==='true';
+    els.audio.onended = handleEnded;
+    if(autoplay){ els.audio.play().catch(()=>{}); }
+    if(resumeSec){ els.audio.currentTime = resumeSec; }
+  }
+  saveState();
+}
+
+function handleEnded(){
+  if(els.loopBtn.getAttribute('aria-pressed')==='true') return; // native loop handles it
+  next();
+}
+
+function next(){
+  if(shuffle){
+    let ni; do { ni = Math.floor(Math.random()*playlist.length); } while(playlist.length>1 && ni===currentIndex);
+    load(ni, true);
+  } else {
+    load((currentIndex+1)%playlist.length, true);
+  }
+}
+
+function prev(){
+  load((currentIndex-1+playlist.length)%playlist.length, true);
+}
+
+// Event wiring
+els.prevBtn.addEventListener('click', prev);
+els.nextBtn.addEventListener('click', next);
+els.playBtn.addEventListener('click', ()=> playPause());
+els.shuffleBtn.addEventListener('click', ()=>{
+  shuffle = !shuffle;
+  els.shuffleBtn.setAttribute('aria-pressed', String(shuffle));
+});
+els.loopBtn.addEventListener('click', ()=>{
+  const now = els.loopBtn.getAttribute('aria-pressed')==='true';
+  els.loopBtn.setAttribute('aria-pressed', String(!now));
+  const el = getActiveEl(); if(el) el.loop = !now;
+});
+els.search.addEventListener('input', ()=> renderList(els.search.value));
+els.clearBtn.addEventListener('click', ()=>{ els.search.value=''; renderList(''); });
+
+window.addEventListener('beforeunload', saveState);
+window.addEventListener('keydown', (e)=>{
+  const tag = (e.target.tagName||'').toLowerCase();
+  if(tag==='input' || tag==='textarea') return; // don't hijack typing
+  if(e.code==='Space'){ e.preventDefault(); playPause(); }
+  if(e.key==='p' || e.key==='P'){ e.preventDefault(); playPause(); }
+  if(e.key==='n' || e.key==='N'){ e.preventDefault(); next(); }
+  if(e.key==='b' || e.key==='B'){ e.preventDefault(); prev(); }
+  if(e.key==='ArrowRight'){ const el=getActiveEl(); if(el) el.currentTime += 5; }
+  if(e.key==='ArrowLeft'){ const el=getActiveEl(); if(el) el.currentTime -= 5; }
+});
+
+// Initialize
+(async function(){
+  playlist = await fetchPlaylist();
+  const state = restoreState();
+  renderList('');
+  const startIndex = (state && Number.isInteger(state.index) && playlist[state.index]) ? state.index : 0;
+  load(startIndex, false, state.currentTime || 0);
+})();
+</script>
+</body>
+</html>
