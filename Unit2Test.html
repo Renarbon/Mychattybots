@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unit 2 Review Test</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f9;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 25px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            margin-top: 30px;
+        }
+        h1 {
+            text-align: center;
+        }
+        .section {
+            margin-bottom: 35px;
+        }
+        .question {
+            margin-bottom: 20px;
+        }
+        .question p {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: normal;
+        }
+        input[type="text"], input[type="email"], textarea, select {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .start-screen {
+            text-align: center;
+        }
+        #test-content, #results-screen {
+            display: none;
+        }
+        audio {
+            width: 100%;
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
+        .reading-box {
+            background-color: #eaf2f8;
+            border-left: 5px solid #3498db;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .reading-box p {
+            font-style: italic;
+        }
+         #score-display {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+            text-align: center;
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px dashed #3498db;
+            border-radius: 10px;
+            background-color: #eaf2f8;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Unit 2 Review Test</h1>
+
+        <div id="start-screen" class="start-screen">
+            <h2>Welcome!</h2>
+            <p>Please enter your full name to begin the test.</p>
+            <div class="question">
+                <input type="text" id="studentName" placeholder="Your Full Name" required>
+            </div>
+            <button onclick="startTest()">Start Test</button>
+        </div>
+
+        <div id="test-content">
+            <form id="quizForm">
+                <div class="section">
+                    <h2>Section 1: Listening</h2>
+                    <p>Listen to the radio show about having a moral compass. Then choose the correct answer to each question.</p>
+                    <audio controls>
+                        <source src="my-music/unit2test.mp3" type="audio/mpeg">
+                        Your browser does not support the audio element.
+                    </audio>
+
+                    <h3>Part A</h3>
+                    <div class="question">
+                        <p>1. How did Katrina's father influence her moral principles?</p>
+                        <label><input type="radio" name="q1" value="a"> a. He cared for people in hospitals with serious illnesses.</label>
+                        <label><input type="radio" name="q1" value="b"> b. He required her to spend time supporting others.</label>
+                        <label><input type="radio" name="q1" value="c"> c. He taught her the importance of being honest.</label>
+                    </div>
+                    <div class="question">
+                        <p>2. What shaped Joe's moral compass?</p>
+                        <label><input type="radio" name="q2" value="a"> a. He was inspired by friend who survived an illness and now volunteers.</label>
+                        <label><input type="radio" name="q2" value="b"> b. He was often sick as a child and spent most of his time in hospitals.</label>
+                        <label><input type="radio" name="q2" value="c"> c. He had a religious upbringing and prayed every night for guidance.</label>
+                    </div>
+
+                    <h3>Part B</h3>
+                    <p>Listen again and choose the correct word or phrase to complete each definition.</p>
+                     <div class="question">
+                        <p>3. Echoing another person's words means...</p>
+                        <label><input type="radio" name="q3" value="a"> a. repeating them</label>
+                        <label><input type="radio" name="q3" value="b"> b. saying the opposite</label>
+                        <label><input type="radio" name="q3" value="c"> c. changing them</label>
+                    </div>
+                    <div class="question">
+                        <p>4. If cancer is in remission, it means the patient is...</p>
+                        <label><input type="radio" name="q4" value="a"> a. getting sicker</label>
+                        <label><input type="radio" name="q4" value="b"> b. likely to die</label>
+                        <label><input type="radio" name="q4" value="c"> c. recovering</label>
+                    </div>
+                     <div class="question">
+                        <p>5. If someone aced a test, it means they...</p>
+                        <label><input type="radio" name="q5" value="a"> a. got a high score</label>
+                        <label><input type="radio" name="q5" value="b"> b. barely passed</label>
+                        <label><input type="radio" name="q5" value="c"> c. failed</label>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>Section 2: Vocabulary</h2>
+                    <h3>Part A</h3>
+                     <div class="question">
+                        <p>6. When Chelsea broke her father's glasses, she ______ to her brother and he got in trouble for it.</p>
+                        <select name="q6">
+                            <option value="">Select an answer...</option>
+                            <option value="admitted to making a mistake">admitted to making a mistake</option>
+                            <option value="made up an excuse">made up an excuse</option>
+                            <option value="shifted the blame">shifted the blame</option>
+                        </select>
+                    </div>
+                     <div class="question">
+                        <p>7. Jane rarely ______ even when it was clear she was at fault.</p>
+                         <select name="q7">
+                            <option value="">Select an answer...</option>
+                            <option value="admitted to making a mistake">admitted to making a mistake</option>
+                            <option value="made up an excuse">made up an excuse</option>
+                            <option value="shifted the blame">shifted the blame</option>
+                        </select>
+                    </div>
+                     <div class="question">
+                        <p>8. Shelly ______ about her dog being sick to explain why she couldn't complete her homework.</p>
+                         <select name="q8">
+                            <option value="">Select an answer...</option>
+                            <option value="admitted to making a mistake">admitted to making a mistake</option>
+                            <option value="made up an excuse">made up an excuse</option>
+                            <option value="shifted the blame">shifted the blame</option>
+                        </select>
+                    </div>
+                    <h3>Part B</h3>
+                    <div class="question">
+                        <p>9. Gina expresses (gratitude / patience / curiosity) by sending thank-you notes to everyone who helps her.</p>
+                        <input type="text" name="q9" placeholder="Type the correct value">
+                    </div>
+                    <div class="question">
+                        <p>10. Hamish is taking a class on regional history. He has (compassion / curiosity / generosity) about previous generations who lived here.</p>
+                        <input type="text" name="q10" placeholder="Type the correct value">
+                    </div>
+                    <div class="question">
+                        <p>11. Aunt Judy has a tremendous amount of (patience / gratitude / generosity). Even when the children are being difficult, she never loses her temper.</p>
+                        <input type="text" name="q11" placeholder="Type the correct value">
+                    </div>
+                    <div class="question">
+                        <p>12. Sandro volunteers at a soup kitchen, which shows (compassion / curiosity / gratitude) toward others in our community.</p>
+                        <input type="text" name="q12" placeholder="Type the correct value">
+                    </div>
+                    <div class="question">
+                        <p>13. The local dairy donated enough milk for every student in school. School officials were thankful for this show of (curiosity / generosity / patience).</p>
+                        <input type="text" name="q13" placeholder="Type the correct value">
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>Section 3: Grammar</h2>
+                    <h3>Part A</h3>
+                    <div class="question">
+                        <p>14. Community Gardens is a place ______ people can go for peace and quiet.</p>
+                        <input type="text" name="q14" placeholder="Enter relative pronoun">
+                    </div>
+                    <div class="question">
+                        <p>15. Mrs. Billow is the teacher ______ never lets her students get out of hand.</p>
+                        <input type="text" name="q15" placeholder="Enter relative pronoun">
+                    </div>
+                    <div class="question">
+                        <p>16. Victoria is a philanthropist ______ charity organization gives money to animal rescue centers.</p>
+                        <input type="text" name="q16" placeholder="Enter relative pronoun">
+                    </div>
+                    <div class="question">
+                        <p>17. Paul volunteers as a library tutor, ______ makes him feel like he's making a difference.</p>
+                        <input type="text" name="q17" placeholder="Enter relative pronoun">
+                    </div>
+                    <h3>Part B</h3>
+                    <p>Combine the two independent clauses into one sentence, converting one to a dependent comment clause.</p>
+                    <div class="question">
+                        <p>18. It's more expensive to buy a new laptop than to repair the old one. (It's ridiculous.)</p>
+                        <textarea name="q18"></textarea>
+                    </div>
+                    <div class="question">
+                        <p>19. Andrea sent flowers to cheer me up. (It was thoughtful of her.)</p>
+                        <textarea name="q19"></textarea>
+                    </div>
+                    <div class="question">
+                        <p>20. My teacher expects us to write two essays this week. (It is unreasonable.)</p>
+                        <textarea name="q20"></textarea>
+                    </div>
+                    <div class="question">
+                        <p>21. I slipped on the icy sidewalk. (It was embarrassing.)</p>
+                        <textarea name="q21"></textarea>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <h2>Section 4: Speaking</h2>
+                    <h3>Part A</h3>
+                    <p>Complete the conversation.</p>
+                    <div class="question">
+                         <p>A: I'm so sorry, but <b>22.</b> ______</p>
+                         <p>B: What's going on?</p>
+                         <p>A: I'm afraid I spilled some grape juice on your white sofa.</p>
+                         <p>B: How bad is it?</p>
+                         <p>A: Pretty bad. There's a big red stain. <b>23.</b> ______</p>
+                         <p>B: Look, <b>24.</b> ______. Don't worry about it.</p>
+                         <p>A: Well, I insist on paying for it to be cleaned. And please <b>25.</b> ______</p>
+                        <label for="q22">22:</label>
+                        <select name="q22">
+                            <option value="">Select...</option>
+                            <option value="accept my apology">accept my apology</option>
+                            <option value="I feel awful about it">I feel awful about it</option>
+                            <option value="I have some bad news">I have some bad news</option>
+                            <option value="these things happen">these things happen</option>
+                        </select>
+                         <label for="q23">23:</label>
+                        <select name="q23">
+                            <option value="">Select...</option>
+                           <option value="accept my apology">accept my apology</option>
+                            <option value="I feel awful about it">I feel awful about it</option>
+                            <option value="I have some bad news">I have some bad news</option>
+                            <option value="these things happen">these things happen</option>
+                        </select>
+                         <label for="q24">24:</label>
+                        <select name="q24">
+                            <option value="">Select...</option>
+                            <option value="accept my apology">accept my apology</option>
+                            <option value="I feel awful about it">I feel awful about it</option>
+                            <option value="I have some bad news">I have some bad news</option>
+                            <option value="these things happen">these things happen</option>
+                        </select>
+                         <label for="q25">25:</label>
+                        <select name="q25">
+                            <option value="">Select...</option>
+                            <option value="accept my apology">accept my apology</option>
+                            <option value="I feel awful about it">I feel awful about it</option>
+                            <option value="I have some bad news">I have some bad news</option>
+                            <option value="these things happen">these things happen</option>
+                        </select>
+                    </div>
+
+                    <h3>Part B</h3>
+                    <div class="question">
+                        <p>26. A: (I'm afraid / I insist / Please accept) I just backed into your mailbox with my car. I'm really sorry.</p>
+                        <input type="text" name="q26" placeholder="Type the correct phrase">
+                    </div>
+                    <div class="question">
+                        <p>27. B: (Not much / Not too bad / Pretty bad). It's going to be expensive to fix.</p>
+                        <input type="text" name="q27" placeholder="Type the correct phrase">
+                    </div>
+                    <div class="question">
+                        <p>28. A: (Please accept my / I'm afraid / I insist on) paying for the damage.</p>
+                        <input type="text" name="q28" placeholder="Type the correct phrase">
+                    </div>
+                    <div class="question">
+                        <p>29. A: It was (totally my fault / awful about it / so embarrassed).</p>
+                        <input type="text" name="q29" placeholder="Type the correct phrase">
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>Section 5: Reading</h2>
+                    <div class="reading-box">
+                        <h3>What Are Your Core Values?</h3>
+                        <p><strong>Posted by mica • 2 months ago</strong><br>
+                        I just received this prompt for my college admissions essay: What is your core value? How has this value shaped your life? It's really making me evaluate what I want out of life! Out of curiosity: how would you answer this question??!</p>
+                        <hr>
+                        <p><strong>Posted by Carly • 2 months ago</strong><br>
+                        I work hard at building up my bank account—not because I love money, but to feel financially secure. I was living <u>paycheck to paycheck</u> for a long time, and the stress of not having any savings really affected my health. I want to feel confident that if something unexpected happens, like I get sick or my car needs expensive repairs, I can cover the expenses. In other words, I want to be secure enough that I no longer have to worry about money. So, I’d say my core value is security.</p>
+                         <hr>
+                        <p><strong>Posted by Isa • 2 months ago</strong><br>
+                        I'm driven by the core value of compassion. I look to build connections with people and nurture those relationships. I aim to be a good listener and a <u>shoulder to lean on</u> in tough times. I try hard to be more accepting of others. Everyone has their own experiences and a unique way of seeing the world. I think a lot of problems in our society are caused by a lack of empathy. You can learn a lot by trying to understand what someone else is going through. Good luck with your college applications, Mica!</p>
+                    </div>
+
+                    <h3>Part A</h3>
+                    <div class="question">
+                        <p>30. Why is the core value of security important to Carly?</p>
+                        <label><input type="radio" name="q30" value="a"> a. She is sick and needs money for hospital bills.</label>
+                        <label><input type="radio" name="q30" value="b"> b. She wants to feel less stress about money.</label>
+                        <label><input type="radio" name="q30" value="c"> c. She loves having and spending lots of money.</label>
+                    </div>
+                    <div class="question">
+                        <p>31. How does Isa demonstrate her core value of compassion?</p>
+                        <label><input type="radio" name="q31" value="a"> a. She supports people when they're having problems.</label>
+                        <label><input type="radio" name="q31" value="b"> b. She volunteers her time and donates money to charity.</label>
+                        <label><input type="radio" name="q31" value="c"> c. She has a unique way of seeing the world.</label>
+                    </div>
+                    
+                    <h3>Part B</h3>
+                     <div class="question">
+                        <p>32. If you're living paycheck to paycheck, you...</p>
+                        <label><input type="radio" name="q32" value="a"> a. spend all your income on expenses and have no savings</label>
+                        <label><input type="radio" name="q32" value="b"> b. deposit most of your paycheck in a savings account</label>
+                        <label><input type="radio" name="q32" value="c"> c. save a part of your income in case of emergencies</label>
+                    </div>
+                     <div class="question">
+                        <p>33. When you provide a shoulder to lean on, you...</p>
+                        <label><input type="radio" name="q33" value="a"> a. talk to people about your problems and get help</label>
+                        <label><input type="radio" name="q33" value="b"> b. help or encourage someone who is having a hard time</label>
+                        <label><input type="radio" name="q33" value="c"> c. experience pain in your upper body and arms</label>
+                    </div>
+                </div>
+
+                <button type="button" onclick="submitTest()">Submit & See Results</button>
+            </form>
+        </div>
+
+        <div id="results-screen">
+            <h2>Test Results</h2>
+            <div id="score-display"></div>
+            <p id="results-summary"></p>
+            <button onclick="downloadPDF()">Download Results as PDF</button>
+            <a id="emailLink" style="text-decoration: none;"><button type="button" style="margin-top: 10px; background-color: #27ae60;">Email Results to renarguet@gmail.com</button></a>
+        </div>
+
+    </div>
+
+    <script>
+        let startTime;
+        let endTime;
+        let studentName;
+
+        const correctAnswers = {
+            q1: "b", q2: "a", q3: "a", q4: "c", q5: "a",
+            q6: "shifted the blame", q7: "admitted to making a mistake", q8: "made up an excuse",
+            q9: "gratitude", q10: "curiosity", q11: "patience", q12: "compassion", q13: "generosity",
+            q14: "where", q15: "who", q16: "whose", q17: "which",
+            q18: "It's more expensive to buy a new laptop than to repair the old one, which is ridiculous.",
+            q19: "Andrea sent flowers to cheer me up, which was thoughtful of her.",
+            q20: "My teacher expects us to write two essays this week, which is unreasonable.",
+            q21: "I slipped on the icy sidewalk, which was embarrassing.",
+            q22: "I have some bad news", q23: "I feel awful about it", q24: "these things happen", q25: "accept my apology",
+            q26: "I'm afraid", q27: "Pretty bad", q28: "I insist on", q29: "totally my fault",
+            q30: "b", q31: "a", q32: "a", q33: "b"
+        };
+        
+        // Use jsPDF
+        const { jsPDF } = window.jspdf;
+
+        function startTest() {
+            studentName = document.getElementById('studentName').value;
+            if (!studentName) {
+                alert("Please enter your name to start.");
+                return;
+            }
+            startTime = new Date();
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('test-content').style.display = 'block';
+        }
+
+        function normalizeText(text) {
+            return text.trim().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").toLowerCase();
+        }
+        
+        function submitTest() {
+            endTime = new Date();
+            const form = document.getElementById('quizForm');
+            let score = 0;
+            const totalQuestions = Object.keys(correctAnswers).length;
+
+            for (const question in correctAnswers) {
+                const elements = form.elements[question];
+                let userAnswer = '';
+
+                if (elements.type === 'radio') {
+                    const checked = document.querySelector(`input[name="${question}"]:checked`);
+                    if (checked) {
+                        userAnswer = checked.value;
+                    }
+                } else { // text, textarea, select
+                    userAnswer = elements.value;
+                }
+
+                if (normalizeText(userAnswer) === normalizeText(correctAnswers[question])) {
+                    score++;
+                }
+            }
+
+            const finalScore = Math.round((score / totalQuestions) * 100);
+            
+            displayResults(finalScore);
+        }
+
+        function displayResults(score) {
+            document.getElementById('test-content').style.display = 'none';
+            document.getElementById('results-screen').style.display = 'block';
+
+            document.getElementById('score-display').innerText = `Your Score: ${score}%`;
+            
+            const summary = `
+                <strong>Student:</strong> ${studentName}<br>
+                <strong>Test Started:</strong> ${startTime.toLocaleString()}<br>
+                <strong>Test Finished:</strong> ${endTime.toLocaleString()}
+            `;
+            document.getElementById('results-summary').innerHTML = summary;
+            
+            prepareEmail(score);
+        }
+
+        function prepareEmail(score) {
+            const recipient = "renarguet@gmail.com";
+            const subject = `Test Results for ${studentName}`;
+            const body = `Hello,\n\nPlease find the test results for ${studentName} below:\n\n` +
+                         `Score: ${score}%\n` +
+                         `Start Time: ${startTime.toLocaleString()}\n` +
+                         `End Time: ${endTime.toLocaleString()}\n\n` +
+                         `Regards.`;
+            
+            const mailtoLink = `mailto:${recipient}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            document.getElementById('emailLink').href = mailtoLink;
+        }
+
+        function downloadPDF() {
+            const doc = new jsPDF();
+            const score = document.getElementById('score-display').innerText;
+            
+            doc.setFontSize(22);
+            doc.text("Unit 2 Review Test Results", 105, 20, null, null, 'center');
+            
+            doc.setFontSize(14);
+            doc.text(`Student Name: ${studentName}`, 20, 40);
+            doc.text(`Score: ${score}`, 20, 50);
+            doc.text(`Start Time: ${startTime.toLocaleString()}`, 20, 60);
+            doc.text(`End Time: ${endTime.toLocaleString()}`, 20, 70);
+
+            const safeFileName = studentName.replace(/ /g, '_') + '.pdf';
+            doc.save(safeFileName);
+        }
+
+    </script>
+</body>
+</html>
