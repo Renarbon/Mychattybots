@@ -68,7 +68,7 @@
             border-radius: 5px;
             font-size: 16px;
             cursor: pointer;
-            transition: background-color 0.3s ease;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
         button:hover {
             background-color: #2980b9;
@@ -138,7 +138,7 @@
         </div>
 
         <div id="test-content">
-            <form id="quizForm">
+             <form id="quizForm">
                 <div class="section">
                     <h2>Section 1: Listening</h2>
                     <p>Listen to the radio show about having a moral compass. Then choose the correct answer to each question.</p>
@@ -393,193 +393,196 @@
             <div id="score-display"></div>
             <div id="results-summary" class="answer-breakdown"></div>
             <button onclick="downloadPDF()">Download Results as PDF</button>
-            <a id="emailLink" style="text-decoration: none;"><button type="button" style="margin-top: 10px; background-color: #27ae60;">Email Results to renarguet@gmail.com</button></a>
+            <button id="copyButton" onclick="copyResultsForEmail()" style="margin-top: 10px; background-color: #27ae60;">Copy Results for Email</button>
         </div>
-
     </div>
 
-<script>
-    let startTime, endTime, studentName;
-    let detailedResults = [];
+    <script>
+        let startTime, endTime, studentName;
+        let detailedResults = [];
 
-    const correctAnswers = {
-        q1: "b", q2: "a", q3: "a", q4: "c", q5: "a",
-        q6: "shifted the blame", q7: "admitted to making a mistake", q8: "made up an excuse",
-        q9: "gratitude", q10: "curiosity", q11: "patience", q12: "compassion", q13: "generosity",
-        q14: "where", q15: "who", q16: "whose", q17: "which",
-        q18: "It's more expensive to buy a new laptop than to repair the old one, which is ridiculous.",
-        q19: "Andrea sent flowers to cheer me up, which was thoughtful of her.",
-        q20: "My teacher expects us to write two essays this week, which is unreasonable.",
-        q21: "I slipped on the icy sidewalk, which was embarrassing.",
-        q22: "I have some bad news", q23: "I feel awful about it", q24: "these things happen", q25: "accept my apology",
-        q26: "I'm afraid", q27: "Pretty bad", q28: "I insist on", q29: "totally my fault",
-        q30: "b", q31: "a", q32: "a", q33: "b"
-    };
-    
-    // Ensure the jsPDF library is loaded before we use it
-    const { jsPDF } = window.jspdf;
+        const correctAnswers = {
+            q1: "b", q2: "a", q3: "a", q4: "c", q5: "a",
+            q6: "shifted the blame", q7: "admitted to making a mistake", q8: "made up an excuse",
+            q9: "gratitude", q10: "curiosity", q11: "patience", q12: "compassion", q13: "generosity",
+            q14: "where", q15: "who", q16: "whose", q17: "which",
+            q18: "It's more expensive to buy a new laptop than to repair the old one, which is ridiculous.",
+            q19: "Andrea sent flowers to cheer me up, which was thoughtful of her.",
+            q20: "My teacher expects us to write two essays this week, which is unreasonable.",
+            q21: "I slipped on the icy sidewalk, which was embarrassing.",
+            q22: "I have some bad news", q23: "I feel awful about it", q24: "these things happen", q25: "accept my apology",
+            q26: "I'm afraid", q27: "Pretty bad", q28: "I insist on", q29: "totally my fault",
+            q30: "b", q31: "a", q32: "a", q33: "b"
+        };
+        
+        const { jsPDF } = window.jspdf;
 
-    function startTest() {
-        studentName = document.getElementById('studentName').value;
-        if (!studentName.trim()) {
-            alert("Please enter your name to start.");
-            return;
-        }
-        startTime = new Date();
-        document.getElementById('start-screen').style.display = 'none';
-        document.getElementById('test-content').style.display = 'block';
-    }
-
-    function normalizeText(text) {
-        if (typeof text !== 'string') return '';
-        return text.trim().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, "").toLowerCase();
-    }
-    
-    function submitTest() {
-        endTime = new Date();
-        const form = document.getElementById('quizForm');
-        let score = 0;
-        const totalQuestions = Object.keys(correctAnswers).length;
-        detailedResults = []; // Clear previous results
-
-        for (const questionKey in correctAnswers) {
-            const elements = form.elements[questionKey];
-            let userAnswer = '';
-            const questionNumber = questionKey.replace('q', '');
-
-            if (elements.type === 'radio') {
-                const checked = document.querySelector(`input[name="${questionKey}"]:checked`);
-                userAnswer = checked ? checked.value : '';
-            } else {
-                userAnswer = elements.value;
+        function startTest() {
+            studentName = document.getElementById('studentName').value;
+            if (!studentName.trim()) {
+                alert("Please enter your name to start.");
+                return;
             }
-
-            const isCorrect = normalizeText(userAnswer) === normalizeText(correctAnswers[questionKey]);
-            if (isCorrect) {
-                score++;
-            }
-
-            detailedResults.push({
-                question: `Question ${questionNumber}`,
-                userAnswer: userAnswer || "No Answer",
-                correctAnswer: correctAnswers[questionKey],
-                isCorrect: isCorrect
-            });
+            startTime = new Date();
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('test-content').style.display = 'block';
         }
 
-        const finalScore = Math.round((score / totalQuestions) * 100);
-        displayResults(finalScore);
-    }
-
-    function displayResults(score) {
-        document.getElementById('test-content').style.display = 'none';
-        document.getElementById('results-screen').style.display = 'block';
-
-        document.getElementById('resultsStudentName').innerText = studentName;
-        document.getElementById('score-display').innerText = `Your Score: ${score}%`;
-
-        let summaryHtml = `<h3>Answer Breakdown</h3>`;
-        detailedResults.forEach(result => {
-            const resultClass = result.isCorrect ? 'correct' : 'incorrect';
-            const resultText = result.isCorrect ? 'Correct' : 'Incorrect';
-            
-            summaryHtml += `
-                <div>
-                    <strong>${result.question}:</strong> <span class="${resultClass}">${resultText}</span><br>
-                    Your Answer: ${result.userAnswer}<br>
-            `;
-            if (!result.isCorrect) {
-                summaryHtml += `<span class="correct-answer-text">Correct Answer: ${result.correctAnswer}</span>`;
-            }
-            summaryHtml += `</div>`;
-        });
-
-        document.getElementById('results-summary').innerHTML = summaryHtml;
-        prepareEmail(score);
-    }
-
-    function prepareEmail(score) {
-        const recipient = "renarguet@gmail.com";
-        const subject = `Test Results for ${studentName}`;
+        function normalizeText(text) {
+            if (typeof text !== 'string') return '';
+            return text.trim().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, "").toLowerCase();
+        }
         
-        let resultsBody = detailedResults.map(result => {
-            const resultStatus = result.isCorrect ? 'Correct' : 'Incorrect';
-            let entry = `${result.question}: ${resultStatus}\n` +
-                        `Your Answer: ${result.userAnswer}\n`;
-            if (!result.isCorrect) {
-                entry += `Correct Answer: ${result.correctAnswer}\n`;
-            }
-            return entry;
-        }).join('\n');
+        function submitTest() {
+            endTime = new Date();
+            const form = document.getElementById('quizForm');
+            let score = 0;
+            const totalQuestions = Object.keys(correctAnswers).length;
+            detailedResults = []; 
 
-        const body = `Hello,\n\nPlease find the test results for ${studentName} below:\n\n` +
-                     `Final Score: ${score}%\n` +
-                     `Start Time: ${startTime.toLocaleString()}\n` +
-                     `End Time: ${endTime.toLocaleString()}\n\n` +
-                     `--- Answer Breakdown ---\n${resultsBody}`;
-        
-        const mailtoLink = `mailto:${recipient}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-        document.getElementById('emailLink').href = mailtoLink;
-    }
+            for (const questionKey in correctAnswers) {
+                const elements = form.elements[questionKey];
+                let userAnswer = '';
+                const questionNumber = questionKey.replace('q', '');
 
-    function downloadPDF() {
-        try {
-            const doc = new jsPDF();
-            const scoreText = document.getElementById('score-display').innerText;
-            
-            let y = 30;
-            const margin = 20;
-            const pageWidth = doc.internal.pageSize.getWidth();
-            const textWidth = pageWidth - (margin * 2);
-
-            function checkPageBreak() {
-                if (y > 270) {
-                    doc.addPage();
-                    y = 20;
+                if (elements.type === 'radio') {
+                    const checked = document.querySelector(`input[name="${questionKey}"]:checked`);
+                    userAnswer = checked ? checked.value : '';
+                } else {
+                    userAnswer = elements.value;
                 }
+
+                const isCorrect = normalizeText(userAnswer) === normalizeText(correctAnswers[questionKey]);
+                if (isCorrect) {
+                    score++;
+                }
+
+                detailedResults.push({
+                    question: `Question ${questionNumber}`,
+                    userAnswer: userAnswer || "No Answer",
+                    correctAnswer: correctAnswers[questionKey],
+                    isCorrect: isCorrect
+                });
             }
 
-            doc.setFontSize(20);
-            doc.text("Unit 2 Review Test Results", pageWidth / 2, 20, { align: 'center' });
-            
-            doc.setFontSize(12);
-            doc.text(`Student Name: ${studentName}`, margin, y); y += 7;
-            doc.text(`Score: ${scoreText}`, margin, y); y += 7;
-            doc.text(`Completed on: ${endTime.toLocaleString()}`, margin, y); y += 15;
+            const finalScore = Math.round((score / totalQuestions) * 100);
+            displayResults(finalScore);
+        }
 
+        function displayResults(score) {
+            document.getElementById('test-content').style.display = 'none';
+            document.getElementById('results-screen').style.display = 'block';
+            document.getElementById('resultsStudentName').innerText = studentName;
+            document.getElementById('score-display').innerText = `Your Score: ${score}%`;
+
+            let summaryHtml = `<h3>Answer Breakdown</h3>`;
             detailedResults.forEach(result => {
-                checkPageBreak();
-                const resultStatus = result.isCorrect ? 'Correct' : 'Incorrect';
-                doc.setFont(undefined, 'bold');
-                doc.setTextColor(result.isCorrect ? '#27ae60' : '#c0392b');
-                doc.text(`${result.question}: ${resultStatus}`, margin, y); y += 7;
-
-                doc.setFont(undefined, 'normal');
-                doc.setTextColor('#000000');
+                const resultClass = result.isCorrect ? 'correct' : 'incorrect';
+                const resultText = result.isCorrect ? 'Correct' : 'Incorrect';
                 
-                checkPageBreak();
-                let userAnswerLines = doc.splitTextToSize(`Your Answer: ${result.userAnswer}`, textWidth);
-                doc.text(userAnswerLines, margin, y);
-                y += (userAnswerLines.length * 5) + 2;
-
+                summaryHtml += `
+                    <div>
+                        <strong>${result.question}:</strong> <span class="${resultClass}">${resultText}</span><br>
+                        Your Answer: ${result.userAnswer}<br>
+                `;
                 if (!result.isCorrect) {
-                    checkPageBreak();
-                    doc.setTextColor('#2980b9');
-                    let correctAnswerLines = doc.splitTextToSize(`Correct Answer: ${result.correctAnswer}`, textWidth);
-                    doc.text(correctAnswerLines, margin, y);
-                    y += (correctAnswerLines.length * 5) + 2;
-                    doc.setTextColor('#000000');
+                    summaryHtml += `<span class="correct-answer-text">Correct Answer: ${result.correctAnswer}</span>`;
                 }
-                y += 5;
+                summaryHtml += `</div>`;
             });
 
-            const safeFileName = studentName.replace(/[^a-zA-Z0-9]/g, '_') + '_Results.pdf';
-            doc.save(safeFileName);
-        } catch (e) {
-            console.error("Error generating PDF:", e);
-            alert("Sorry, an error occurred while creating the PDF. Please check the console for details.");
+            document.getElementById('results-summary').innerHTML = summaryHtml;
         }
-    }
-</script>
+
+        function copyResultsForEmail() {
+            const score = document.getElementById('score-display').innerText;
+
+            let resultsText = detailedResults.map(result => {
+                const resultStatus = result.isCorrect ? 'Correct' : 'Incorrect';
+                let entry = `${result.question}: ${resultStatus}\n` +
+                            `  Your Answer: ${result.userAnswer}\n`;
+                if (!result.isCorrect) {
+                    entry += `  Correct Answer: ${result.correctAnswer}\n`;
+                }
+                return entry;
+            }).join('\n');
+
+            const body = `Hello,\n\nPlease find the test results for ${studentName} below:\n\n` +
+                         `Final Score: ${score}\n` +
+                         `Start Time: ${startTime.toLocaleString()}\n` +
+                         `End Time: ${endTime.toLocaleString()}\n\n` +
+                         `--- Answer Breakdown ---\n${resultsText}`;
+            
+            navigator.clipboard.writeText(body).then(() => {
+                const copyButton = document.getElementById('copyButton');
+                copyButton.innerText = 'Copied to Clipboard!';
+                setTimeout(() => {
+                    copyButton.innerText = 'Copy Results for Email';
+                }, 2500);
+            }).catch(err => {
+                console.error('Failed to copy results: ', err);
+                alert('Could not copy results. Please copy them manually from the screen.');
+            });
+        }
+
+        function downloadPDF() {
+            try {
+                const doc = new jsPDF();
+                const scoreText = document.getElementById('score-display').innerText;
+                
+                let y = 30;
+                const margin = 20;
+                const pageWidth = doc.internal.pageSize.getWidth();
+                const textWidth = pageWidth - (margin * 2);
+
+                function checkPageBreak() {
+                    if (y > 270) {
+                        doc.addPage();
+                        y = 20;
+                    }
+                }
+
+                doc.setFontSize(20);
+                doc.text("Unit 2 Review Test Results", pageWidth / 2, 20, { align: 'center' });
+                
+                doc.setFontSize(12);
+                doc.text(`Student Name: ${studentName}`, margin, y); y += 7;
+                doc.text(`${scoreText}`, margin, y); y += 7;
+                doc.text(`Completed on: ${endTime.toLocaleString()}`, margin, y); y += 15;
+
+                detailedResults.forEach(result => {
+                    checkPageBreak();
+                    const resultStatus = result.isCorrect ? 'Correct' : 'Incorrect';
+                    doc.setFont(undefined, 'bold');
+                    doc.setTextColor(result.isCorrect ? '#27ae60' : '#c0392b');
+                    doc.text(`${result.question}: ${resultStatus}`, margin, y); y += 7;
+
+                    doc.setFont(undefined, 'normal');
+                    doc.setTextColor('#000000');
+                    
+                    checkPageBreak();
+                    let userAnswerLines = doc.splitTextToSize(`Your Answer: ${result.userAnswer}`, textWidth);
+                    doc.text(userAnswerLines, margin, y);
+                    y += (userAnswerLines.length * 5) + 2;
+
+                    if (!result.isCorrect) {
+                        checkPageBreak();
+                        doc.setTextColor('#2980b9');
+                        let correctAnswerLines = doc.splitTextToSize(`Correct Answer: ${result.correctAnswer}`, textWidth);
+                        doc.text(correctAnswerLines, margin, y);
+                        y += (correctAnswerLines.length * 5) + 2;
+                        doc.setTextColor('#000000');
+                    }
+                    y += 5;
+                });
+
+                const safeFileName = studentName.replace(/[^a-zA-Z0-9]/g, '_') + '_Results.pdf';
+                doc.save(safeFileName);
+            } catch (e) {
+                console.error("Error generating PDF:", e);
+                alert("Sorry, an error occurred while creating the PDF.");
+            }
+        }
+    </script>
 </body>
 </html>
