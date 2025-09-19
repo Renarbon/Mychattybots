@@ -146,7 +146,6 @@
                         <source src="my-music/unit2test.mp3" type="audio/mpeg">
                         Your browser does not support the audio element.
                     </audio>
-
                     <h3>Part A</h3>
                     <div class="question">
                         <p>1. How did Katrina's father influence her moral principles?</p>
@@ -160,7 +159,6 @@
                         <label><input type="radio" name="q2" value="b"> b. He was often sick as a child and spent most of his time in hospitals.</label>
                         <label><input type="radio" name="q2" value="c"> c. He had a religious upbringing and prayed every night for guidance.</label>
                     </div>
-
                     <h3>Part B</h3>
                     <p>Listen again and choose the correct word or phrase to complete each definition.</p>
                      <div class="question">
@@ -182,7 +180,6 @@
                         <label><input type="radio" name="q5" value="c"> c. failed</label>
                     </div>
                 </div>
-
                 <div class="section">
                     <h2>Section 2: Vocabulary</h2>
                     <h3>Part A</h3>
@@ -235,7 +232,6 @@
                         <input type="text" name="q13" placeholder="Type the correct value">
                     </div>
                 </div>
-
                 <div class="section">
                     <h2>Section 3: Grammar</h2>
                     <h3>Part A</h3>
@@ -274,7 +270,6 @@
                         <textarea name="q21"></textarea>
                     </div>
                 </div>
-                
                 <div class="section">
                     <h2>Section 4: Speaking</h2>
                     <h3>Part A</h3>
@@ -320,7 +315,6 @@
                             <option value="these things happen">these things happen</option>
                         </select>
                     </div>
-
                     <h3>Part B</h3>
                     <div class="question">
                         <p>26. A: (I'm afraid / I insist / Please accept) I just backed into your mailbox with my car. I'm really sorry.</p>
@@ -339,7 +333,6 @@
                         <input type="text" name="q29" placeholder="Type the correct phrase">
                     </div>
                 </div>
-
                 <div class="section">
                     <h2>Section 5: Reading</h2>
                     <div class="reading-box">
@@ -353,7 +346,6 @@
                         <p><strong>Posted by Isa • 2 months ago</strong><br>
                         I'm driven by the core value of compassion. I look to build connections with people and nurture those relationships. I aim to be a good listener and a <u>shoulder to lean on</u> in tough times. I try hard to be more accepting of others. Everyone has their own experiences and a unique way of seeing the world. I think a lot of problems in our society are caused by a lack of empathy. You can learn a lot by trying to understand what someone else is going through. Good luck with your college applications, Mica!</p>
                     </div>
-
                     <h3>Part A</h3>
                     <div class="question">
                         <p>30. Why is the core value of security important to Carly?</p>
@@ -367,7 +359,6 @@
                         <label><input type="radio" name="q31" value="b"> b. She volunteers her time and donates money to charity.</label>
                         <label><input type="radio" name="q31" value="c"> c. She has a unique way of seeing the world.</label>
                     </div>
-                    
                     <h3>Part B</h3>
                      <div class="question">
                         <p>32. If you're living paycheck to paycheck, you...</p>
@@ -382,7 +373,6 @@
                         <label><input type="radio" name="q33" value="c"> c. experience pain in your upper body and arms</label>
                     </div>
                 </div>
-
                 <button type="button" onclick="submitTest()">Submit & See Results</button>
             </form>
         </div>
@@ -393,7 +383,6 @@
             <div id="score-display"></div>
             <div id="results-summary" class="answer-breakdown"></div>
             <button onclick="downloadPDF()">Download Results as PDF</button>
-            <button id="copyButton" onclick="copyResultsForEmail()" style="margin-top: 10px; background-color: #27ae60;">Copy Results for Email</button>
         </div>
     </div>
 
@@ -494,37 +483,6 @@
             document.getElementById('results-summary').innerHTML = summaryHtml;
         }
 
-        function copyResultsForEmail() {
-            const score = document.getElementById('score-display').innerText;
-
-            let resultsText = detailedResults.map(result => {
-                const resultStatus = result.isCorrect ? 'Correct' : 'Incorrect';
-                let entry = `${result.question}: ${resultStatus}\n` +
-                            `  Your Answer: ${result.userAnswer}\n`;
-                if (!result.isCorrect) {
-                    entry += `  Correct Answer: ${result.correctAnswer}\n`;
-                }
-                return entry;
-            }).join('\n');
-
-            const body = `Hello,\n\nPlease find the test results for ${studentName} below:\n\n` +
-                         `Final Score: ${score}\n` +
-                         `Start Time: ${startTime.toLocaleString()}\n` +
-                         `End Time: ${endTime.toLocaleString()}\n\n` +
-                         `--- Answer Breakdown ---\n${resultsText}`;
-            
-            navigator.clipboard.writeText(body).then(() => {
-                const copyButton = document.getElementById('copyButton');
-                copyButton.innerText = 'Copied to Clipboard!';
-                setTimeout(() => {
-                    copyButton.innerText = 'Copy Results for Email';
-                }, 2500);
-            }).catch(err => {
-                console.error('Failed to copy results: ', err);
-                alert('Could not copy results. Please copy them manually from the screen.');
-            });
-        }
-
         function downloadPDF() {
             try {
                 const doc = new jsPDF();
@@ -532,6 +490,7 @@
                 
                 let y = 30;
                 const margin = 20;
+                const lineHeight = 7;
                 const pageWidth = doc.internal.pageSize.getWidth();
                 const textWidth = pageWidth - (margin * 2);
 
@@ -546,16 +505,16 @@
                 doc.text("Unit 2 Review Test Results", pageWidth / 2, 20, { align: 'center' });
                 
                 doc.setFontSize(12);
-                doc.text(`Student Name: ${studentName}`, margin, y); y += 7;
-                doc.text(`${scoreText}`, margin, y); y += 7;
-                doc.text(`Completed on: ${endTime.toLocaleString()}`, margin, y); y += 15;
+                doc.text(`Student Name: ${studentName}`, margin, y); y += lineHeight;
+                doc.text(`${scoreText}`, margin, y); y += lineHeight;
+                doc.text(`Completed on: ${endTime.toLocaleString()}`, margin, y); y += lineHeight * 2;
 
                 detailedResults.forEach(result => {
                     checkPageBreak();
                     const resultStatus = result.isCorrect ? 'Correct' : 'Incorrect';
                     doc.setFont(undefined, 'bold');
                     doc.setTextColor(result.isCorrect ? '#27ae60' : '#c0392b');
-                    doc.text(`${result.question}: ${resultStatus}`, margin, y); y += 7;
+                    doc.text(`${result.question}: ${resultStatus}`, margin, y); y += lineHeight;
 
                     doc.setFont(undefined, 'normal');
                     doc.setTextColor('#000000');
@@ -563,24 +522,24 @@
                     checkPageBreak();
                     let userAnswerLines = doc.splitTextToSize(`Your Answer: ${result.userAnswer}`, textWidth);
                     doc.text(userAnswerLines, margin, y);
-                    y += (userAnswerLines.length * 5) + 2;
+                    y += (userAnswerLines.length * lineHeight);
 
                     if (!result.isCorrect) {
                         checkPageBreak();
                         doc.setTextColor('#2980b9');
                         let correctAnswerLines = doc.splitTextToSize(`Correct Answer: ${result.correctAnswer}`, textWidth);
                         doc.text(correctAnswerLines, margin, y);
-                        y += (correctAnswerLines.length * 5) + 2;
+                        y += (correctAnswerLines.length * lineHeight);
                         doc.setTextColor('#000000');
                     }
-                    y += 5;
+                    y += lineHeight / 2;
                 });
 
                 const safeFileName = studentName.replace(/[^a-zA-Z0-9]/g, '_') + '_Results.pdf';
                 doc.save(safeFileName);
             } catch (e) {
                 console.error("Error generating PDF:", e);
-                alert("Sorry, an error occurred while creating the PDF.");
+                alert("Sorry, an error occurred while creating the PDF. Please check the browser console for details.");
             }
         }
     </script>
