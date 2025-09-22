@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>My Music & Videos</title>
+
+<!-- Open Graph tags for Facebook preview -->
+<meta property="og:url" content="https://YOUR_GITHUB_PAGES_URL" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="My Music & Videos" />
+<meta property="og:description" content="Enjoy my music and videos!" />
+<meta property="og:image" content="https://YOUR_GITHUB_PAGES_URL/path-to-cover.jpg" />
+
 <style>
 :root{
   --bg:#0f172a; --card:#111827; --muted:#64748b; --text:#e5e7eb;
@@ -24,7 +32,7 @@ h1{font-size:clamp(22px,3vw,34px); margin:0; letter-spacing:0.3px;}
 .thumb{width:100%; aspect-ratio:16/9; background:#0b1220; border-radius:12px; overflow:hidden; display:grid; place-items:center; margin-bottom:12px;}
 .thumb img, .thumb video{width:100%; height:100%; object-fit:cover; border-radius:12px;}
 audio{display:none;}
-.controls{display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;}
+.controls{display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; align-items:center;}
 .btn{appearance:none; border:1px solid rgba(255,255,255,0.12); color:var(--text); background:#0b1220; padding:10px 12px; border-radius:12px; cursor:pointer;}
 .btn:hover{border-color:rgba(255,255,255,0.22);}
 .btn[aria-pressed="true"]{border-color:var(--accent); box-shadow:0 0 0 2px rgba(34,211,238,0.25) inset;}
@@ -44,13 +52,15 @@ footer{margin-top:18px; color:var(--muted); font-size:0.9rem;}
 a{color:var(--accent);}
 #visitorCounter{margin-top:12px; color:var(--accent); font-weight:bold;}
 #comments{margin-top:16px;}
+.fb-like{margin-left:10px;}
 </style>
 </head>
 <body>
+
 <!-- Facebook SDK -->
 <div id="fb-root"></div>
 <script async defer crossorigin="anonymous" 
-src="https://connect.facebook.net/es_LA/sdk.js#xfbml=1&version=v23.0&appId=YOUR_APP_ID"></script>
+src="https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v23.0&appId=YOUR_APP_ID"></script>
 
 <div class="wrap">
   <header>
@@ -77,8 +87,17 @@ src="https://connect.facebook.net/es_LA/sdk.js#xfbml=1&version=v23.0&appId=YOUR_
         <button class="btn" id="nextBtn">⏭️ Next</button>
         <button class="btn" id="shuffleBtn" aria-pressed="false">🔀 Shuffle</button>
         <button class="btn" id="loopBtn" aria-pressed="false">🔁 Loop</button>
-        <button class="btn" id="likeBtn">❤️ 0</button>
-        <div class="fb-like" data-href="YOUR_GITHUB_PAGES_URL" data-layout="button_count" data-action="like" data-size="large" data-share="true"></div>
+
+        <!-- Facebook Like Button -->
+        <div class="fb-like" 
+          data-href="https://YOUR_GITHUB_PAGES_URL" 
+          data-width="" 
+          data-layout="button_count" 
+          data-action="like" 
+          data-size="small"  
+          data-share="true">
+        </div>
+
       </div>
 
       <div id="visitorCounter">👁️ Visitors: 0</div>
@@ -86,7 +105,7 @@ src="https://connect.facebook.net/es_LA/sdk.js#xfbml=1&version=v23.0&appId=YOUR_
       <!-- Facebook Comments -->
       <div id="comments">
         <h3>💬 Comments</h3>
-        <div class="fb-comments" data-href="YOUR_GITHUB_PAGES_URL" data-width="100%" data-numposts="5"></div>
+        <div class="fb-comments" data-href="https://YOUR_GITHUB_PAGES_URL" data-width="100%" data-numposts="5"></div>
       </div>
     </section>
 
@@ -97,14 +116,13 @@ src="https://connect.facebook.net/es_LA/sdk.js#xfbml=1&version=v23.0&appId=YOUR_
         <button class="btn" id="clearBtn">✖</button>
       </div>
       <div class="list" id="list" role="listbox"></div>
-      <footer></footer>
     </aside>
   </div>
 </div>
 
 <script>
 // --- Playlist ---
-const DEFAULT_PLAYLIST = [
+const playlist = [
   { title: "Tears on the dancefloor clip", src: "soul-mus/tears on the dancefloor.mp4", type: "video", poster: "soul-mus/tears on the dancefloor-Cover.jpg", artist: "Moonstone Grooves" },
   { title: "Volví", src: "my-music/Volví.mp3", type: "audio", artist: "Mr. Arguet", poster:"my-music/lospoetas.png"},
   { title: "Aún te sueño", src: "my-music/Aún te sueño .mp3", type: "audio", artist: "Mr. Arguet", poster:"my-music/lospoetas.png"},
@@ -127,9 +145,8 @@ const DEFAULT_PLAYLIST = [
   
 ];
 
-let playlist = DEFAULT_PLAYLIST;
-let currentIndex = 0;
-let shuffle = false;
+let currentIndex=0;
+let shuffle=false;
 
 const els = {
   audio: document.getElementById('audio'),
@@ -144,42 +161,32 @@ const els = {
   playBtn: document.getElementById('playBtn'),
   shuffleBtn: document.getElementById('shuffleBtn'),
   loopBtn: document.getElementById('loopBtn'),
-  likeBtn: document.getElementById('likeBtn'),
-  visitorCounter: document.getElementById('visitorCounter'),
+  visitorCounter: document.getElementById('visitorCounter')
 };
 
-// --- Visitor counter using CountAPI ---
+// --- Visitor Counter (CountAPI) ---
 fetch('https://api.countapi.xyz/hit/github-pages-pages/YOUR_PAGE').then(r=>r.json()).then(data=>{
   els.visitorCounter.textContent=`👁️ Visitors: ${data.value}`;
 });
 
-// --- Likes ---
-let likes = localStorage.getItem('likes') || 0;
-els.likeBtn.textContent=`❤️ ${likes}`;
-els.likeBtn.addEventListener('click',()=>{
-  likes++;
-  localStorage.setItem('likes', likes);
-  els.likeBtn.textContent=`❤️ ${likes}`;
-});
-
-// --- Render playlist ---
+// --- Render Playlist ---
 function renderList(){
   const q = els.search.value.trim().toLowerCase();
-  els.list.innerHTML = '';
+  els.list.innerHTML='';
   playlist.forEach((item,i)=>{
     if(q && !`${item.title} ${item.artist}`.toLowerCase().includes(q)) return;
-    const row=document.createElement('div');
+    const row = document.createElement('div');
     row.className='row'+(i===currentIndex?' active':'');
     row.tabIndex=0;
     row.dataset.index=i;
     row.innerHTML=`<div class="dot ${item.type}"></div><div class="name">${item.title}</div><div class="dur">${item.type==='audio'?'MP3':'MP4'}</div>`;
-    row.addEventListener('click',()=>load(i,true));
-    row.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' ') {e.preventDefault(); load(i,true);}});
+    row.addEventListener('click',()=> load(i,true));
+    row.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();load(i,true);}});
     els.list.appendChild(row);
   });
 }
 
-// --- Load item ---
+// --- Load Track ---
 function load(i, autoplay=false){
   currentIndex=i;
   const item=playlist[i];
@@ -189,9 +196,8 @@ function load(i, autoplay=false){
   els.list.children[i]?.classList.add('active');
 
   if(item.type==='video'){
-    els.audio.pause();
-    els.audio.removeAttribute('src');
-    els.thumb.innerHTML=`<video src="${item.src}" controls autoplay playsinline style="width:100%;height:100%;object-fit:cover;border-radius:12px;"></video>`;
+    els.audio.pause(); els.audio.removeAttribute('src');
+    els.thumb.innerHTML=`<video src="${item.src}" autoplay playsinline controls style="width:100%;height:100%;object-fit:cover;border-radius:12px;" muted=false></video>`;
     const vid = els.thumb.querySelector('video');
     vid.muted=false;
     vid.loop=els.loopBtn.getAttribute('aria-pressed')==='true';
@@ -202,7 +208,7 @@ function load(i, autoplay=false){
     els.audio.src=item.src;
     els.audio.loop=els.loopBtn.getAttribute('aria-pressed')==='true';
     els.audio.onended=()=>{ if(!els.audio.loop) next(); };
-    if(autoplay){ els.audio.play().catch(()=>{}); }
+    if(autoplay) els.audio.play().catch(()=>{});
   }
 }
 
@@ -221,15 +227,15 @@ els.loopBtn.addEventListener('click',()=>{ const now=els.loopBtn.getAttribute('a
 els.search.addEventListener('input',renderList);
 els.clearBtn.addEventListener('click',()=>{ els.search.value=''; renderList(); });
 
-// --- Keyboard ---
-window.addEventListener('keydown',(e)=>{
+// --- Keyboard shortcuts ---
+window.addEventListener('keydown',e=>{
   if(['INPUT','TEXTAREA'].includes((e.target.tagName||'').toUpperCase())) return;
   if(e.code==='Space'||e.key.toLowerCase()==='p'){ e.preventDefault(); const vid = els.thumb.querySelector('video'); if(vid) vid.paused?vid.play():vid.pause(); else els.audio.paused?els.audio.play():els.audio.pause();}
   if(e.key.toLowerCase()==='n'){ e.preventDefault(); load((currentIndex+1)%playlist.length,true);}
   if(e.key.toLowerCase()==='b'){ e.preventDefault(); load((currentIndex-1+playlist.length)%playlist.length,true);}
 });
 
-// --- Init ---
+// --- Initialize ---
 renderList();
 load(0,false);
 </script>
