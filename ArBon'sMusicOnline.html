@@ -58,9 +58,10 @@
       width:100%;
       height:100%;
       object-fit:cover;
+      border-radius:12px;
     }
     .av{width:100%}
-    audio{width:100%; outline:none; border-radius:10px; background:#000; display:none;}
+    audio{display:none;}
 
     .controls{display:flex; gap:8px; flex-wrap:wrap; margin-top:12px}
     .btn{appearance:none; border:1px solid rgba(255,255,255,0.12); color:var(--text); background:#0b1220; padding:10px 12px; border-radius:12px; cursor:pointer}
@@ -84,7 +85,6 @@
     footer{margin-top:18px; color:var(--muted); font-size:0.9rem}
     a{color:var(--accent)}
 
-    /* Facebook comments */
     #comments{margin-top:16px;}
   </style>
 </head>
@@ -112,9 +112,7 @@
         </div>
         <h2 class="title" id="title">Nothing playing</h2>
         <div class="meta" id="meta">—</div>
-        <div class="av">
-          <audio id="audio" preload="metadata"></audio>
-        </div>
+        <audio id="audio" preload="metadata"></audio>
         <div class="controls">
           <button class="btn" id="prevBtn" title="Previous (B)">⏮️ Prev</button>
           <button class="btn" id="playBtn" title="Play/Pause (Space/P)">⏯️ Play/Pause</button>
@@ -155,21 +153,103 @@
   </div>
 
 <script>
-// --- Playlist & Player JS (your existing code, modified for hidden audio, video inside thumb, autoplay muted) ---
+// --- Playlist ---
+const DEFAULT_PLAYLIST = [  
+  { title: "Tears on the dancefloor clip", src: "soul-mus/tears on the dancefloor.mp4", type: "video", poster: "soul-mus/tears on the dancefloor-Cover.jpg", artist: "Moonstone Grooves" },
+  { title: "Volví", src: "my-music/Volví.mp3", type: "audio", artist: "Mr. Arguet", poster:"my-music/lospoetas.png"},
+  { title: "Aún te sueño", src: "my-music/Aún te sueño .mp3", type: "audio", artist: "Mr. Arguet", poster:"my-music/lospoetas.png"},
+  // ... rest of your tracks
+];
 
-// Like button (local per user)
+let playlist = [];
+let currentIndex = 0;
+let shuffle = false;
+
+const els = {
+  audio: document.getElementById('audio'),
+  thumb: document.getElementById('thumb'),
+  title: document.getElementById('title'),
+  meta: document.getElementById('meta'),
+  list: document.getElementById('list'),
+  search: document.getElementById('search'),
+  clearBtn: document.getElementById('clearBtn'),
+  prevBtn: document.getElementById('prevBtn'),
+  nextBtn: document.getElementById('nextBtn'),
+  playBtn: document.getElementById('playBtn'),
+  shuffleBtn: document.getElementById('shuffleBtn'),
+  loopBtn: document.getElementById('loopBtn'),
+  likeBtn: document.getElementById('likeBtn'),
+};
+
+// --- Local like button ---
 let likeCount = Number(localStorage.getItem('likeCount') || 0);
-const likeBtn = document.getElementById('likeBtn');
-likeBtn.textContent = `❤️ ${likeCount}`;
-likeBtn.addEventListener('click', ()=>{
+els.likeBtn.textContent = `❤️ ${likeCount}`;
+els.likeBtn.addEventListener('click', ()=>{
   likeCount++;
   localStorage.setItem('likeCount', likeCount);
-  likeBtn.textContent = `❤️ ${likeCount}`;
+  els.likeBtn.textContent = `❤️ ${likeCount}`;
 });
 
-// Your full JS playlist code goes here, including fetchPlaylist(), load(), playPause(), etc.
-// Just make sure in load() you dynamically inject <video> inside #thumb for videos, 
-// autoplay muted, and hide <audio> controls. Comments and Facebook plugins are now embedded.
+// --- Functions ---
+function renderList(){
+  els.list.innerHTML = '';
+  playlist.forEach((item, i)=>{
+    const row = document.createElement('div');
+    row.className = 'row' + (i===currentIndex?' active':'');
+    row.dataset.index = i;
+
+    const dot = document.createElement('div');
+    dot.className = 'dot ' + (item.type==='video'?'video':'audio');
+    const name = document.createElement('div'); name.className='name'; name.textContent=item.title;
+    const dur = document.createElement('div'); dur.className='dur'; dur.textContent=item.type==='audio'?'MP3':'MP4';
+    row.append(dot,name,dur);
+    row.addEventListener('click',()=>load(i,true));
+    els.list.appendChild(row);
+  });
+}
+
+function updateActiveRow(){ [...els.list.children].forEach(row=>row.classList.toggle('active', Number(row.dataset.index)===currentIndex)); }
+
+function setThumb(item){
+  if(item.type==='video'){
+    els.thumb.innerHTML = `<video src="${item.src}" autoplay muted controls playsinline style="width:100%; height:100%; object-fit:cover; border-radius:12px;"></video>`;
+  } else {
+    els.thumb.innerHTML = `<img src="${item.poster}" alt="cover art">`;
+  }
+}
+
+function load(i, autoplay=false){
+  currentIndex=i;
+  const item=playlist[i];
+  els.title.textContent=item.title;
+  els.meta.textContent=item.artist + ' · ' + (item.type==='audio'?'Audio':'Video');
+  setThumb(item);
+
+  if(item.type==='audio'){
+    els.audio.src=item.src; els.audio.style.display='block'; els.audio.play().catch(()=>{});
+  } else {
+    els.audio.pause(); els.audio.removeAttribute('src'); els.audio.style.display='none';
+  }
+
+  updateActiveRow();
+}
+
+// --- Controls ---
+els.prevBtn.addEventListener('click', ()=>load((currentIndex-1+playlist.length)%playlist.length,true));
+els.nextBtn.addEventListener('click', ()=>load((currentIndex+1)%playlist.length,true));
+els.playBtn.addEventListener('click', ()=>{
+  const vid = els.thumb.querySelector('video');
+  if(vid){ vid.paused?vid.play():vid.pause(); } 
+  else { els.audio.paused?els.audio.play():els.audio.pause(); }
+});
+els.search.addEventListener('input', ()=>renderList());
+els.clearBtn.addEventListener('click', ()=>{ els.search.value=''; renderList(); });
+
+// --- Init ---
+playlist = DEFAULT_PLAYLIST;
+renderList();
+load(0,false);
+
 </script>
 </body>
 </html>
