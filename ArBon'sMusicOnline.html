@@ -144,70 +144,66 @@ const els = {
   playBtn: document.getElementById('playBtn'),
   shuffleBtn: document.getElementById('shuffleBtn'),
   loopBtn: document.getElementById('loopBtn'),
-  likeBtn: document.getElementById('likeBtn')
+  likeBtn: document.getElementById('likeBtn'),
+  visitorCounter: document.getElementById('visitorCounter'),
 };
 
-// --- Local Like Button ---
-let likeCount = Number(localStorage.getItem('likeCount')||0);
-els.likeBtn.textContent=`❤️ ${likeCount}`;
-els.likeBtn.addEventListener('click', ()=>{
-  likeCount++; localStorage.setItem('likeCount',likeCount);
-  els.likeBtn.textContent=`❤️ ${likeCount}`;
+// --- Visitor counter using CountAPI ---
+fetch('https://api.countapi.xyz/hit/github-pages-pages/YOUR_PAGE').then(r=>r.json()).then(data=>{
+  els.visitorCounter.textContent=`👁️ Visitors: ${data.value}`;
 });
 
-// --- Visitor Counter ---
-async function updateCounter(){
-  const res=await fetch('https://api.countapi.xyz/hit/YOUR_GITHUB_USERNAME/YOUR_REPO_NAME');
-  const data=await res.json();
-  document.getElementById('visitorCounter').textContent=`👁️ Visitors: ${data.value}`;
-}
-updateCounter();
+// --- Likes ---
+let likes = localStorage.getItem('likes') || 0;
+els.likeBtn.textContent=`❤️ ${likes}`;
+els.likeBtn.addEventListener('click',()=>{
+  likes++;
+  localStorage.setItem('likes', likes);
+  els.likeBtn.textContent=`❤️ ${likes}`;
+});
 
-// --- Render Playlist ---
+// --- Render playlist ---
 function renderList(){
-  els.list.innerHTML='';
+  const q = els.search.value.trim().toLowerCase();
+  els.list.innerHTML = '';
   playlist.forEach((item,i)=>{
+    if(q && !`${item.title} ${item.artist}`.toLowerCase().includes(q)) return;
     const row=document.createElement('div');
     row.className='row'+(i===currentIndex?' active':'');
+    row.tabIndex=0;
     row.dataset.index=i;
-
-    const dot=document.createElement('div'); dot.className='dot '+(item.type==='video'?'video':'audio');
-    const name=document.createElement('div'); name.className='name'; name.textContent=item.title;
-    const dur=document.createElement('div'); dur.className='dur'; dur.textContent=item.type==='audio'?'MP3':'MP4';
-    row.append(dot,name,dur);
+    row.innerHTML=`<div class="dot ${item.type}"></div><div class="name">${item.title}</div><div class="dur">${item.type==='audio'?'MP3':'MP4'}</div>`;
     row.addEventListener('click',()=>load(i,true));
+    row.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' ') {e.preventDefault(); load(i,true);}});
     els.list.appendChild(row);
   });
 }
 
-// --- Set Thumbnail ---
-function setThumb(item){
-  if(item.type==='video'){
-    els.thumb.innerHTML=`<video src="${item.src}" autoplay muted controls playsinline style="width:100%;height:100%;object-fit:cover;border-radius:12px;"></video>`;
-  } else {
-    els.thumb.innerHTML=`<img src="${item.poster}" alt="cover art">`;
-  }
-}
-
-// --- Load track ---
+// --- Load item ---
 function load(i, autoplay=false){
   currentIndex=i;
   const item=playlist[i];
   els.title.textContent=item.title;
-  els.meta.textContent=item.artist+' · '+(item.type==='audio'?'Audio':'Video');
-  setThumb(item);
-
-  if(item.type==='audio'){
-    els.audio.src=item.src;
-    els.audio.muted=false; // UNMUTE
-    els.audio.style.display='block';
-    if(autoplay) els.audio.play().catch(()=>{});
-  } else {
-    els.audio.pause(); els.audio.removeAttribute('src'); els.audio.style.display='none';
-  }
-
-  document.querySelectorAll('.row').forEach(r=>r.classList.remove('active'));
+  els.meta.textContent=`${item.artist} · ${item.type==='audio'?'Audio':'Video'}`;
+  els.list.querySelectorAll('.row').forEach(r=>r.classList.remove('active'));
   els.list.children[i]?.classList.add('active');
+
+  if(item.type==='video'){
+    els.audio.pause();
+    els.audio.removeAttribute('src');
+    els.thumb.innerHTML=`<video src="${item.src}" controls autoplay playsinline style="width:100%;height:100%;object-fit:cover;border-radius:12px;"></video>`;
+    const vid = els.thumb.querySelector('video');
+    vid.muted=false;
+    vid.loop=els.loopBtn.getAttribute('aria-pressed')==='true';
+    vid.onended=()=>{ if(!vid.loop) next(); };
+    if(autoplay) vid.play().catch(()=>{});
+  } else {
+    els.thumb.innerHTML=`<img src="${item.poster}" alt="cover art">`;
+    els.audio.src=item.src;
+    els.audio.loop=els.loopBtn.getAttribute('aria-pressed')==='true';
+    els.audio.onended=()=>{ if(!els.audio.loop) next(); };
+    if(autoplay){ els.audio.play().catch(()=>{}); }
+  }
 }
 
 // --- Controls ---
@@ -222,13 +218,13 @@ els.shuffleBtn.addEventListener('click',()=>{ shuffle=!shuffle; els.shuffleBtn.s
 els.loopBtn.addEventListener('click',()=>{ const now=els.loopBtn.getAttribute('aria-pressed')==='true'; els.loopBtn.setAttribute('aria-pressed',!now); });
 
 // --- Search ---
-els.search.addEventListener('input',()=>renderList());
+els.search.addEventListener('input',renderList);
 els.clearBtn.addEventListener('click',()=>{ els.search.value=''; renderList(); });
 
-// --- Keyboard shortcuts ---
+// --- Keyboard ---
 window.addEventListener('keydown',(e)=>{
   if(['INPUT','TEXTAREA'].includes((e.target.tagName||'').toUpperCase())) return;
-  if(e.code==='Space'||e.key.toLowerCase()==='p'){ e.preventDefault(); els.audio.paused?els.audio.play():els.audio.pause();}
+  if(e.code==='Space'||e.key.toLowerCase()==='p'){ e.preventDefault(); const vid = els.thumb.querySelector('video'); if(vid) vid.paused?vid.play():vid.pause(); else els.audio.paused?els.audio.play():els.audio.pause();}
   if(e.key.toLowerCase()==='n'){ e.preventDefault(); load((currentIndex+1)%playlist.length,true);}
   if(e.key.toLowerCase()==='b'){ e.preventDefault(); load((currentIndex-1+playlist.length)%playlist.length,true);}
 });
