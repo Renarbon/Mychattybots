@@ -1,167 +1,133 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>My Music & Videos</title>
-  <style>
-    :root{
-      --bg:#0f172a; 
-      --card:#111827; 
-      --muted:#64748b; 
-      --text:#e5e7eb; 
-      --accent:#22d3ee; 
-      --accent-2:#a78bfa; 
-      --radius:18px;
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0; font:16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
-      background: radial-gradient(1200px 800px at 20% -10%, #1f2937 0%, transparent 60%),
-                  radial-gradient(800px 600px at 120% 10%, #0e7490 0%, transparent 40%),
-                  var(--bg);
-      color:var(--text);
-    }
-    .wrap{max-width:1000px; margin:24px auto; padding:0 16px}
-    header{
-      display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px
-    }
-    h1{font-size:clamp(22px, 3vw, 34px); margin:0; letter-spacing:0.3px}
-    .hint{color:var(--muted); font-size:0.95rem}
-    .board{display:grid; grid-template-columns: 1fr 380px; gap:16px}
-    @media (max-width: 900px){ .board{grid-template-columns: 1fr} }
-
-    .card{
-      background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
-      border:1px solid rgba(255,255,255,0.09);
-      border-radius:var(--radius);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
-      backdrop-filter: blur(6px);
-    }
-
-    /* Player */
-    .player{padding:16px}
-    .title{font-weight:600; font-size:1.05rem; margin:0 0 6px}
-    .meta{color:var(--muted); font-size:0.92rem; margin-bottom:10px}
-    .thumb{
-      width:100%;
-      aspect-ratio:16/9;
-      background:#0b1220;
-      border-radius:12px;
-      overflow:hidden;
-      display:grid;
-      place-items:center;
-      margin-bottom:12px;
-    }
-    .thumb img, .thumb video{
-      width:100%;
-      height:100%;
-      object-fit:cover;
-      border-radius:12px;
-    }
-    .av{width:100%}
-    audio{display:none;}
-
-    .controls{display:flex; gap:8px; flex-wrap:wrap; margin-top:12px}
-    .btn{appearance:none; border:1px solid rgba(255,255,255,0.12); color:var(--text); background:#0b1220; padding:10px 12px; border-radius:12px; cursor:pointer}
-    .btn:hover{border-color:rgba(255,255,255,0.22)}
-    .btn[aria-pressed="true"]{border-color:var(--accent); box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.25) inset}
-
-    /* Sidebar */
-    .side{padding:12px}
-    .search{display:flex; gap:8px; margin-bottom:10px}
-    .search input{flex:1; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,0.12); background:#0b1220; color:var(--text)}
-    .list{ max-height:62vh; overflow:auto; padding:4px}
-    .row{display:grid; grid-template-columns:auto 1fr auto; gap:10px; align-items:center; padding:10px; border-radius:12px; cursor:pointer}
-    .row:hover{background:rgba(255,255,255,0.06)}
-    .row.active{background:linear-gradient(90deg, rgba(167,139,250,0.15), rgba(34,211,238,0.12))}
-    .row .dot{width:10px; height:10px; border-radius:50%}
-    .dot.audio{background:var(--accent)}
-    .dot.video{background:var(--accent-2)}
-    .row .name{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-    .row .dur{color:var(--muted); font-variant-numeric:tabular-nums}
-
-    footer{margin-top:18px; color:var(--muted); font-size:0.9rem}
-    a{color:var(--accent)}
-
-    #comments{margin-top:16px;}
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Music & Videos</title>
+<style>
+:root{
+  --bg:#0f172a; --card:#111827; --muted:#64748b; --text:#e5e7eb;
+  --accent:#22d3ee; --accent-2:#a78bfa; --radius:18px;
+}
+*{box-sizing:border-box;}
+html,body{height:100%; margin:0; font:16px/1.5 system-ui,sans-serif; background: radial-gradient(1200px 800px at 20% -10%, #1f2937 0%, transparent 60%), radial-gradient(800px 600px at 120% 10%, #0e7490 0%, transparent 40%), var(--bg); color:var(--text);}
+.wrap{max-width:1000px; margin:24px auto; padding:0 16px;}
+header{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px;}
+h1{font-size:clamp(22px,3vw,34px); margin:0; letter-spacing:0.3px;}
+.hint{color:var(--muted); font-size:0.95rem;}
+.board{display:grid; grid-template-columns:1fr 380px; gap:16px;}
+@media(max-width:900px){.board{grid-template-columns:1fr;}}
+.card{background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.09); border-radius:var(--radius); box-shadow:0 10px 30px rgba(0,0,0,0.35); backdrop-filter: blur(6px);}
+.player{padding:16px;}
+.title{font-weight:600; font-size:1.05rem; margin:0 0 6px;}
+.meta{color:var(--muted); font-size:0.92rem; margin-bottom:10px;}
+.thumb{width:100%; aspect-ratio:16/9; background:#0b1220; border-radius:12px; overflow:hidden; display:grid; place-items:center; margin-bottom:12px;}
+.thumb img, .thumb video{width:100%; height:100%; object-fit:cover; border-radius:12px;}
+audio{display:none;}
+.controls{display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;}
+.btn{appearance:none; border:1px solid rgba(255,255,255,0.12); color:var(--text); background:#0b1220; padding:10px 12px; border-radius:12px; cursor:pointer;}
+.btn:hover{border-color:rgba(255,255,255,0.22);}
+.btn[aria-pressed="true"]{border-color:var(--accent); box-shadow:0 0 0 2px rgba(34,211,238,0.25) inset;}
+.side{padding:12px;}
+.search{display:flex; gap:8px; margin-bottom:10px;}
+.search input{flex:1; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,0.12); background:#0b1220; color:var(--text);}
+.list{max-height:62vh; overflow:auto; padding:4px;}
+.row{display:grid; grid-template-columns:auto 1fr auto; gap:10px; align-items:center; padding:10px; border-radius:12px; cursor:pointer;}
+.row:hover{background:rgba(255,255,255,0.06);}
+.row.active{background:linear-gradient(90deg, rgba(167,139,250,0.15), rgba(34,211,238,0.12));}
+.row .dot{width:10px; height:10px; border-radius:50%;}
+.dot.audio{background:var(--accent);}
+.dot.video{background:var(--accent-2);}
+.row .name{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.row .dur{color:var(--muted); font-variant-numeric:tabular-nums;}
+footer{margin-top:18px; color:var(--muted); font-size:0.9rem;}
+a{color:var(--accent);}
+#visitorCounter{margin-top:12px; color:var(--accent); font-weight:bold;}
+#comments{margin-top:16px;}
+</style>
 </head>
 <body>
-  <!-- Facebook SDK -->
-  <div id="fb-root"></div>
-  <script async defer crossorigin="anonymous" 
-    src="https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v17.0"></script>
+<!-- Facebook SDK -->
+<div id="fb-root"></div>
+<script async defer crossorigin="anonymous" 
+src="https://connect.facebook.net/es_LA/sdk.js#xfbml=1&version=v23.0&appId=YOUR_APP_ID"></script>
 
-  <div class="wrap">
-    <header>
-      <div>
-        <h1>My Music & Videos</h1>
-        <div class="hint">Shortcuts: <kbd>Space</kbd>/<kbd>P</kbd> play‑pause · <kbd>N</kbd> next · <kbd>B</kbd> back</div>
-      </div>
-    </header>
-
-    <div class="board">
-      <!-- PLAYER CARD -->
-      <section class="card player" aria-label="Player">
-        <div class="thumb" id="thumb">
-          <svg width="60" height="60" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M10 17l6-5-6-5v10z"></path>
-          </svg>
-        </div>
-        <h2 class="title" id="title">Nothing playing</h2>
-        <div class="meta" id="meta">—</div>
-        <audio id="audio" preload="metadata"></audio>
-        <div class="controls">
-          <button class="btn" id="prevBtn" title="Previous (B)">⏮️ Prev</button>
-          <button class="btn" id="playBtn" title="Play/Pause (Space/P)">⏯️ Play/Pause</button>
-          <button class="btn" id="nextBtn" title="Next (N)">⏭️ Next</button>
-          <button class="btn" id="shuffleBtn" aria-pressed="false" title="Shuffle">🔀 Shuffle</button>
-          <button class="btn" id="loopBtn" aria-pressed="false" title="Loop one">🔁 Loop</button>
-          <button class="btn" id="likeBtn" title="Like ❤️">❤️ 0</button>
-          <!-- Facebook Like Button -->
-          <div class="fb-like" 
-               data-href="YOUR_GITHUB_PAGES_URL" 
-               data-width="" 
-               data-layout="button_count" 
-               data-action="like" 
-               data-size="large" 
-               data-share="true"></div>
-        </div>
-
-        <!-- Facebook Comments -->
-        <div id="comments">
-          <h3>💬 Comments</h3>
-          <div class="fb-comments" 
-               data-href="YOUR_GITHUB_PAGES_URL" 
-               data-width="100%" 
-               data-numposts="5"></div>
-        </div>
-      </section>
-
-      <!-- SIDEBAR / PLAYLIST -->
-      <aside class="card side" aria-label="Playlist">
-        <div class="search">
-          <input id="search" type="search" placeholder="Search…" aria-label="Search playlist" />
-          <button class="btn" id="clearBtn" title="Clear search">✖</button>
-        </div>
-        <div class="list" id="list" role="listbox" aria-label="Tracks"></div>
-        <footer></footer>
-      </aside>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>My Music & Videos</h1>
+      <div class="hint">Shortcuts: <kbd>Space</kbd>/<kbd>P</kbd> play‑pause · <kbd>N</kbd> next · <kbd>B</kbd> back</div>
     </div>
+  </header>
+
+  <div class="board">
+    <!-- PLAYER -->
+    <section class="card player" aria-label="Player">
+      <div class="thumb" id="thumb">
+        <svg width="60" height="60" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M10 17l6-5-6-5v10z"></path>
+        </svg>
+      </div>
+      <h2 class="title" id="title">Nothing playing</h2>
+      <div class="meta" id="meta">—</div>
+      <audio id="audio" preload="metadata"></audio>
+      <div class="controls">
+        <button class="btn" id="prevBtn">⏮️ Prev</button>
+        <button class="btn" id="playBtn">⏯️ Play/Pause</button>
+        <button class="btn" id="nextBtn">⏭️ Next</button>
+        <button class="btn" id="shuffleBtn" aria-pressed="false">🔀 Shuffle</button>
+        <button class="btn" id="loopBtn" aria-pressed="false">🔁 Loop</button>
+        <button class="btn" id="likeBtn">❤️ 0</button>
+        <div class="fb-like" data-href="YOUR_GITHUB_PAGES_URL" data-layout="button_count" data-action="like" data-size="large" data-share="true"></div>
+      </div>
+
+      <div id="visitorCounter">👁️ Visitors: 0</div>
+
+      <!-- Facebook Comments -->
+      <div id="comments">
+        <h3>💬 Comments</h3>
+        <div class="fb-comments" data-href="YOUR_GITHUB_PAGES_URL" data-width="100%" data-numposts="5"></div>
+      </div>
+    </section>
+
+    <!-- PLAYLIST -->
+    <aside class="card side" aria-label="Playlist">
+      <div class="search">
+        <input id="search" type="search" placeholder="Search…" />
+        <button class="btn" id="clearBtn">✖</button>
+      </div>
+      <div class="list" id="list" role="listbox"></div>
+      <footer></footer>
+    </aside>
   </div>
+</div>
 
 <script>
 // --- Playlist ---
-const DEFAULT_PLAYLIST = [  
+const DEFAULT_PLAYLIST = [
   { title: "Tears on the dancefloor clip", src: "soul-mus/tears on the dancefloor.mp4", type: "video", poster: "soul-mus/tears on the dancefloor-Cover.jpg", artist: "Moonstone Grooves" },
   { title: "Volví", src: "my-music/Volví.mp3", type: "audio", artist: "Mr. Arguet", poster:"my-music/lospoetas.png"},
   { title: "Aún te sueño", src: "my-music/Aún te sueño .mp3", type: "audio", artist: "Mr. Arguet", poster:"my-music/lospoetas.png"},
-  // ... rest of your tracks
+  { title: "Brujula en la piel", src: "my-music/Brujula en la piel.mp3", type: "audio", artist: "Mr. Arguet", poster:"my-music/lospoetas.png"},
+  { title: "30 dias", src: "my-music/30 dias (Remix).mp3", type: "audio", artist: "Mr. Arguet", poster:"my-music/lospoetas.png"},
+  { title: "Entre Sol y Neon", src: "my-music/Entre Sol y Neón.mp3", type: "audio", artist: "Mr. Arguet", poster:"my-music/lospoetas.png"},
+  { title: "Mi destino", src: "my-music/Mi destino.mp3", type: "audio", artist: "Mr. Arguet", poster:"my-music/lospoetas.png"},
+  { title: "Mi radar", src: "my-music/Mi radar.mp3", type: "audio", artist: "Mr. Arguet", poster:"my-music/lospoetas.png"},
+  { title: "Por un dia mas de sol", src: "my-music/por un dia mas de sol .mp3", type: "audio", artist: "Mr. Arguet", poster:"my-music/lospoetas.png"},
+  { title: "Cancion para mi..", src: "my-music/te encontrare una mañana.mp3", type: "audio", artist: "Mr. Arguet", poster:"my-music/lospoetas.png"},
+  { title: "Candle Light Groove", src: "soul-mus/clg.mp3", type: "audio", artist: "Mr. Arguet", poster:"soul-mus/New Cover.png"},
+  { title: "Don't let me go now", src: "soul-mus/dlg.mp3", type: "audio", artist: "Mr. Arguet", poster:"soul-mus/New Cover.png"},
+  { title: "Funk Explosion", src: "soul-mus/fe.mp3", type: "audio", artist: "Mr. Arguet", poster:"soul-mus/New Cover.png"},
+  { title: "Flirting Games", src: "soul-mus/fg.mp3", type: "audio", artist: "Mr. Arguet", poster:"soul-mus/New Cover.png"},
+  { title: "Let the good times roll", src: "soul-mus/ltgr.mp3", type: "audio", artist: "Mr. Arguet", poster:"soul-mus/New Cover.png"},
+  { title: "Midnight Polaroid", src: "soul-mus/mp.mp3", type: "audio", artist: "Mr. Arguet", poster:"soul-mus/New Cover.png"},    
+  { title: "Smooth Goodbye", src: "soul-mus/sg.mp3", type: "audio", artist: "Mr. Arguet", poster:"soul-mus/New Cover.png"},
+  { title: "The grand entrance", src: "soul-mus/tge.mp3", type: "audio", artist: "Mr. Arguet", poster:"soul-mus/New Cover.png"},
+  { title: "Tears on the dancefloor", src: "soul-mus/tod.mp3", type: "audio", artist: "Mr. Arguet", poster:"soul-mus/New Cover.png"}     
+  
 ];
 
-let playlist = [];
+let playlist = DEFAULT_PLAYLIST;
 let currentIndex = 0;
 let shuffle = false;
 
@@ -178,78 +144,98 @@ const els = {
   playBtn: document.getElementById('playBtn'),
   shuffleBtn: document.getElementById('shuffleBtn'),
   loopBtn: document.getElementById('loopBtn'),
-  likeBtn: document.getElementById('likeBtn'),
+  likeBtn: document.getElementById('likeBtn')
 };
 
-// --- Local like button ---
-let likeCount = Number(localStorage.getItem('likeCount') || 0);
-els.likeBtn.textContent = `❤️ ${likeCount}`;
+// --- Local Like Button ---
+let likeCount = Number(localStorage.getItem('likeCount')||0);
+els.likeBtn.textContent=`❤️ ${likeCount}`;
 els.likeBtn.addEventListener('click', ()=>{
-  likeCount++;
-  localStorage.setItem('likeCount', likeCount);
-  els.likeBtn.textContent = `❤️ ${likeCount}`;
+  likeCount++; localStorage.setItem('likeCount',likeCount);
+  els.likeBtn.textContent=`❤️ ${likeCount}`;
 });
 
-// --- Functions ---
-function renderList(){
-  els.list.innerHTML = '';
-  playlist.forEach((item, i)=>{
-    const row = document.createElement('div');
-    row.className = 'row' + (i===currentIndex?' active':'');
-    row.dataset.index = i;
+// --- Visitor Counter ---
+async function updateCounter(){
+  const res=await fetch('https://api.countapi.xyz/hit/YOUR_GITHUB_USERNAME/YOUR_REPO_NAME');
+  const data=await res.json();
+  document.getElementById('visitorCounter').textContent=`👁️ Visitors: ${data.value}`;
+}
+updateCounter();
 
-    const dot = document.createElement('div');
-    dot.className = 'dot ' + (item.type==='video'?'video':'audio');
-    const name = document.createElement('div'); name.className='name'; name.textContent=item.title;
-    const dur = document.createElement('div'); dur.className='dur'; dur.textContent=item.type==='audio'?'MP3':'MP4';
+// --- Render Playlist ---
+function renderList(){
+  els.list.innerHTML='';
+  playlist.forEach((item,i)=>{
+    const row=document.createElement('div');
+    row.className='row'+(i===currentIndex?' active':'');
+    row.dataset.index=i;
+
+    const dot=document.createElement('div'); dot.className='dot '+(item.type==='video'?'video':'audio');
+    const name=document.createElement('div'); name.className='name'; name.textContent=item.title;
+    const dur=document.createElement('div'); dur.className='dur'; dur.textContent=item.type==='audio'?'MP3':'MP4';
     row.append(dot,name,dur);
     row.addEventListener('click',()=>load(i,true));
     els.list.appendChild(row);
   });
 }
 
-function updateActiveRow(){ [...els.list.children].forEach(row=>row.classList.toggle('active', Number(row.dataset.index)===currentIndex)); }
-
+// --- Set Thumbnail ---
 function setThumb(item){
   if(item.type==='video'){
-    els.thumb.innerHTML = `<video src="${item.src}" autoplay muted controls playsinline style="width:100%; height:100%; object-fit:cover; border-radius:12px;"></video>`;
+    els.thumb.innerHTML=`<video src="${item.src}" autoplay muted controls playsinline style="width:100%;height:100%;object-fit:cover;border-radius:12px;"></video>`;
   } else {
-    els.thumb.innerHTML = `<img src="${item.poster}" alt="cover art">`;
+    els.thumb.innerHTML=`<img src="${item.poster}" alt="cover art">`;
   }
 }
 
+// --- Load track ---
 function load(i, autoplay=false){
   currentIndex=i;
   const item=playlist[i];
   els.title.textContent=item.title;
-  els.meta.textContent=item.artist + ' · ' + (item.type==='audio'?'Audio':'Video');
+  els.meta.textContent=item.artist+' · '+(item.type==='audio'?'Audio':'Video');
   setThumb(item);
 
   if(item.type==='audio'){
-    els.audio.src=item.src; els.audio.style.display='block'; els.audio.play().catch(()=>{});
+    els.audio.src=item.src;
+    els.audio.muted=false; // UNMUTE
+    els.audio.style.display='block';
+    if(autoplay) els.audio.play().catch(()=>{});
   } else {
     els.audio.pause(); els.audio.removeAttribute('src'); els.audio.style.display='none';
   }
 
-  updateActiveRow();
+  document.querySelectorAll('.row').forEach(r=>r.classList.remove('active'));
+  els.list.children[i]?.classList.add('active');
 }
 
 // --- Controls ---
-els.prevBtn.addEventListener('click', ()=>load((currentIndex-1+playlist.length)%playlist.length,true));
-els.nextBtn.addEventListener('click', ()=>load((currentIndex+1)%playlist.length,true));
-els.playBtn.addEventListener('click', ()=>{
+els.prevBtn.addEventListener('click',()=>load((currentIndex-1+playlist.length)%playlist.length,true));
+els.nextBtn.addEventListener('click',()=>load((currentIndex+1)%playlist.length,true));
+els.playBtn.addEventListener('click',()=>{
   const vid = els.thumb.querySelector('video');
-  if(vid){ vid.paused?vid.play():vid.pause(); } 
-  else { els.audio.paused?els.audio.play():els.audio.pause(); }
+  if(vid) vid.paused?vid.play():vid.pause();
+  else els.audio.paused?els.audio.play():els.audio.pause();
 });
-els.search.addEventListener('input', ()=>renderList());
-els.clearBtn.addEventListener('click', ()=>{ els.search.value=''; renderList(); });
+els.shuffleBtn.addEventListener('click',()=>{ shuffle=!shuffle; els.shuffleBtn.setAttribute('aria-pressed',shuffle); });
+els.loopBtn.addEventListener('click',()=>{ const now=els.loopBtn.getAttribute('aria-pressed')==='true'; els.loopBtn.setAttribute('aria-pressed',!now); });
+
+// --- Search ---
+els.search.addEventListener('input',()=>renderList());
+els.clearBtn.addEventListener('click',()=>{ els.search.value=''; renderList(); });
+
+// --- Keyboard shortcuts ---
+window.addEventListener('keydown',(e)=>{
+  if(['INPUT','TEXTAREA'].includes((e.target.tagName||'').toUpperCase())) return;
+  if(e.code==='Space'||e.key.toLowerCase()==='p'){ e.preventDefault(); els.audio.paused?els.audio.play():els.audio.pause();}
+  if(e.key.toLowerCase()==='n'){ e.preventDefault(); load((currentIndex+1)%playlist.length,true);}
+  if(e.key.toLowerCase()==='b'){ e.preventDefault(); load((currentIndex-1+playlist.length)%playlist.length,true);}
+});
 
 // --- Init ---
-playlist = DEFAULT_PLAYLIST;
 renderList();
 load(0,false);
-
 </script>
 </body>
 </html>
