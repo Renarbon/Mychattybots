@@ -18,20 +18,20 @@
 </head>
 <body>
   <div id="chat">
-    <h2>🧑‍🎓 ESL ChattyBot – You are the student (read the green lines you might need to wait 50 seconds for the voice to start)</h2>
+    <h2>🧑‍🎓 ESL ChattyBot – You are the student (read the green lines you might need to wait 5 seconds for the voice to start)</h2>
     <label>Student Name: <input id="studentName" type="text" autocomplete="off" /></label>
-    <button id="startBtn">Start</button>
+    <button id="startBtn" disabled>Start</button>
     <span style="margin-left:15px; font-size:0.98em;">Date: <span id="sessionDate"></span></span>
     <br>
     <label for="voice-select"><b>Voice:</b></label>
     <select id="voice-select">
-       <option value="adam">Adam</option>
-    <option value="sarah">Sarah</option>
-    <option value="emily">Emily</option>
-    <option value="james">James</option>
-    <option value="jenny">Jenny</option>
-    <option value="nicole">Nicole</option>
-    <option value="santa">Santa</option>
+      <option value="lisa">Lisa</option>
+      <option value="sarah">Sarah</option>
+      <option value="emily">Emily</option>
+      <option value="james">James</option>
+      <option value="jenny">Jenny</option>
+      <option value="nicole">Nicole</option>
+      <option value="santa">Santa</option>
     </select>
     <div style="margin: 12px 0; color: #007aff; background: #e6e6ff; border-radius: 6px; padding: 8px; max-width: 600px;">
       <b>Instructions:</b> You are the <b>student</b> (read the green parts aloud each turn). The ChatBot will play the <b>career advisor</b>.
@@ -43,12 +43,7 @@
     <button onclick="downloadPDF()" id="pdfBtn" disabled>⬇️ Download PDF</button>
   </div>
   <script>
-    // === CONFIG: Backend for Lemonfox (change if needed) ===
-    const BASE_URL = "https://chattybot-backend.onrender.com";
-    const LEMONFOX_PROXY_URL = `${BASE_URL}/api/lemonfox-tts`;
-
-    // === SCRIPT DATA ===
-    // Bot (counselor) lines – blue
+    // Advisor (bot/counselor) lines – blue
     const botLines = [
       "So, Andy, what brings you here today?",
       "Hotel management. Correct me if I'm wrong, but weren't you studying marine biology?",
@@ -56,15 +51,25 @@
       "Give me a day or two to look into it. I'll get back to you before the end of the week.",
       "My pleasure. And I'd be more than happy to write you a recommendation if you decide to apply."
     ];
-    // Student (student) lines – gray
+    // Student lines – green
     const scriptLines = [
       "I'd like some advice. I've been considering taking up hotel management.",
       "I was. But I've given it some thought, and I've decided I'm not cut out for science.",
       "Well, I'd like to enroll in a good program. I was hoping you could steer me in the right direction.",
-      "That's great.",
+      "That's great."
     ];
 
-    // === STATE ===
+    // Custom voice mapping (label => partial SpeechSynthesisVoice name)
+    const customVoiceMap = {
+      adam:        "Google US English",  
+      sarah:       "Google UK English Female",
+      emily:       "Microsoft Zira",
+      james:       "Microsoft David",
+      jenny:       "Google UK English Female",
+      nicole:      "Google AU English Female",
+      santa:       "Google Deutsch"
+    };
+
     let studentName = "";
     let currentLine = 0;
     let tempUserText = "";
@@ -73,41 +78,58 @@
     const transcript = [];
     const conversationDiv = document.getElementById('conversation');
 
-    // Date auto-fill
     document.getElementById("sessionDate").textContent = new Date().toLocaleDateString();
 
-    // --- Lemonfox via backend proxy ---
-    async function speakWithLemonfox(text) {
-      const voice = document.getElementById('voice-select').value;
-      try {
-        const response = await fetch(LEMONFOX_PROXY_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text, voice })
-        });
-        if (!response.ok) {
-          alert("Lemonfox error: " + response.status + " - " + response.statusText);
-          return;
-        }
-        const audioBlob = await response.blob();
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const audio = new Audio(audioUrl);
-        await audio.play();
-      } catch (e) {
-        alert("Lemonfox error: " + e);
+    // Enable Start button when voices are available
+    function voicesReady() {
+      document.getElementById("startBtn").disabled = false;
+    }
+    function waitForVoices() {
+      const voices = speechSynthesis.getVoices();
+      if (voices.length > 0) {
+        voicesReady();
+      } else {
+        setTimeout(waitForVoices, 100);
       }
+    }
+    if (typeof speechSynthesis !== "undefined") {
+      if (speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = waitForVoices;
+      }
+      window.onload = waitForVoices;
+    }
+
+    // Speak student lines (selected custom voice label mapped to real system voice)
+    function speakWithVoice(text) {
+      return new Promise(resolve => {
+        const utter = new SpeechSynthesisUtterance(text);
+        const selectedCustom = document.getElementById('voice-select').value;
+        const voices = speechSynthesis.getVoices();
+        let mapped = customVoiceMap[selectedCustom];
+        let voice = null;
+        if (mapped) {
+          voice = voices.find(v => v.name.toLowerCase().includes(mapped.toLowerCase()));
+        }
+        if (!voice) voice = voices.find(v => v.lang && v.lang.startsWith("en"));
+        if (voice) utter.voice = voice;
+        utter.onend = resolve;
+        speechSynthesis.speak(utter);
+      });
     }
 
     function addMessage(who, text) {
       const d = document.createElement('div');
       d.className = `message ${who}`;
-      d.textContent = `${who==='user'?studentName||"You":"Bot"}: ${text}`;
+      let label;
+      if (who === 'user') label = studentName || "You";
+      else if (who === 'studentResponse') label = studentName || "You";
+      else label = "Advisor";
+      d.textContent = `${label}: ${text}`;
       conversationDiv.appendChild(d);
       transcript.push({ who, text });
       conversationDiv.scrollTop = conversationDiv.scrollHeight;
     }
 
-    // --- Start conversation after name is entered & start pressed/Enter
     document.getElementById("startBtn").onclick = startConversation;
     document.getElementById("studentName").addEventListener("keydown", function(e) {
       if (e.key === "Enter") startConversation();
@@ -130,15 +152,13 @@
       currentLine = 0;
       conversationStarted = true;
 
-      // Bot starts
       let botFirstLine = botLines[0].replace("Andy", studentName);
       addMessage('bot', botFirstLine);
-      speakWithLemonfox(botFirstLine).then(() => {
+      speakWithVoice(botFirstLine).then(() => {
         showStudentPrompt();
       });
     }
 
-    // Show the student prompt (gray line), enable Record
     function showStudentPrompt() {
       if (currentLine < scriptLines.length) {
         addMessage('user', scriptLines[currentLine]);
@@ -161,7 +181,6 @@
 
     function submitStudentResponse() {
       if (!tempUserText || !awaitingUser) return;
-      // Save what student actually said
       transcript.push({ who: "studentResponse", text: tempUserText });
       document.getElementById("studentInput").value = "";
       tempUserText = "";
@@ -172,12 +191,13 @@
       // Bot speaks next
       if (currentLine + 1 < botLines.length) {
         setTimeout(() => {
-          addMessage('bot', botLines[currentLine + 1].replace("Andy", studentName));
-          speakWithLemonfox(botLines[currentLine + 1].replace("Andy", studentName)).then(() => {
+          let botLine = botLines[currentLine + 1].replace("Andy", studentName);
+          addMessage('bot', botLine);
+          speakWithVoice(botLine).then(() => {
             currentLine++;
             showStudentPrompt();
+            // Enable PDF at end of last student prompt
             if (currentLine >= scriptLines.length) {
-              // Enable PDF at end
               document.getElementById("pdfBtn").disabled = false;
             }
           });
@@ -191,7 +211,6 @@
 
     document.getElementById("sendButton").onclick = submitStudentResponse;
 
-    // --- PDF EXPORT ---
     function downloadPDF() {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
@@ -201,7 +220,7 @@
       doc.text(`Conversation Transcript\nName: ${name}\nDate: ${date}`, 10, 10);
       let y = 30;
       transcript.forEach(entry => {
-        let whoLabel = entry.who === 'bot' ? 'Counselor' : entry.who === 'user' ? 'Student (prompt)' : 'Student (spoken)';
+        let whoLabel = entry.who === 'bot' ? 'Advisor' : entry.who === 'user' ? 'Student (prompt)' : 'Student (spoken)';
         doc.setTextColor(entry.who === 'bot' ? 11 : 0, entry.who === 'bot' ? 46 : 150, entry.who === 'bot' ? 138 : 0);
         const lines = doc.splitTextToSize(`${whoLabel}: ${entry.text}`, 180);
         lines.forEach(line => {
@@ -214,10 +233,6 @@
       doc.save(filename);
     }
     document.getElementById("pdfBtn").onclick = downloadPDF;
-
   </script>
-
-  
-
 </body>
 </html>
