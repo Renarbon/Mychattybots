@@ -77,26 +77,43 @@
     // Date auto-fill
     document.getElementById("sessionDate").textContent = new Date().toLocaleDateString();
 
-    // --- Lemonfox via backend proxy ---
-    async function speakWithLemonfox(text) {
-      const voice = document.getElementById('voice-select').value;
-      try {
-        const response = await fetch(LEMONFOX_PROXY_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text, voice })
-        });
-        if (!response.ok) {
-          alert("Lemonfox error: " + response.status + " - " + response.statusText);
-          return;
-        }
-        const audioBlob = await response.blob();
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const audio = new Audio(audioUrl);
-        await audio.play();
-      } catch (e) {
-        alert("Lemonfox error: " + e);
-      }
+    // === Load voices (Google English voices if available) ===
+    function loadVoices() {
+      const voices = speechSynthesis.getVoices();
+      const select = document.getElementById("voice-select");
+      select.innerHTML = "";
+
+      // Prioritize Google English voices
+      const englishVoices = voices.filter(v => v.lang.startsWith("en"));
+      englishVoices.sort((a, b) => {
+        const aGoogle = a.name.toLowerCase().includes("google");
+        const bGoogle = b.name.toLowerCase().includes("google");
+        if (aGoogle && !bGoogle) return -1;
+        if (!aGoogle && bGoogle) return 1;
+        return a.name.localeCompare(b.name);
+      });
+
+      englishVoices.forEach(v => {
+        const opt = document.createElement("option");
+        opt.value = v.name;
+        opt.textContent = v.name + " (" + v.lang + ")";
+        select.appendChild(opt);
+      });
+    }
+    speechSynthesis.onvoiceschanged = loadVoices;
+    window.onload = loadVoices;
+
+    // === Speak with SpeechSynthesis ===
+    function speakWithVoice(text) {
+      return new Promise(resolve => {
+        const utter = new SpeechSynthesisUtterance(text);
+        const voiceName = document.getElementById('voice-select').value;
+        const voices = speechSynthesis.getVoices();
+        const voice = voices.find(v => v.name === voiceName);
+        if (voice) utter.voice = voice;
+        utter.onend = resolve;
+        speechSynthesis.speak(utter);
+      });
     }
 
     function addMessage(who, text) {
