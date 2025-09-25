@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>ESL ChattyBot – Student “A” (Anna) Role</title>
+  <title>ESL ChattyBot – Student “A” Role</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: Arial; padding: 20px; background: #f2f2f2; }
@@ -18,12 +18,12 @@
 </head>
 <body>
   <div id="chat">
-    <h2>🧑‍🎓 ESL ChattyBot – You are “A” (Anna, the student) <span style="font-size:15px;">(read the green lines, voice selection below)</span></h2>
-    <label>Other Character's Name: <input id="otherName" type="text" autocomplete="off" placeholder="e.g. Anna or your partner's name" /></label>
+    <h2>🧑‍🎓 ESL ChattyBot – You are “A” (Student) <span style="font-size:15px;">(read the green lines, voice selection below)</span></h2>
+    <label>Your Name (A): <input id="studentName" type="text" autocomplete="off" placeholder="Type your name" /></label>
     <button id="startBtn" disabled>Start</button>
     <span style="margin-left:15px; font-size:0.98em;">Date: <span id="sessionDate"></span></span>
     <br>
-    <label for="voice-select"><b>Your Voice (A):</b></label>
+    <label for="voice-select"><b>ChattyBot's Name (B):</b></label>
     <select id="voice-select">
       <option value="adam">Adam</option>
       <option value="sarah">Sarah</option>
@@ -34,7 +34,7 @@
       <option value="santa">Santa</option>
     </select>
     <div style="margin: 12px 0; color: #007aff; background: #e6e6ff; border-radius: 6px; padding: 8px; max-width: 600px;">
-      <b>Instructions:</b> You are <b>Anna (“A”)</b> (read the green lines aloud each turn). ChattyBot will play <b>B</b>.
+      <b>Instructions:</b> You are <b>A</b> (read the green lines aloud each turn). ChattyBot will play <b>B</b> with the selected name/voice.
     </div>
     <div id="conversation"></div>
     <button onclick="startRecording()" id="recordButton" disabled>🎙️ Record</button>
@@ -44,12 +44,12 @@
   </div>
   <script>
     // Dialogue definition
-    // A = user (Anna); B = bot
+    // A = user; B = bot
     const botLines = [
       "Actually, I'm at my wits' end with my dad.",
       "Well, basically, no matter how well I do at school, he never gives me any credit.",
       "It is. I just wish he'd be a little more supportive.",
-      "I know. Thanks for the encouragement, Anna."
+      "I know. Thanks for the encouragement, NAME."
     ];
     const scriptLines = [
       "Hey, NAME? You look a little distracted. Is everything OK?",
@@ -58,9 +58,10 @@
       "Well, hang in there, OK? I'm sure your dad loves you.",
       "Anytime."
     ];
-    // --- Custom voice mapping
+
+    // Custom voice mapping
     const customVoiceMap = {
-      adam:        "Google US English",  
+      adam:        "Google US English",
       sarah:       "Google UK English Female",
       emily:       "Microsoft Zira",
       james:       "Microsoft David",
@@ -69,7 +70,8 @@
       santa:       "Google Deutsch"
     };
 
-    let otherName = "";
+    let studentName = "";
+    let botName = "";
     let currentLine = 0;
     let tempUserText = "";
     let awaitingUser = false;
@@ -98,7 +100,7 @@
       window.onload = waitForVoices;
     }
 
-    // Speak Anna's lines with mapped voice
+    // Speak B's lines (dropdown-selected name/voice)
     function speakWithVoice(text) {
       return new Promise(resolve => {
         const utter = new SpeechSynthesisUtterance(text);
@@ -120,9 +122,8 @@
       const d = document.createElement('div');
       d.className = `message ${who}`;
       let label;
-      if (who === 'user') label = "Anna";
-      else if (who === 'studentResponse') label = "Anna";
-      else label = otherName || "B";
+      if (who === 'user' || who === 'studentResponse') label = studentName || "A";
+      else label = botName || "B";
       d.textContent = `${label}: ${text}`;
       conversationDiv.appendChild(d);
       transcript.push({ who, text });
@@ -130,15 +131,17 @@
     }
 
     document.getElementById("startBtn").onclick = startConversation;
-    document.getElementById("otherName").addEventListener("keydown", function(e) {
+    document.getElementById("studentName").addEventListener("keydown", function(e) {
       if (e.key === "Enter") startConversation();
     });
 
     function startConversation() {
       if (conversationStarted) return;
-      otherName = document.getElementById("otherName").value.trim() || "B";
+      studentName = document.getElementById("studentName").value.trim() || "A";
+      botName = document.getElementById('voice-select').selectedOptions[0].textContent;
       document.getElementById("startBtn").disabled = true;
-      document.getElementById("otherName").disabled = true;
+      document.getElementById("studentName").disabled = true;
+      document.getElementById("voice-select").disabled = true;
       document.getElementById("recordButton").disabled = true;
       document.getElementById("sendButton").disabled = true;
       document.getElementById("pdfBtn").disabled = true;
@@ -147,8 +150,8 @@
       currentLine = 0;
       conversationStarted = true;
 
-      // Anna starts
-      let firstLine = scriptLines[0].replace("NAME", otherName);
+      // A starts (user)
+      let firstLine = scriptLines[0].replace(/NAME/g, botName);
       addMessage('user', firstLine);
       document.getElementById("recordButton").disabled = false;
       awaitingUser = true;
@@ -157,11 +160,14 @@
     function showBotReply() {
       if (currentLine < botLines.length) {
         setTimeout(() => {
-          addMessage('bot', botLines[currentLine]);
-          speakWithVoice(botLines[currentLine]).then(() => {
+          // Always replace NAME with studentName in B's lines
+          let botLine = botLines[currentLine].replace(/NAME/g, studentName);
+          addMessage('bot', botLine);
+          speakWithVoice(botLine).then(() => {
             currentLine++;
             if (currentLine < scriptLines.length) {
-              addMessage('user', scriptLines[currentLine]);
+              let userLine = scriptLines[currentLine].replace(/NAME/g, botName);
+              addMessage('user', userLine);
               document.getElementById("recordButton").disabled = false;
               awaitingUser = true;
             } else {
@@ -206,14 +212,14 @@
     function downloadPDF() {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
-      const name = "Anna";
-      const partner = otherName;
+      const nameA = studentName || 'A';
+      const nameB = botName || 'B';
       const date = document.getElementById('sessionDate').textContent;
       doc.setTextColor(0, 0, 0);
-      doc.text(`Conversation Transcript\nA: Anna\nB: ${partner}\nDate: ${date}`, 10, 10);
+      doc.text(`Conversation Transcript\nA: ${nameA}\nB: ${nameB}\nDate: ${date}`, 10, 10);
       let y = 30;
       transcript.forEach(entry => {
-        let whoLabel = entry.who === 'bot' ? partner : entry.who === 'user' ? 'Anna (prompt)' : 'Anna (spoken)';
+        let whoLabel = entry.who === 'bot' ? nameB : entry.who === 'user' ? `${nameA} (prompt)` : `${nameA} (spoken)`;
         doc.setTextColor(entry.who === 'bot' ? 11 : 0, entry.who === 'bot' ? 46 : 150, entry.who === 'bot' ? 138 : 0);
         const lines = doc.splitTextToSize(`${whoLabel}: ${entry.text}`, 180);
         lines.forEach(line => {
@@ -222,7 +228,7 @@
           if (y > 280) { doc.addPage(); y = 20; }
         });
       });
-      const filename = `Anna_${partner}_${date.replace(/[\/]/g, '-')}_unit2.pdf`;
+      const filename = `${nameA}_${nameB}_${date.replace(/[\/]/g, '-')}_unit2.pdf`;
       doc.save(filename);
     }
     document.getElementById("pdfBtn").onclick = downloadPDF;
