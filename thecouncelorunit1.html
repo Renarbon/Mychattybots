@@ -181,16 +181,17 @@
           addMessage('bot', botLines[currentLine]);
           speakWithVoice(botLines[currentLine]).then(() => {
             currentLine++;
-            if (currentLine < scriptLines.length) {
-              // Show next user prompt (counselor line)
-              addMessage('user', scriptLines[currentLine].replace("NAME", botName));
-              document.getElementById("recordButton").disabled = false;
-              awaitingUser = true;
-            } else {
-              // End: enable PDF
-              document.getElementById("pdfBtn").disabled = false;
-              document.getElementById("recordButton").disabled = true;
-            }
+           if (currentLine < scriptLines.length) {
+  // Show next user prompt (counselor line)
+  addMessage('user', scriptLines[currentLine].replace("NAME", botName));
+  document.getElementById("recordButton").disabled = false;
+  awaitingUser = true;
+} else {
+  // Conversation is finished!
+  document.getElementById("pdfBtn").disabled = false;
+  document.getElementById("recordButton").disabled = true;
+  awaitingUser = false;
+}
           });
         }, 900);
       } else {
