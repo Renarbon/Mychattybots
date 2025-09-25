@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ESL ChattyBot – You are B (Counselor) Role</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    body { font-family: Arial; padding: 20px; background: #f2f2f2; }
+    #chat { background: white; padding: 20px; max-width: 700px; margin: auto; border-radius: 10px; }
+    .message { margin: 10px 0; }
+    .user { color: #0b2e8a; }
+    .bot { color: green; }
+    input, button { padding: 10px; margin: 5px; }
+    input[readonly] { background-color: #eee; }
+    #studentInput { width: 90%; padding: 8px; }
+    #pdfBtn { margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div id="chat">
+    <h2>🧑‍💼 ESL ChattyBot – You are “B” (the counselor or friend) <span style="font-size:15px;">(read the blue lines, voice selection below)</span></h2>
+    <label>Your Name (B): <input id="counselorName" type="text" autocomplete="off" placeholder="Type your name" /></label>
+    <button id="startBtn" disabled>Start</button>
+    <span style="margin-left:15px; font-size:0.98em;">Date: <span id="sessionDate"></span></span>
+    <br>
+    <label for="voice-select"><b>ChattyBot's Name (A):</b></label>
+    <select id="voice-select">
+      <option value="adam">Adam</option>
+      <option value="sarah">Sarah</option>
+      <option value="emily">Emily</option>
+      <option value="james">James</option>
+      <option value="jenny">Jenny</option>
+      <option value="nicole">Nicole</option>
+      <option value="santa">Santa</option>
+    </select>
+    <div style="margin: 12px 0; color: #007aff; background: #e6e6ff; border-radius: 6px; padding: 8px; max-width: 600px;">
+      <b>Instructions:</b> You are <b>B</b> (read the blue lines aloud each turn). ChattyBot will play <b>A</b> with the selected name/voice.
+    </div>
+    <div id="conversation"></div>
+    <button onclick="startRecording()" id="recordButton" disabled>🎙️ Record</button>
+    <button onclick="submitCounselorResponse()" id="sendButton" disabled>📨 Send</button>
+    <input type="text" id="studentInput" readonly />
+    <button onclick="downloadPDF()" id="pdfBtn" disabled>⬇️ Download PDF</button>
+  </div>
+  <script>
+    // A = bot, B = user
+    const botLines = [
+      "Hey, NAME? You look a little distracted. Is everything OK?",
+      "What's going on?",
+      "I hear you. That must be tough.",
+      "Well, hang in there, OK? I'm sure your dad loves you.",
+      "Anytime."
+    ];
+    const scriptLines = [
+      "Actually, I'm at my wits' end with my dad.",
+      "Well, basically, no matter how well I do at school, he never gives me any credit.",
+      "It is. I just wish he'd be a little more supportive.",
+      "I know. Thanks for the encouragement, NAME."
+    ];
+
+    // Custom voice mapping
+    const customVoiceMap = {
+      adam:        "Google US English",
+      sarah:       "Google UK English Female",
+      emily:       "Microsoft Zira",
+      james:       "Microsoft David",
+      jenny:       "Google UK English Female",
+      nicole:      "Google AU English Female",
+      santa:       "Google Deutsch"
+    };
+
+    let counselorName = "";
+    let botName = "";
+    let currentLine = 0;
+    let tempUserText = "";
+    let awaitingUser = false;
+    let conversationStarted = false;
+    const transcript = [];
+    const conversationDiv = document.getElementById('conversation');
+
+    document.getElementById("sessionDate").textContent = new Date().toLocaleDateString();
+
+    // Enable Start button when voices available
+    function voicesReady() {
+      document.getElementById("startBtn").disabled = false;
+    }
+    function waitForVoices() {
+      const voices = speechSynthesis.getVoices();
+      if (voices.length > 0) {
+        voicesReady();
+      } else {
+        setTimeout(waitForVoices, 100);
+      }
+    }
+    if (typeof speechSynthesis !== "undefined") {
+      if (speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = waitForVoices;
+      }
+      window.onload = waitForVoices;
+    }
+
+    // Speak A's lines (dropdown-selected)
+    function speakWithVoice(text) {
+      return new Promise(resolve => {
+        const utter = new SpeechSynthesisUtterance(text);
+        const selectedCustom = document.getElementById('voice-select').value;
+        const voices = speechSynthesis.getVoices();
+        let mapped = customVoiceMap[selectedCustom];
+        let voice = null;
+        if (mapped) {
+          voice = voices.find(v => v.name.toLowerCase().includes(mapped.toLowerCase()));
+        }
+        if (!voice) voice = voices.find(v => v.lang && v.lang.startsWith("en"));
+        if (voice) utter.voice = voice;
+        utter.onend = resolve;
+        speechSynthesis.speak(utter);
+      });
+    }
+
+    function addMessage(who, text) {
+      const d = document.createElement('div');
+      d.className = `message ${who}`;
+      let label;
+      if (who === 'user' || who === 'counselorResponse') label = counselorName || "B";
+      else label = botName || "A";
+      d.textContent = `${label}: ${text}`;
+      conversationDiv.appendChild(d);
+      transcript.push({ who, text });
+      conversationDiv.scrollTop = conversationDiv.scrollHeight;
+    }
+
+    document.getElementById("startBtn").onclick = startConversation;
+    document.getElementById("counselorName").addEventListener("keydown", function(e) {
+      if (e.key === "Enter") startConversation();
+    });
+
+    function startConversation() {
+      if (conversationStarted) return;
+      counselorName = document.getElementById("counselorName").value.trim() || "B";
+      botName = document.getElementById('voice-select').selectedOptions[0].textContent;
+      document.getElementById("startBtn").disabled = true;
+      document.getElementById("counselorName").disabled = true;
+      document.getElementById("voice-select").disabled = true;
+      document.getElementById("recordButton").disabled = true;
+      document.getElementById("sendButton").disabled = true;
+      document.getElementById("pdfBtn").disabled = true;
+      conversationDiv.innerHTML = "";
+      transcript.length = 0;
+      currentLine = 0;
+      conversationStarted = true;
+
+      // A (ChattyBot) starts
+      let firstLine = botLines[0].replace(/NAME/g, counselorName);
+      addMessage('bot', firstLine);
+      speakWithVoice(firstLine).then(() => {
+        showCounselorPrompt();
+      });
+    }
+
+    function showCounselorPrompt() {
+      if (currentLine < scriptLines.length) {
+        addMessage('user', scriptLines[currentLine]);
+        document.getElementById("recordButton").disabled = false;
+        awaitingUser = true;
+      }
+    }
+
+    function startRecording() {
+      const recog = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recog.lang = 'en-US'; recog.interimResults = false; recog.maxAlternatives = 1;
+      recog.start();
+      recog.onresult = e => {
+        tempUserText = e.results[0][0].transcript;
+        document.getElementById("studentInput").value = tempUserText;
+        document.getElementById("sendButton").disabled = false;
+      };
+      recog.onerror = e => alert("Speech recognition error: " + e.error);
+    }
+
+    function submitCounselorResponse() {
+      if (!tempUserText || !awaitingUser) return;
+      transcript.push({ who: "counselorResponse", text: tempUserText });
+      document.getElementById("studentInput").value = "";
+      tempUserText = "";
+      document.getElementById("sendButton").disabled = true;
+      document.getElementById("recordButton").disabled = true;
+      awaitingUser = false;
+
+      // ChattyBot speaks next
+      if (currentLine + 1 < botLines.length) {
+        setTimeout(() => {
+          let botLine = botLines[currentLine + 1].replace(/NAME/g, counselorName);
+          addMessage('bot', botLine);
+          speakWithVoice(botLine).then(() => {
+            currentLine++;
+            showCounselorPrompt();
+            // Enable PDF at end
+            if (currentLine >= scriptLines.length) {
+              document.getElementById("pdfBtn").disabled = false;
+            }
+          });
+        }, 900);
+      } else {
+        // Conversation finished
+        addMessage('bot', "Great job! Conversation finished.");
+        document.getElementById("pdfBtn").disabled = false;
+      }
+    }
+
+    document.getElementById("sendButton").onclick = submitCounselorResponse;
+
+    function downloadPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const nameB = counselorName || 'B';
+      const nameA = botName || 'A';
+      const date = document.getElementById('sessionDate').textContent;
+      doc.setTextColor(0, 0, 0);
+      doc.text(`Conversation Transcript\nA: ${nameA}\nB: ${nameB}\nDate: ${date}`, 10, 10);
+      let y = 30;
+      transcript.forEach(entry => {
+        let whoLabel = entry.who === 'bot' ? nameA : entry.who === 'user' ? `${nameB} (prompt)` : `${nameB} (spoken)`;
+        doc.setTextColor(entry.who === 'bot' ? 0 : 11, entry.who === 'bot' ? 150 : 46, entry.who === 'bot' ? 0 : 138);
+        const lines = doc.splitTextToSize(`${whoLabel}: ${entry.text}`, 180);
+        lines.forEach(line => {
+          doc.text(line, 10, y);
+          y += 10;
+          if (y > 280) { doc.addPage(); y = 20; }
+        });
+      });
+      const filename = `${nameA}_${nameB}_${date.replace(/[\/]/g, '-')}_unit2.pdf`;
+      doc.save(filename);
+    }
+    document.getElementById("pdfBtn").onclick = downloadPDF;
+  </script>
+</body>
+</html>
