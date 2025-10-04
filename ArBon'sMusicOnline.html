@@ -55,6 +55,61 @@ h1{font-size:clamp(22px,3vw,34px);margin:0;}
 .dot.video{background:var(--accent2);}
 .row .name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .row .dur{color:var(--muted);}
+
+/* Album grid styles */
+.album-grid { 
+  display: flex; 
+  flex-wrap: wrap;
+  gap: 20px; 
+  margin-bottom: 24px; 
+  justify-content: flex-start;
+}
+.album { 
+  display: flex; 
+  flex-direction: column; 
+  align-items: center; 
+  cursor: pointer; 
+  border-radius: 12px; 
+  background:rgba(255,255,255,0.04);
+  padding:10px 10px 6px 10px;
+  border: 2px solid transparent;
+  transition: border 0.2s;
+}
+.album.active, .album:hover {
+  border: 2px solid var(--accent2);
+  background: linear-gradient(180deg, rgba(34,211,238,0.04), rgba(167,139,250,0.08));
+}
+.album img { 
+  width: 80px; 
+  height: 80px; 
+  object-fit: cover; 
+  border-radius: 12px; 
+  margin-bottom: 6px;
+  box-shadow: 0 2px 8px rgba(20,20,40,0.18);
+}
+.album .album-label {
+  font-size: 0.95em;
+  color: var(--muted);
+  text-align: center;
+  max-width:90px;
+  word-break: break-word;
+}
+.album .album-count {
+  font-size: 0.8em;
+  color: var(--accent2);
+}
+.show-albums-btn {
+  margin-bottom: 12px;
+  display: none;
+}
+
+/* Responsive for album grid */
+@media(max-width:600px) {
+  .album-grid {gap:9px;}
+  .album img {width:52px;height:52px;}
+  .album .album-label {font-size:0.88em;}
+}
+
 </style>
 </head>
 <body>
@@ -71,6 +126,10 @@ src="https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v23.0&appId=YOUR_
   <div class="hint">Shortcuts: <kbd>Space</kbd>/<kbd>P</kbd> play‑pause · <kbd>N</kbd> next · <kbd>B</kbd> back</div>
 </header>
 
+<!-- Album grid -->
+<button class="btn show-albums-btn" id="showAlbumsBtn">← Back to Albums</button>
+<div class="album-grid" id="albumGrid"></div>
+
 <div class="board">
   <!-- Player -->
   <section class="card player">
@@ -86,7 +145,7 @@ src="https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v23.0&appId=YOUR_
       <button class="btn" id="nextBtn">⏭️ Next</button>
       <button class="btn" id="shuffleBtn" aria-pressed="false">🔀 Shuffle</button>
       <button class="btn" id="loopBtn" aria-pressed="false">🔁 Loop</button>
-
+    </div>
      
      <!-- Facebook Comments -->
   <div id="comments" style="background:#fff; color:#111; border-radius:12px; padding: 8px;">
@@ -131,9 +190,12 @@ const playlist=[
   { title: "Smooth Goodbye", src: "soul-mus/sg.mp3", type: "audio", artist: "Mr. Arguet", poster:"soul-mus/New Cover.png"},
   { title: "The grand entrance", src: "soul-mus/tge.mp3", type: "audio", artist: "Mr. Arguet", poster:"soul-mus/New Cover.png"},
   { title: "Tears on the dancefloor", src: "soul-mus/tod.mp3", type: "audio", artist: "Mr. Arguet", poster:"soul-mus/New Cover.png"}     
-  
 ];
+
 let currentIndex=0;
+let shuffle=false;
+let currentAlbum = null; // null = all albums
+
 const els={
   audio:document.getElementById('audio'),
   thumb:document.getElementById('thumb'),
@@ -147,23 +209,109 @@ const els={
   playBtn:document.getElementById('playBtn'),
   shuffleBtn:document.getElementById('shuffleBtn'),
   loopBtn:document.getElementById('loopBtn'),
-  visitorCounter:document.getElementById('visitorCounter')
+  albumGrid:document.getElementById('albumGrid'),
+  showAlbumsBtn:document.getElementById('showAlbumsBtn')
 };
 
-let shuffle=false;
+// 1. Group songs by poster
+function getAlbums() {
+  // { poster: [songs] }
+  const albums = {};
+  playlist.forEach(song => {
+    if (!albums[song.poster]) albums[song.poster] = [];
+    albums[song.poster].push(song);
+  });
+  return albums;
+}
 
-// Render playlist
+// 2. Render album covers
+function renderAlbumGrid() {
+  const albums = getAlbums();
+  els.albumGrid.innerHTML = '';
+  Object.entries(albums).forEach(([poster, songs], i) => {
+    const albumDiv = document.createElement('div');
+    albumDiv.className = 'album';
+    albumDiv.tabIndex = 0;
+    albumDiv.innerHTML = `
+      <img src="${poster}" alt="album cover">
+      <div class="album-label">${getAlbumLabel(songs)}</div>
+      <div class="album-count">${songs.length} song${songs.length > 1 ? 's' : ''}</div>
+    `;
+    albumDiv.onclick = () => showAlbum(poster);
+    albumDiv.onkeypress = e => { if (e.key === "Enter" || e.key === " ") { showAlbum(poster); } };
+    els.albumGrid.appendChild(albumDiv);
+  });
+  els.albumGrid.style.display = "";
+  els.showAlbumsBtn.style.display = "none";
+}
+
+// Try to infer album label from first song's title or artist, or use file name
+function getAlbumLabel(songs) {
+  // Try to get artist or fallback to filename
+  if (!songs || !songs.length) return 'Unknown Album';
+  const artist = songs[0].artist || '';
+  // Group by artist and poster = treat as one album
+  if (artist) return artist;
+  // Or fallback to file name
+  const poster = songs[0].poster || '';
+  return poster.split("/").pop().split(".")[0];
+}
+
+// 3. Show only songs from selected album
+function showAlbum(poster) {
+  currentAlbum = poster;
+  renderList();
+  // Mark selected album
+  for(const albumDiv of els.albumGrid.children) {
+    if (albumDiv.querySelector("img").src.includes(poster)) {
+      albumDiv.classList.add('active');
+    } else {
+      albumDiv.classList.remove('active');
+    }
+  }
+  els.albumGrid.style.display = "none";
+  els.showAlbumsBtn.style.display = "";
+}
+
+// 4. Show all albums button
+els.showAlbumsBtn.onclick = function() {
+  currentAlbum = null;
+  renderAlbumGrid();
+  renderList();
+};
+
+// Modified renderList to support album filtering and search
 function renderList(){
   els.list.innerHTML='';
-  playlist.forEach((item,i)=>{
+  let songs = playlist;
+  // Filter by album if selected
+  if (currentAlbum) songs = songs.filter(item => item.poster === currentAlbum);
+  // Filter by search
+  const q = els.search.value.trim().toLowerCase();
+  if (q) {
+    songs = songs.filter(item => 
+      item.title.toLowerCase().includes(q) ||
+      (item.artist && item.artist.toLowerCase().includes(q))
+    );
+  }
+  // If nothing, show empty message
+  if (!songs.length) {
     const row=document.createElement('div');
-    row.className='row'+(i===currentIndex?' active':'');
-    row.dataset.index=i;
+    row.className='row';
+    row.innerHTML = "<div>No songs found.</div>";
+    els.list.appendChild(row);
+    return;
+  }
+  songs.forEach((item,i)=>{
+    const idx = playlist.indexOf(item); // Use index from main playlist for playback order
+    const row=document.createElement('div');
+    row.className='row'+(idx===currentIndex?' active':'');
+    row.dataset.index=idx;
     const dot=document.createElement('div'); dot.className='dot '+item.type;
     const name=document.createElement('div'); name.className='name'; name.textContent=item.title;
     const dur=document.createElement('div'); dur.className='dur'; dur.textContent=item.type==='audio'?'MP3':'MP4';
     row.append(dot,name,dur);
-    row.addEventListener('click',()=>load(i,true));
+    row.addEventListener('click',()=>load(idx,true));
     els.list.appendChild(row);
   });
 }
@@ -191,8 +339,23 @@ function load(i,autoplay=false){
 }
 
 // Controls
-function next(){load((currentIndex+1)%playlist.length,true);}
-function prev(){load((currentIndex-1+playlist.length)%playlist.length,true);}
+function next(){
+  // If filtered, stay within filter
+  let songs = playlist;
+  if (currentAlbum) songs = songs.filter(item => item.poster === currentAlbum);
+  const currentFilteredIdx = songs.findIndex(item => playlist.indexOf(item) === currentIndex);
+  const nextFilteredIdx = (currentFilteredIdx+1)%songs.length;
+  const nextRealIdx = playlist.indexOf(songs[nextFilteredIdx]);
+  load(nextRealIdx,true);
+}
+function prev(){
+  let songs = playlist;
+  if (currentAlbum) songs = songs.filter(item => item.poster === currentAlbum);
+  const currentFilteredIdx = songs.findIndex(item => playlist.indexOf(item) === currentIndex);
+  const prevFilteredIdx = (currentFilteredIdx-1+songs.length)%songs.length;
+  const prevRealIdx = playlist.indexOf(songs[prevFilteredIdx]);
+  load(prevRealIdx,true);
+}
 els.prevBtn.addEventListener('click',prev);
 els.nextBtn.addEventListener('click',next);
 els.playBtn.addEventListener('click',()=>{
@@ -201,19 +364,21 @@ els.playBtn.addEventListener('click',()=>{
   else els.audio.paused?els.audio.play():els.audio.pause();
 });
 els.shuffleBtn.addEventListener('click',()=>{shuffle=!shuffle;els.shuffleBtn.setAttribute('aria-pressed',shuffle);});
-els.loopBtn.addEventListener('click',()=>{const now=els.loopBtn.getAttribute('aria-pressed')==='true';els.loopBtn.setAttribute('aria-pressed',!now);const vid=els.thumb.querySelector('video');if(vid)vid.loop=!now;else els.audio.loop=!now;});
+els.loopBtn.addEventListener('click',()=>{const now=els.loopBtn.getAttribute('aria-pressed')==='true';els.loopBtn.setAttribute('aria-pressed',!now);const vid=els.thumb.querySelector('video');if(vid)vid.loop=!now;});
 
 // Search
 els.search.addEventListener('input',()=>renderList());
 els.clearBtn.addEventListener('click',()=>{els.search.value='';renderList();});
 
 // Visitor Counter using CountAPI
-fetch('https://api.countapi.xyz/hit/YOUR_UNIQUE_NAMESPACE/YOUR_KEY')
-  .then(res=>res.json()).then(data=>{els.visitorCounter.textContent=`👁️ Visitors: ${data.value}`;});
+// fetch('https://api.countapi.xyz/hit/YOUR_UNIQUE_NAMESPACE/YOUR_KEY')
+//   .then(res=>res.json()).then(data=>{els.visitorCounter.textContent=`👁️ Visitors: ${data.value}`;});
 
 // Initialize
+renderAlbumGrid();
 renderList();
 load(0,true);
+
 </script>
 </body>
 </html>
