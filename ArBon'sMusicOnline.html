@@ -3,20 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>My AI Music & Videos </title>
-
-<!-- Open Graph for Facebook preview -->
-<meta property="og:url" content="https://mychatbots.netlify.app/arbon'smusiconline" />
-<meta property="og:type" content="website" />
-<meta property="og:title" content="My Music & Videos" />
-<meta property="og:description" content="Enjoy my music and videos!" />
-<meta property="og:image" content="https://mychatbots.netlify.app/arbon'smusiconline" />
-
+<title>My AI Music & Videos</title>
 <style>
 :root{
   --bg:#0f172a; --text:#e5e7eb; --muted:#64748b; --accent:#22d3ee; --accent2:#a78bfa; --radius:12px;
 }
-*{box-sizing:border-box}
 body{margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);}
 .wrap{max-width:1000px;margin:24px auto;padding:0 16px;}
 header{display:flex;flex-direction:column;gap:6px;margin-bottom:18px;}
@@ -32,9 +23,8 @@ h1{font-size:clamp(22px,3vw,34px);margin:0;}
   display: grid;
   place-items: center;
   margin-bottom: 12px;
+  min-height:60px;
 }
-
-/* Make sure media fills the box */
 .thumb img,
 .thumb video {
   width: 100%;
@@ -42,7 +32,6 @@ h1{font-size:clamp(22px,3vw,34px);margin:0;}
   object-fit: cover;
   border-radius: 12px;
 }
-
 .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
 .btn{appearance:none;border:1px solid rgba(255,255,255,0.12);color:var(--text);background:#0b1220;padding:10px 12px;border-radius:12px;cursor:pointer;}
 .btn:hover{border-color:rgba(255,255,255,0.22);}
@@ -55,88 +44,35 @@ h1{font-size:clamp(22px,3vw,34px);margin:0;}
 .dot.video{background:var(--accent2);}
 .row .name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .row .dur{color:var(--muted);}
-
-/* Album grid styles */
-.album-grid { 
-  display: flex; 
-  flex-wrap: wrap;
-  gap: 20px; 
-  margin-bottom: 24px; 
-  justify-content: flex-start;
-}
-.album { 
-  display: flex; 
-  flex-direction: column; 
-  align-items: center; 
-  cursor: pointer; 
-  border-radius: 12px; 
-  background:rgba(255,255,255,0.04);
-  padding:10px 10px 6px 10px;
-  border: 2px solid transparent;
-  transition: border 0.2s;
-}
-.album.active, .album:hover {
-  border: 2px solid var(--accent2);
-  background: linear-gradient(180deg, rgba(34,211,238,0.04), rgba(167,139,250,0.08));
-}
-.album img { 
-  width: 80px; 
-  height: 80px; 
-  object-fit: cover; 
-  border-radius: 12px; 
-  margin-bottom: 6px;
-  box-shadow: 0 2px 8px rgba(20,20,40,0.18);
-}
-.album .album-label {
-  font-size: 0.95em;
-  color: var(--muted);
-  text-align: center;
-  max-width:90px;
-  word-break: break-word;
-}
-.album .album-count {
-  font-size: 0.8em;
-  color: var(--accent2);
-}
-.show-albums-btn {
-  margin-bottom: 12px;
-  display: none;
-}
-
-/* Responsive for album grid */
+.album-grid {display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 24px; justify-content: flex-start;}
+.album {display: flex; flex-direction: column; align-items: center; cursor: pointer; border-radius: 12px; background:rgba(255,255,255,0.04); padding:10px 10px 6px 10px; border: 2px solid transparent; transition: border 0.2s;}
+.album.active, .album:hover {border: 2px solid var(--accent2); background: linear-gradient(180deg, rgba(34,211,238,0.04), rgba(167,139,250,0.08));}
+.album img {width: 80px; height: 80px; object-fit: cover; border-radius: 12px; margin-bottom: 6px; box-shadow: 0 2px 8px rgba(20,20,40,0.18);}
+.album .album-label {font-size: 0.95em; color: var(--muted); text-align: center; max-width:90px; word-break: break-word;}
+.album .album-count {font-size: 0.8em; color: var(--accent2);}
+.show-albums-btn {margin-bottom: 12px; display: none;}
+.hide { display: none !important; }
 @media(max-width:600px) {
   .album-grid {gap:9px;}
   .album img {width:52px;height:52px;}
   .album .album-label {font-size:0.88em;}
 }
-
 </style>
 </head>
 <body>
-
-<!-- Facebook SDK -->
-<div id="fb-root"></div>
-<script async defer crossorigin="anonymous" 
-src="https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v23.0&appId=YOUR_APP_ID">
-</script>
-
 <div class="wrap">
 <header>
   <h1>My Music & Videos</h1>
   <div class="hint">Shortcuts: <kbd>Space</kbd>/<kbd>P</kbd> play‑pause · <kbd>N</kbd> next · <kbd>B</kbd> back</div>
 </header>
-
-<!-- Album grid -->
 <button class="btn show-albums-btn" id="showAlbumsBtn">← Back to Albums</button>
 <div class="album-grid" id="albumGrid"></div>
-
 <div class="board">
-  <!-- Player -->
-  <section class="card player">
+  <section class="card player hide" id="playerCard">
     <div class="thumb" id="thumb">
       <svg width="60" height="60" viewBox="0 0 24 24" fill="currentColor"><path d="M10 17l6-5-6-5v10z"/></svg>
     </div>
-    <h2 class="title" id="title">Nothing playing</h2>
+    <h2 class="title" id="title">No song selected</h2>
     <div class="meta" id="meta">—</div>
     <audio id="audio" preload="metadata"></audio>
     <div class="controls">
@@ -146,19 +82,8 @@ src="https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v23.0&appId=YOUR_
       <button class="btn" id="shuffleBtn" aria-pressed="false">🔀 Shuffle</button>
       <button class="btn" id="loopBtn" aria-pressed="false">🔁 Loop</button>
     </div>
-     
-     <!-- Facebook Comments -->
-  <div id="comments" style="background:#fff; color:#111; border-radius:12px; padding: 8px;">
-  <h3 style="color:#111;">💬 Comments</h3>
-  <div class="fb-comments"
-       data-href="https://mychatbots.netlify.app/arbon'smusiconline"
-       data-width="100%"
-       data-numposts="5"></div>
-</div>
   </section>
-
-  <!-- Playlist -->
-  <aside class="card side">
+  <aside class="card side hide" id="sideCard">
     <div class="search">
       <input id="search" type="search" placeholder="Search…" />
       <button class="btn" id="clearBtn">✖</button>
@@ -167,7 +92,6 @@ src="https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v23.0&appId=YOUR_
   </aside>
 </div>
 </div>
-
 <script>
 // Playlist
 const playlist=[
@@ -191,31 +115,31 @@ const playlist=[
   { title: "The grand entrance", src: "soul-mus/tge.mp3", type: "audio", artist: "Mr. Arguet", poster:"soul-mus/New Cover.png"},
   { title: "Tears on the dancefloor", src: "soul-mus/tod.mp3", type: "audio", artist: "Mr. Arguet", poster:"soul-mus/New Cover.png"}     
 ];
+let currentIndex = null;
+let shuffle = false;
+let currentAlbum = null;
 
-let currentIndex=0;
-let shuffle=false;
-let currentAlbum = null; // null = all albums
-
-const els={
-  audio:document.getElementById('audio'),
-  thumb:document.getElementById('thumb'),
-  title:document.getElementById('title'),
-  meta:document.getElementById('meta'),
-  list:document.getElementById('list'),
-  search:document.getElementById('search'),
-  clearBtn:document.getElementById('clearBtn'),
-  prevBtn:document.getElementById('prevBtn'),
-  nextBtn:document.getElementById('nextBtn'),
-  playBtn:document.getElementById('playBtn'),
-  shuffleBtn:document.getElementById('shuffleBtn'),
-  loopBtn:document.getElementById('loopBtn'),
-  albumGrid:document.getElementById('albumGrid'),
-  showAlbumsBtn:document.getElementById('showAlbumsBtn')
+const els = {
+  audio: document.getElementById('audio'),
+  thumb: document.getElementById('thumb'),
+  title: document.getElementById('title'),
+  meta: document.getElementById('meta'),
+  list: document.getElementById('list'),
+  search: document.getElementById('search'),
+  clearBtn: document.getElementById('clearBtn'),
+  prevBtn: document.getElementById('prevBtn'),
+  nextBtn: document.getElementById('nextBtn'),
+  playBtn: document.getElementById('playBtn'),
+  shuffleBtn: document.getElementById('shuffleBtn'),
+  loopBtn: document.getElementById('loopBtn'),
+  albumGrid: document.getElementById('albumGrid'),
+  showAlbumsBtn: document.getElementById('showAlbumsBtn'),
+  playerCard: document.getElementById('playerCard'),
+  sideCard: document.getElementById('sideCard')
 };
 
-// 1. Group songs by poster
+// GROUP SONGS BY ALBUM COVER
 function getAlbums() {
-  // { poster: [songs] }
   const albums = {};
   playlist.forEach(song => {
     if (!albums[song.poster]) albums[song.poster] = [];
@@ -224,11 +148,19 @@ function getAlbums() {
   return albums;
 }
 
-// 2. Render album covers
+function getAlbumLabel(songs) {
+  if (!songs || !songs.length) return 'Unknown Album';
+  const artist = songs[0].artist || '';
+  if (artist) return artist;
+  const poster = songs[0].poster || '';
+  return poster.split("/").pop().split(".")[0];
+}
+
+// RENDER ALBUM GRID
 function renderAlbumGrid() {
   const albums = getAlbums();
   els.albumGrid.innerHTML = '';
-  Object.entries(albums).forEach(([poster, songs], i) => {
+  Object.entries(albums).forEach(([poster, songs]) => {
     const albumDiv = document.createElement('div');
     albumDiv.className = 'album';
     albumDiv.tabIndex = 0;
@@ -243,50 +175,43 @@ function renderAlbumGrid() {
   });
   els.albumGrid.style.display = "";
   els.showAlbumsBtn.style.display = "none";
+  els.playerCard.classList.add("hide");
+  els.sideCard.classList.add("hide");
 }
 
-// Try to infer album label from first song's title or artist, or use file name
-function getAlbumLabel(songs) {
-  // Try to get artist or fallback to filename
-  if (!songs || !songs.length) return 'Unknown Album';
-  const artist = songs[0].artist || '';
-  // Group by artist and poster = treat as one album
-  if (artist) return artist;
-  // Or fallback to file name
-  const poster = songs[0].poster || '';
-  return poster.split("/").pop().split(".")[0];
-}
-
-// 3. Show only songs from selected album
+// SHOW SONGS FOR SELECTED ALBUM
 function showAlbum(poster) {
   currentAlbum = poster;
   renderList();
-  // Mark selected album
-  for(const albumDiv of els.albumGrid.children) {
+  Array.from(els.albumGrid.children).forEach(albumDiv => {
     if (albumDiv.querySelector("img").src.includes(poster)) {
       albumDiv.classList.add('active');
     } else {
       albumDiv.classList.remove('active');
     }
-  }
+  });
   els.albumGrid.style.display = "none";
   els.showAlbumsBtn.style.display = "";
+  els.playerCard.classList.remove("hide");
+  els.sideCard.classList.remove("hide");
 }
 
-// 4. Show all albums button
+// BACK TO ALBUMS
 els.showAlbumsBtn.onclick = function() {
   currentAlbum = null;
+  currentIndex = null;
   renderAlbumGrid();
-  renderList();
+  els.list.innerHTML = '<div class="row"><div>Select an album to view songs.</div></div>';
+  els.title.textContent = 'No song selected';
+  els.meta.textContent = '—';
+  els.thumb.innerHTML = `<svg width="60" height="60" viewBox="0 0 24 24" fill="currentColor"><path d="M10 17l6-5-6-5v10z"/></svg>`;
 };
 
-// Modified renderList to support album filtering and search
-function renderList(){
-  els.list.innerHTML='';
+// RENDER SONG LIST FOR ALBUM
+function renderList() {
+  els.list.innerHTML = '';
   let songs = playlist;
-  // Filter by album if selected
   if (currentAlbum) songs = songs.filter(item => item.poster === currentAlbum);
-  // Filter by search
   const q = els.search.value.trim().toLowerCase();
   if (q) {
     songs = songs.filter(item => 
@@ -294,53 +219,57 @@ function renderList(){
       (item.artist && item.artist.toLowerCase().includes(q))
     );
   }
-  // If nothing, show empty message
   if (!songs.length) {
-    const row=document.createElement('div');
-    row.className='row';
+    const row = document.createElement('div');
+    row.className = 'row';
     row.innerHTML = "<div>No songs found.</div>";
     els.list.appendChild(row);
     return;
   }
-  songs.forEach((item,i)=>{
-    const idx = playlist.indexOf(item); // Use index from main playlist for playback order
-    const row=document.createElement('div');
-    row.className='row'+(idx===currentIndex?' active':'');
-    row.dataset.index=idx;
-    const dot=document.createElement('div'); dot.className='dot '+item.type;
-    const name=document.createElement('div'); name.className='name'; name.textContent=item.title;
-    const dur=document.createElement('div'); dur.className='dur'; dur.textContent=item.type==='audio'?'MP3':'MP4';
-    row.append(dot,name,dur);
-    row.addEventListener('click',()=>load(idx,true));
+  songs.forEach((item,i) => {
+    const idx = playlist.indexOf(item);
+    const row = document.createElement('div');
+    row.className = 'row' + (idx === currentIndex ? ' active' : '');
+    row.dataset.index = idx;
+    const dot = document.createElement('div'); dot.className = 'dot ' + item.type;
+    const name = document.createElement('div'); name.className = 'name'; name.textContent = item.title;
+    const dur = document.createElement('div'); dur.className = 'dur'; dur.textContent = item.type === 'audio' ? 'MP3' : 'MP4';
+    row.append(dot, name, dur);
+    row.addEventListener('click', () => load(idx, true));
     els.list.appendChild(row);
   });
-}
-
-// Load item
-function load(i,autoplay=false){
-  currentIndex=i;
-  const item=playlist[i];
-  els.title.textContent=item.title;
-  els.meta.textContent=item.artist+' · '+(item.type==='audio'?'Audio':'Video');
-  [...els.list.children].forEach(r=>r.classList.toggle('active',r.dataset.index==i));
-
-  if(item.type==='video'){
-    els.audio.pause();
-    els.thumb.innerHTML=`<video src="${item.src}" autoplay playsinline controls></video>`;
-    const vid=els.thumb.querySelector('video'); vid.muted=false; vid.loop=els.loopBtn.getAttribute('aria-pressed')==='true';
-    vid.onended=()=>{if(!vid.loop) next();};
-    if(autoplay) vid.play().catch(()=>{});
-  } else {
-    els.thumb.innerHTML=`<img src="${item.poster}" alt="cover art">`;
-    els.audio.src=item.src; els.audio.loop=els.loopBtn.getAttribute('aria-pressed')==='true';
-    els.audio.onended=()=>{if(!els.audio.loop) next();};
-    if(autoplay) els.audio.play().catch(()=>{});
+  // If no song currently loaded, load the first one of the list
+  if (currentIndex === null || !songs.find(s => playlist.indexOf(s) === currentIndex)) {
+    load(playlist.indexOf(songs[0]), false);
   }
 }
 
-// Controls
+// LOAD SONG/VIDEO
+function load(i, autoplay=false) {
+  currentIndex = i;
+  const item = playlist[i];
+  els.title.textContent = item.title;
+  els.meta.textContent = (item.artist||'') + ' · ' + (item.type === 'audio' ? 'Audio' : 'Video');
+  [...els.list.children].forEach(r => r.classList.toggle('active', r.dataset.index == i));
+  if (item.type === 'video') {
+    els.audio.pause();
+    els.thumb.innerHTML = `<video src="${item.src}" autoplay playsinline controls></video>`;
+    const vid = els.thumb.querySelector('video'); 
+    vid.muted = false; 
+    vid.loop = els.loopBtn.getAttribute('aria-pressed') === 'true';
+    vid.onended = () => { if (!vid.loop) next(); };
+    if (autoplay) vid.play().catch(()=>{});
+  } else {
+    els.thumb.innerHTML = `<img src="${item.poster}" alt="cover art">`;
+    els.audio.src = item.src; 
+    els.audio.loop = els.loopBtn.getAttribute('aria-pressed') === 'true';
+    els.audio.onended = () => { if (!els.audio.loop) next(); };
+    if (autoplay) els.audio.play().catch(()=>{});
+  }
+}
+
+// CONTROLS
 function next(){
-  // If filtered, stay within filter
   let songs = playlist;
   if (currentAlbum) songs = songs.filter(item => item.poster === currentAlbum);
   const currentFilteredIdx = songs.findIndex(item => playlist.indexOf(item) === currentIndex);
@@ -356,29 +285,31 @@ function prev(){
   const prevRealIdx = playlist.indexOf(songs[prevFilteredIdx]);
   load(prevRealIdx,true);
 }
-els.prevBtn.addEventListener('click',prev);
-els.nextBtn.addEventListener('click',next);
-els.playBtn.addEventListener('click',()=>{
-  const vid=els.thumb.querySelector('video');
-  if(vid) vid.paused?vid.play():vid.pause();
-  else els.audio.paused?els.audio.play():els.audio.pause();
+els.prevBtn.addEventListener('click', prev);
+els.nextBtn.addEventListener('click', next);
+els.playBtn.addEventListener('click', ()=>{
+  const vid = els.thumb.querySelector('video');
+  if (vid) vid.paused ? vid.play() : vid.pause();
+  else els.audio.paused ? els.audio.play() : els.audio.pause();
 });
-els.shuffleBtn.addEventListener('click',()=>{shuffle=!shuffle;els.shuffleBtn.setAttribute('aria-pressed',shuffle);});
-els.loopBtn.addEventListener('click',()=>{const now=els.loopBtn.getAttribute('aria-pressed')==='true';els.loopBtn.setAttribute('aria-pressed',!now);const vid=els.thumb.querySelector('video');if(vid)vid.loop=!now;});
+els.shuffleBtn.addEventListener('click', ()=>{shuffle = !shuffle; els.shuffleBtn.setAttribute('aria-pressed', shuffle);});
+els.loopBtn.addEventListener('click', ()=>{
+  const now = els.loopBtn.getAttribute('aria-pressed') === 'true';
+  els.loopBtn.setAttribute('aria-pressed', !now);
+  const vid = els.thumb.querySelector('video');
+  if (vid) vid.loop = !now;
+  else els.audio.loop = !now;
+});
+// SEARCH
+els.search.addEventListener('input', ()=>renderList());
+els.clearBtn.addEventListener('click', ()=>{els.search.value='';renderList();});
 
-// Search
-els.search.addEventListener('input',()=>renderList());
-els.clearBtn.addEventListener('click',()=>{els.search.value='';renderList();});
-
-// Visitor Counter using CountAPI
-// fetch('https://api.countapi.xyz/hit/YOUR_UNIQUE_NAMESPACE/YOUR_KEY')
-//   .then(res=>res.json()).then(data=>{els.visitorCounter.textContent=`👁️ Visitors: ${data.value}`;});
-
-// Initialize
+// INITIALIZE
 renderAlbumGrid();
-renderList();
-load(0,true);
-
+els.list.innerHTML = '<div class="row"><div>Select an album to view songs.</div></div>';
+els.title.textContent = 'No song selected';
+els.meta.textContent = '—';
+els.thumb.innerHTML = `<svg width="60" height="60" viewBox="0 0 24 24" fill="currentColor"><path d="M10 17l6-5-6-5v10z"/></svg>`;
 </script>
 </body>
 </html>
