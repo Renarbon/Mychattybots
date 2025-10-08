@@ -6,55 +6,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Class Time & Attendance Tracker</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            color: #333;
-        }
-        h1 {
-            margin-bottom: 10px;
-        }
-        input[type="file"] {
-            margin-right: 10px;
-        }
-        button {
-            margin-right: 10px;
-            padding: 6px 12px;
-            font-size: 14px;
-        }
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            margin-top: 20px;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        tr.failing td {
-            background-color: #ffe6e6;
-        }
-        td.trophy {
-            text-align: center;
-        }
-        .hidden {
-            display: none;
-        }
-        #teacherInfo {
-            margin-top: 15px;
-            font-weight: bold;
-        }
+        body { font-family: Arial, sans-serif; margin: 20px; color: #333; }
+        h1 { margin-bottom: 10px; }
+        input[type="file"], select { margin-right: 10px; }
+        button { margin-right: 10px; padding: 6px 12px; font-size: 14px; }
+        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        tr.failing td { background-color: #ffe6e6; }
+        td.trophy { text-align: center; }
+        .hidden { display: none; }
+        #teacherInfo { margin-top: 15px; font-weight: bold; }
+        #teacherSelectContainer { margin-top: 15px; }
     </style>
 </head>
 <body>
     <h1>Class Time & Attendance Tracker</h1>
-    <p>Select one or more participant CSV files exported from Zoom. The app will aggregate participants across all files, exclude the teacher from the ranking, calculate attendance information, and identify the most punctual student with a trophy.</p>
+    <p>Select one or more participant CSV files exported from Zoom. The app will aggregate participants across all files, exclude the teacher from the ranking, calculate attendance information, and identify absences by date (weekdays only).</p>
     <input type="file" id="fileInput" multiple accept=".csv">
     <button id="processBtn">Process Data</button>
+    <div id="teacherSelectContainer" class="hidden">
+        <label for="teacherSelect">Select Teacher Name:</label>
+        <select id="teacherSelect"></select>
+        <button id="generateReportBtn">Generate Report</button>
+    </div>
     <button id="downloadCsvBtn" disabled>Download CSV</button>
     <button id="downloadPdfBtn" disabled>Download PDF</button>
     <div id="teacherInfo"></div>
@@ -67,27 +42,32 @@
 
     <script>
     (function() {
-        // Teacher's name and optional email used to exclude them from rankings. Case-insensitive.
-        const TEACHER_NAME = 'Rene Arbon';
-        const TEACHER_EMAIL = '';
+        let participants = {};
+        let teacherRecord = null;
+        let teacherDays = 0;
+        let teacherDates = new Set();
+        let allSessionDates = new Set();
+        let allNamesSet = new Set();
+        let teacherNameChosen = '';
+        let teacherEmailChosen = '';
 
+        // Elements
         const fileInput = document.getElementById('fileInput');
         const processBtn = document.getElementById('processBtn');
+        const teacherSelectContainer = document.getElementById('teacherSelectContainer');
+        const teacherSelect = document.getElementById('teacherSelect');
+        const generateReportBtn = document.getElementById('generateReportBtn');
         const downloadCsvBtn = document.getElementById('downloadCsvBtn');
         const downloadPdfBtn = document.getElementById('downloadPdfBtn');
         const resultsTable = document.getElementById('resultsTable');
         const teacherInfo = document.getElementById('teacherInfo');
 
-        // Data structures used across files
-        let participants = {};
-        let teacherRecord = null;
-        let teacherDays = 0;
-        let teacherDates = new Set();
-
         processBtn.addEventListener('click', handleFiles);
         downloadCsvBtn.addEventListener('click', downloadCsv);
         downloadPdfBtn.addEventListener('click', downloadPdf);
+        generateReportBtn.addEventListener('click', finalizeResults);
 
+        // Parse files and collect names/dates
         function handleFiles() {
             const files = fileInput.files;
             if (!files || files.length === 0) {
@@ -99,6 +79,11 @@
             participants = {};
             teacherRecord = null;
             teacherDays = 0;
+            teacherDates = new Set();
+            allSessionDates = new Set();
+            allNamesSet = new Set();
+            teacherNameChosen = '';
+            teacherEmailChosen = '';
 
             const filePromises = [];
             for (let i = 0; i < files.length; i++) {
@@ -107,11 +92,37 @@
             }
 
             Promise.all(filePromises).then(() => {
-                finalizeResults();
+                // After parsing, filter session dates to weekdays only
+                allSessionDates = new Set(Array.from(allSessionDates).filter(isWeekday));
+                // Also filter each participant's daysPresentSet
+                for (const key in participants) {
+                    participants[key].daysPresentSet = new Set(Array.from(participants[key].daysPresentSet).filter(isWeekday));
+                }
+                // Populate dropdown with allNamesSet
+                populateTeacherDropdown();
             }).catch((err) => {
                 console.error(err);
                 alert('An error occurred while processing the files.');
             });
+        }
+
+        function isWeekday(dateStr) {
+            // dateStr: "YYYY-MM-DD"
+            const d = new Date(dateStr);
+            const day = d.getDay(); // 0 = Sunday, 6 = Saturday
+            return day >= 1 && day <= 5; // Mon-Fri only
+        }
+
+        function populateTeacherDropdown() {
+            teacherSelect.innerHTML = '';
+            const namesArr = Array.from(allNamesSet).sort((a, b) => a.localeCompare(b));
+            namesArr.forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                teacherSelect.appendChild(option);
+            });
+            teacherSelectContainer.classList.remove('hidden');
         }
 
         // Parse a single CSV file and update aggregates
@@ -145,24 +156,18 @@
             if (dateMatch) {
                 return `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}`;
             }
-            // Fallback: use file modification time if available via File API; else random
             return filename;
         }
 
         // Process parsed rows for a single meeting
         function processRows(rows, filename) {
             const meetingDate = extractDateFromFilename(filename);
-            let teacherPresentInThisFile = false;
-            let teacherMinutes = 0;
-            let teacherFirstJoin = null;
-            let teacherLastLeave = null;
+            allSessionDates.add(meetingDate);
 
             rows.forEach(row => {
-                // Normalize column names to simplify extraction
                 const normalizedRow = {};
                 for (const key in row) {
                     if (!row.hasOwnProperty(key)) continue;
-                    // Normalize key: trim whitespace, lowercase and remove any BOM character
                     const cleanedKey = key.replace(/^\uFEFF/, '');
                     const lower = cleanedKey.trim().toLowerCase();
                     normalizedRow[lower] = row[key];
@@ -177,16 +182,10 @@
                     return;
                 }
 
-                const isTeacher = matchTeacher(name, email);
-                if (isTeacher) {
-                    teacherPresentInThisFile = true;
-                    teacherMinutes += duration;
-                    teacherFirstJoin = earliestTime(teacherFirstJoin, joinTime);
-                    teacherLastLeave = latestTime(teacherLastLeave, leaveTime);
-                    return;
-                }
+                // Collect name for dropdown
+                if (name) allNamesSet.add(name);
 
-                // Determine unique key (prefer email if available)
+                // Use name as key (case-insensitive)
                 const key = name.toLowerCase();
                 if (!participants[key]) {
                     participants[key] = {
@@ -204,26 +203,8 @@
                 participant.firstJoin = earliestTime(participant.firstJoin, joinTime);
                 participant.lastLeave = latestTime(participant.lastLeave, leaveTime);
             });
-
-            if (teacherPresentInThisFile) {
-                teacherDays++;
-                teacherDates.add(meetingDate);
-                if (!teacherRecord) {
-                    teacherRecord = {
-                        name: TEACHER_NAME,
-                        email: TEACHER_EMAIL,
-                        totalMinutes: 0,
-                        firstJoin: null,
-                        lastLeave: null
-                    };
-                }
-                teacherRecord.totalMinutes += teacherMinutes;
-                teacherRecord.firstJoin = earliestTime(teacherRecord.firstJoin, teacherFirstJoin);
-                teacherRecord.lastLeave = latestTime(teacherRecord.lastLeave, teacherLastLeave);
-            }
         }
 
-        // Helper: compare times and return earliest non-empty string (times are Zoom strings)
         function earliestTime(a, b) {
             if (!a) return b || null;
             if (!b) return a;
@@ -231,7 +212,6 @@
             const bDate = new Date(b);
             return aDate <= bDate ? a : b;
         }
-        // Helper: compare times and return latest
         function latestTime(a, b) {
             if (!a) return b || null;
             if (!b) return a;
@@ -240,25 +220,35 @@
             return aDate >= bDate ? a : b;
         }
 
-        // Determine if row belongs to teacher
-        function matchTeacher(name, email) {
-            const nameLower = name ? name.toLowerCase() : '';
-            const emailLower = email ? email.toLowerCase() : '';
-            const teacherNameLower = TEACHER_NAME.toLowerCase();
-            const teacherEmailLower = TEACHER_EMAIL.toLowerCase();
-            return (teacherEmailLower && emailLower === teacherEmailLower) || (!teacherEmailLower && nameLower === teacherNameLower);
-        }
-
-        // Finalize aggregated results and render table
+        // Called when user clicks "Generate Report" after selecting teacher
         function finalizeResults() {
-            // Build sorted list of teacher session dates
-            const teacherDatesArr = Array.from(teacherDates);
-            teacherDatesArr.sort();
+            teacherSelectContainer.classList.add('hidden');
+            teacherNameChosen = teacherSelect.value;
+            teacherEmailChosen = ''; // If you want to use email, you can fetch here if available
 
-            // Helper to format absent dates grouped by month e.g. "Feb: 2, 5 | Mar: 1, 3"
+            // Remove teacher from participants
+            const teacherKey = teacherNameChosen.toLowerCase();
+            teacherRecord = participants[teacherKey];
+            if (teacherRecord) {
+                teacherDays = Array.from(allSessionDates).filter(d => teacherRecord.daysPresentSet.has(d)).length;
+                teacherDates = new Set(Array.from(teacherRecord.daysPresentSet));
+                delete participants[teacherKey];
+            } else {
+                teacherDays = Array.from(allSessionDates).length;
+                teacherRecord = null;
+                teacherDates = new Set();
+            }
+
+            // Use only weekdays for teacherDays
+            teacherDays = Array.from(allSessionDates).length;
+
+            // Build sorted list of teacher session dates (all weekdays)
+            const teacherDatesArr = Array.from(allSessionDates).sort();
+
+            // Helper to format absent dates grouped by month
             function formatAbsentDaysByMonth(absentDateList) {
                 if (!absentDateList || absentDateList.length === 0) return '';
-                const monthMap = new Map(); // key: 'YYYY-MM', value: array of day numbers
+                const monthMap = new Map();
                 for (const d of absentDateList) {
                     const [y, m, day] = d.split('-');
                     const key = `${y}-${m}`;
@@ -300,21 +290,16 @@
                     )
                 });
             }
-            // Sort by totalMinutes descending
             rows.sort((a, b) => b.totalMinutes - a.totalMinutes);
 
-            // Determine top participant (if any)
             let topKey = null;
             if (rows.length > 0) {
                 topKey = rows[0].key;
             }
 
-            // Build HTML table
             const header = ['Rank', 'Name', 'Email', 'Total Minutes', 'Days Present', 'Days Absent', 'Attendance %', 'Absent Days (by Month)', 'First Join', 'Last Leave', ''];
             let html = '<tr>';
-            header.forEach(h => {
-                html += `<th>${h}</th>`;
-            });
+            header.forEach(h => { html += `<th>${h}</th>`; });
             html += '</tr>';
 
             rows.forEach((row, index) => {
@@ -330,33 +315,25 @@
                 html += `<td>${escapeHtml(row.absentDaysDetail)}</td>`;
                 html += `<td>${escapeHtml(row.firstJoin)}</td>`;
                 html += `<td>${escapeHtml(row.lastLeave)}</td>`;
-                // Trophy column
-                if (row.key === topKey) {
-                    html += `<td class="trophy">🏆</td>`;
-                } else {
-                    html += '<td></td>';
-                }
+                html += (row.key === topKey) ? `<td class="trophy">🏆</td>` : '<td></td>';
                 html += '</tr>';
             });
             resultsTable.innerHTML = html;
             resultsTable.classList.remove('hidden');
 
-            // Teacher info
             let teacherMsg = '';
             if (teacherRecord) {
                 const totalHours = (teacherRecord.totalMinutes / 60).toFixed(2);
-                teacherMsg = `You (the teacher) were present for ${teacherDays} session${teacherDays !== 1 ? 's' : ''}, totalling ${teacherRecord.totalMinutes.toFixed(1)} minutes (${totalHours} hours).`;
+                teacherMsg = `${teacherNameChosen} (teacher) was present for ${teacherDays} session${teacherDays !== 1 ? 's' : ''}, totalling ${teacherRecord.totalMinutes.toFixed(1)} minutes (${totalHours} hours).`;
             } else {
                 teacherMsg = 'The teacher was not detected in the uploaded files.';
             }
             teacherInfo.textContent = teacherMsg;
 
-            // Enable download buttons
             downloadCsvBtn.disabled = rows.length === 0;
             downloadPdfBtn.disabled = rows.length === 0;
         }
 
-        // Escape HTML special characters
         function escapeHtml(text) {
             if (!text) return '';
             return text
@@ -367,18 +344,15 @@
                 .replace(/'/g, '&#039;');
         }
 
-        // Download CSV of results
         function downloadCsv() {
             const rows = [];
             const header = ['Rank','Name','Email','Total Minutes','Days Present','Days Absent','Attendance %','Absent Days (by Month)','First Join','Last Leave','Trophy'];
             rows.push(header);
             const tableRows = resultsTable.querySelectorAll('tr');
-            // Skip header row in tableRows[0]
             for (let i = 1; i < tableRows.length; i++) {
                 const cells = tableRows[i].children;
                 const row = [];
                 for (let j = 0; j < cells.length; j++) {
-                    // Remove % sign in Attendance column for CSV clarity
                     let text = cells[j].textContent;
                     if (header[j] === 'Attendance %') {
                         text = text.replace('%','');
@@ -397,30 +371,24 @@
             document.body.removeChild(link);
         }
 
-        // Download PDF of results using jsPDF and autoTable
         function downloadPdf() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF({ orientation: 'landscape' });
             doc.setFontSize(12);
             doc.text('Class Time & Attendance Report', 14, 14);
             if (teacherRecord) {
-                const teacherText = `Teacher: ${teacherRecord.name} | Sessions: ${teacherDays} | Total Minutes: ${teacherRecord.totalMinutes.toFixed(1)}`;
+                const teacherText = `Teacher: ${teacherNameChosen} | Sessions: ${teacherDays} | Total Minutes: ${teacherRecord.totalMinutes.toFixed(1)}`;
                 doc.setFontSize(10);
                 doc.text(teacherText, 14, 22);
             }
             const tableBody = [];
             const headerRow = ['Rank', 'Name', 'Email', 'Total Minutes', 'Days Present', 'Days Absent', 'Attendance %', 'Absent Days (by Month)', 'First Join', 'Last Leave', ''];
             const tableRows = resultsTable.querySelectorAll('tr');
-            // Skip the first header row in the table
             for (let i = 1; i < tableRows.length; i++) {
                 const cells = tableRows[i].children;
                 const row = [];
                 for (let j = 0; j < cells.length; j++) {
                     let text = cells[j].textContent;
-                    if (headerRow[j] === 'Attendance %') {
-                        // Remove the percent sign for PDF but keep numeric value with sign for clarity
-                        text = text;
-                    }
                     row.push(text);
                 }
                 tableBody.push(row);
@@ -432,9 +400,8 @@
                 styles: { fontSize: 8 },
                 headStyles: { fillColor: [242, 242, 242] },
                 didParseCell: function (data) {
-                    // Highlight failing rows in PDF by changing background color to light red
                     if (data.section === 'body' && data.column.index >= 0) {
-                        const attendanceColIndex = 6; // index of 'Attendance %'
+                        const attendanceColIndex = 6;
                         const attendancePercent = parseFloat(data.row.raw[attendanceColIndex]);
                         if (!isNaN(attendancePercent) && attendancePercent < 80) {
                             data.cell.styles.fillColor = [255, 230, 230];
