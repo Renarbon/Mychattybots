@@ -61,7 +61,6 @@
         let teacherEmailChosen = '';
         let excusedDates = {};
         let participantRows = {}; // key: name.toLowerCase(), value: row object
-        const TOTAL_DAYS = 40; // Set to 40 days for attendance percent calculation
 
         // Elements
         const fileInput = document.getElementById('fileInput');
@@ -319,7 +318,8 @@
                 teacherDates = new Set();
             }
 
-            teacherDays = Array.from(allSessionDates).length;
+            // Use actual sessions held for all calculations
+            const totalSessionsHeld = allSessionDates.size;
             const teacherDatesArr = Array.from(allSessionDates).sort();
 
             function formatAbsentDaysByMonth(absentDateList) {
@@ -354,10 +354,8 @@
                     excusedDates[key].forEach(d => p.daysPresentSet.add(d));
                 }
                 const daysPresent = p.daysPresentSet.size;
-                // Absence calculation: absent = TOTAL_DAYS - present
-                const daysAbsent = Math.max(TOTAL_DAYS - daysPresent, 0);
-                const attendancePercent = TOTAL_DAYS > 0 ? (daysPresent / TOTAL_DAYS * 100) : 0;
-                // Absent dates: all session dates not present, minus excused
+                const daysAbsent = totalSessionsHeld - daysPresent;
+                const attendancePercent = totalSessionsHeld > 0 ? (daysPresent / totalSessionsHeld * 100) : 0;
                 const absentDatesArr = teacherDatesArr.filter(d => !p.daysPresentSet.has(d));
                 rows.push({
                     key: key,
@@ -408,7 +406,7 @@
             let teacherMsg = '';
             if (teacherRecord) {
                 const totalHours = (teacherRecord.totalMinutes / 60).toFixed(2);
-                teacherMsg = `${teacherNameChosen} (teacher) was present for ${teacherDays} session${teacherDays !== 1 ? 's' : ''}, totalling ${teacherRecord.totalMinutes.toFixed(1)} minutes (${totalHours} hours).`;
+                teacherMsg = `${teacherNameChosen} (teacher) was present for ${totalSessionsHeld} session${totalSessionsHeld !== 1 ? 's' : ''}, totalling ${teacherRecord.totalMinutes.toFixed(1)} minutes (${totalHours} hours).`;
             } else {
                 teacherMsg = 'The teacher was not detected in the uploaded files.';
             }
@@ -465,7 +463,7 @@
             doc.setFontSize(12);
             doc.text('Class Time & Attendance Report', 14, 14);
             if (teacherRecord) {
-                const teacherText = `Teacher: ${teacherNameChosen} | Sessions: ${teacherDays} | Total Minutes: ${teacherRecord.totalMinutes.toFixed(1)}`;
+                const teacherText = `Teacher: ${teacherNameChosen} | Sessions: ${allSessionDates.size} | Total Minutes: ${teacherRecord.totalMinutes.toFixed(1)}`;
                 doc.setFontSize(10);
                 doc.text(teacherText, 14, 22);
             }
