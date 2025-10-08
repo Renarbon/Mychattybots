@@ -18,6 +18,8 @@
     .correctionBox { background: #f0fff0; border-left: 4px solid #30c230; margin: 16px 0; padding: 10px 16px; border-radius: 7px; }
     .correctionLabel { color: #007aff; font-weight: bold; }
     audio { margin-top: 8px; width: 100%; }
+    .meta-row { margin-bottom: 10px; }
+    .meta-label { font-weight: bold; color: #333; }
   </style>
 </head>
 <body>
@@ -28,8 +30,14 @@
       Enter your name, then press <b>Record</b> to begin. Press <b>Stop</b> when done.<br>
       You can preview, download your transcript and audio file, and see grammar feedback.
     </div>
-    <label>Student Name: <input id="studentName" type="text" required /></label>
-    <label>Date: <input id="sessionDate" type="date" /></label><br><br>
+    <div class="meta-row">
+      <label>Student Name: <input id="studentName" type="text" required /></label>
+      <span style="margin-left:15px" class="meta-label">Date: <span id="autoDate"></span></span>
+      <span style="margin-left:15px" class="meta-label">Time: <span id="autoTime"></span></span>
+    </div>
+    <div class="meta-row">
+      <span class="meta-label">Speech Duration: <span id="speechDuration">00:00</span></span>
+    </div>
     <button id="recordBtn" onclick="startRecording()">🎙️ Record</button>
     <button id="stopBtn" onclick="stopRecording()" disabled>⏹️ Stop</button>
     <button id="downloadPDF" onclick="downloadPDF()" disabled>⬇️ Download PDF</button>
@@ -57,10 +65,33 @@
     const audioPlayer = document.getElementById('audioPlayer');
     let audioBlob = null;
 
-    function getNiceDate() {
-      const d = document.getElementById('sessionDate').value || new Date().toISOString().slice(0,10);
-      return d;
+    // Added for time/date/duration
+    let recordStartTime = null;
+    let recordEndTime = null;
+
+    // UI elements for meta info
+    const autoDate = document.getElementById('autoDate');
+    const autoTime = document.getElementById('autoTime');
+    const speechDuration = document.getElementById('speechDuration');
+
+    // Helper: pad number to two digits
+    function pad2(d) { return d.toString().padStart(2, '0'); }
+
+    // Format duration seconds as mm:ss
+    function formatDuration(secs) {
+      const m = Math.floor(secs / 60);
+      const s = Math.floor(secs % 60);
+      return pad2(m) + ':' + pad2(s);
     }
+
+    // Helper: show date/time (local)
+    function showDateTime(dt) {
+      if (!dt) dt = new Date();
+      autoDate.textContent = dt.toLocaleDateString();
+      autoTime.textContent = dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+
+    // --- Remove manual date input, now automatic via JS ---
 
     function startRecording() {
       // Browser support check
@@ -80,6 +111,11 @@
       downloadAudioBtn.disabled = true;
       audioPlayer.style.display = "none";
       document.getElementById('feedback').style.display = "none";
+      speechDuration.textContent = "00:00";
+
+      // --- Set auto date/time at start ---
+      recordStartTime = new Date();
+      showDateTime(recordStartTime);
 
       // --- Speech Recognition ---
       recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
@@ -137,6 +173,10 @@
         recordBtn.classList.remove("recording");
         stopBtn.disabled = true;
         downloadPDFBtn.disabled = false;
+        // --- Set end time and calculate duration ---
+        recordEndTime = new Date();
+        let durationSecs = (recordEndTime - recordStartTime) / 1000;
+        speechDuration.textContent = formatDuration(durationSecs);
         showFeedback(transcriptBox.value);
       }
     }
@@ -144,12 +184,15 @@
     function downloadPDF() {
       const { jsPDF } = window.jspdf;
       const name = document.getElementById('studentName').value || 'Student';
-      const date = getNiceDate();
+      // Use auto date/time
+      const date = autoDate.textContent || "";
+      const time = autoTime.textContent || "";
+      const duration = speechDuration.textContent || "00:00";
       const doc = new jsPDF();
       doc.setTextColor(0,0,0);
-      doc.text(`ESL Speaking Transcript\nName: ${name}\nDate: ${date}\n`, 10, 10);
+      doc.text(`ESL Speaking Transcript\nName: ${name}\nDate: ${date}\nTime: ${time}\nDuration: ${duration}`, 10, 10);
       doc.setTextColor(30, 90, 30);
-      let y = 32;
+      let y = 42;
       const lines = doc.splitTextToSize(transcriptBox.value, 180);
       lines.forEach(line => {
         doc.text(line, 10, y);
@@ -169,15 +212,16 @@
         doc.text("Suggested Correction:", 10, y); y+=8;
         doc.text(doc.splitTextToSize(suggestion, 180), 10, y);
       }
-      const filename = `${name.replace(/\s+/g,'_')}_${date.replace(/[\/]/g,'-')}_speaking.pdf`;
+      const filename = `${name.replace(/\s+/g,'_')}_${date.replace(/[\/]/g,'-')}_${time.replace(/:/g,'-')}_speaking.pdf`;
       doc.save(filename);
     }
 
     function downloadAudio() {
       if (!audioBlob) return;
       const name = document.getElementById('studentName').value || 'Student';
-      const date = getNiceDate();
-      const filename = `${name.replace(/\s+/g,'_')}_${date.replace(/[\/]/g,'-')}_speaking.wav`;
+      const date = autoDate.textContent || "";
+      const time = autoTime.textContent || "";
+      const filename = `${name.replace(/\s+/g,'_')}_${date.replace(/[\/]/g,'-')}_${time.replace(/:/g,'-')}_speaking.wav`;
       const url = URL.createObjectURL(audioBlob);
       const a = document.createElement('a');
       a.href = url;
@@ -197,7 +241,6 @@
       const suggestionDiv = document.getElementById('correctionSuggestion');
       feedbackBox.style.display = "block";
 
-      // Use your public Render backend URL!
       fetch('https://chattybot-backend.onrender.com/api/grammar-correct', {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -213,7 +256,9 @@
         suggestionDiv.textContent = "";
       });
     }
+
+    // Show initial date/time on page load
+    showDateTime(new Date());
   </script>
 </body>
 </html>
-
