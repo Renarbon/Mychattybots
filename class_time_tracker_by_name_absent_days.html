@@ -1,417 +1,166 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Class Time & Attendance Tracker</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; color: #333; }
-        h1 { margin-bottom: 10px; }
-        input[type="file"], select { margin-right: 10px; }
-        button { margin-right: 10px; padding: 6px 12px; font-size: 14px; }
-        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
-        tr.failing td { background-color: #ffe6e6; }
-        td.trophy { text-align: center; }
-        .hidden { display: none; }
-        #teacherInfo { margin-top: 15px; font-weight: bold; }
-        #teacherSelectContainer { margin-top: 15px; }
-    </style>
-</head>
-<body>
-    <h1>Class Time & Attendance Tracker</h1>
-    <p>Select one or more participant CSV files exported from Zoom. The app will aggregate participants across all files, exclude the teacher from the ranking, calculate attendance information, and identify absences by date (weekdays only).</p>
-    <input type="file" id="fileInput" multiple accept=".csv">
-    <button id="processBtn">Process Data</button>
-    <div id="teacherSelectContainer" class="hidden">
-        <label for="teacherSelect">Select Teacher Name:</label>
-        <select id="teacherSelect"></select>
-        <button id="generateReportBtn">Generate Report</button>
-    </div>
-    <button id="downloadCsvBtn" disabled>Download CSV</button>
-    <button id="downloadPdfBtn" disabled>Download PDF</button>
-    <div id="teacherInfo"></div>
-    <table id="resultsTable" class="hidden"></table>
+<!-- Only the <script> section is shown for brevity; keep all other HTML the same -->
+<script>
+(function() {
+    let participants = {};
+    let teacherRecord = null;
+    let teacherDays = 0;
+    let teacherDates = new Set();
+    let allSessionDates = new Set();
+    let allNamesSet = new Set();
+    let teacherNameChosen = '';
+    let teacherEmailChosen = '';
 
-    <!-- External libraries for CSV parsing and PDF generation -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/5.0.2/jspdf.plugin.autotable.min.js"></script>
+    // ... all element selectors as before
 
-    <script>
-    (function() {
-        let participants = {};
-        let teacherRecord = null;
-        let teacherDays = 0;
-        let teacherDates = new Set();
-        let allSessionDates = new Set();
-        let allNamesSet = new Set();
-        let teacherNameChosen = '';
-        let teacherEmailChosen = '';
+    processBtn.addEventListener('click', handleFiles);
+    downloadCsvBtn.addEventListener('click', downloadCsv);
+    downloadPdfBtn.addEventListener('click', downloadPdf);
+    generateReportBtn.addEventListener('click', finalizeResults);
 
-        // Elements
-        const fileInput = document.getElementById('fileInput');
-        const processBtn = document.getElementById('processBtn');
-        const teacherSelectContainer = document.getElementById('teacherSelectContainer');
-        const teacherSelect = document.getElementById('teacherSelect');
-        const generateReportBtn = document.getElementById('generateReportBtn');
-        const downloadCsvBtn = document.getElementById('downloadCsvBtn');
-        const downloadPdfBtn = document.getElementById('downloadPdfBtn');
-        const resultsTable = document.getElementById('resultsTable');
-        const teacherInfo = document.getElementById('teacherInfo');
+    function handleFiles() {
+        // Reset state
+        participants = {};
+        teacherRecord = null;
+        teacherDays = 0;
+        teacherDates = new Set();
+        allSessionDates = new Set();
+        allNamesSet = new Set();
+        teacherNameChosen = '';
+        teacherEmailChosen = '';
 
-        processBtn.addEventListener('click', handleFiles);
-        downloadCsvBtn.addEventListener('click', downloadCsv);
-        downloadPdfBtn.addEventListener('click', downloadPdf);
-        generateReportBtn.addEventListener('click', finalizeResults);
+        const files = fileInput.files;
+        if (!files || files.length === 0) {
+            alert('Please select one or more CSV files.');
+            return;
+        }
 
-        // Parse files and collect names/dates
-        function handleFiles() {
-            const files = fileInput.files;
-            if (!files || files.length === 0) {
-                alert('Please select one or more CSV files.');
+        const filePromises = [];
+        for (let i = 0; i < files.length; i++) {
+            filePromises.push(parseFile(files[i]));
+        }
+
+        Promise.all(filePromises).then(() => {
+            // After parsing, filter session dates to weekdays only
+            allSessionDates = new Set(Array.from(allSessionDates).filter(isWeekday));
+            // Also filter each participant's daysPresentSet
+            for (const key in participants) {
+                participants[key].daysPresentSet = new Set(Array.from(participants[key].daysPresentSet).filter(isWeekday));
+            }
+            populateTeacherDropdown();
+        }).catch((err) => {
+            console.error(err);
+            alert('An error occurred while processing the files.');
+        });
+    }
+
+    function isWeekday(dateStr) {
+        // dateStr: "YYYY-MM-DD"
+        const d = new Date(dateStr);
+        const day = d.getDay(); // 0 = Sunday, 6 = Saturday
+        return day >= 1 && day <= 5;
+    }
+
+    function populateTeacherDropdown() {
+        teacherSelect.innerHTML = '';
+        const namesArr = Array.from(allNamesSet).sort((a, b) => a.localeCompare(b));
+        namesArr.forEach(name => {
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            teacherSelect.appendChild(option);
+        });
+        teacherSelectContainer.classList.remove('hidden');
+    }
+
+    function parseFile(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const csvText = e.target.result;
+                Papa.parse(csvText, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: function(results) {
+                        processRows(results.data);
+                        resolve();
+                    },
+                    error: function(err) {
+                        reject(err);
+                    }
+                });
+            };
+            reader.onerror = function(err) {
+                reject(err);
+            };
+            reader.readAsText(file);
+        });
+    }
+
+    // NEW: Extracts session date from "Join Time" column inside each row
+    function getDateFromJoinTime(joinTime) {
+        if (!joinTime) return null;
+        // Try parsing strings like "2025-10-07 07:55:33" or "10/7/2025 07:55:33"
+        let d = new Date(joinTime);
+        if (isNaN(d)) {
+            // Try parsing as MM/DD/YYYY
+            const match = joinTime.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+            if (match) {
+                return `${match[3]}-${match[1].padStart(2,'0')}-${match[2].padStart(2,'0')}`;
+            }
+            return null;
+        }
+        // Always output as YYYY-MM-DD
+        return `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`;
+    }
+
+    function processRows(rows) {
+        rows.forEach(row => {
+            const normalizedRow = {};
+            for (const key in row) {
+                if (!row.hasOwnProperty(key)) continue;
+                const cleanedKey = key.replace(/^\uFEFF/, '');
+                const lower = cleanedKey.trim().toLowerCase();
+                normalizedRow[lower] = row[key];
+            }
+            const name = (normalizedRow['name (original name)'] || normalizedRow['name'] || '').trim();
+            const email = (normalizedRow['email'] || normalizedRow['user email'] || '').trim();
+            const duration = parseFloat(normalizedRow['duration (minutes)'] || normalizedRow['duration'] || normalizedRow['duration(minutes)'] || 0) || 0;
+            const joinTime = (normalizedRow['join time'] || normalizedRow['first join time'] || '').trim();
+            const leaveTime = (normalizedRow['leave time'] || normalizedRow['last leave time'] || '').trim();
+
+            if (!name && !email) {
                 return;
             }
 
-            // Reset state
-            participants = {};
-            teacherRecord = null;
-            teacherDays = 0;
-            teacherDates = new Set();
-            allSessionDates = new Set();
-            allNamesSet = new Set();
-            teacherNameChosen = '';
-            teacherEmailChosen = '';
+            // Get session date from joinTime
+            const sessionDate = getDateFromJoinTime(joinTime);
+            if (!sessionDate) return; // skip if can't parse date
 
-            const filePromises = [];
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                filePromises.push(parseFile(file));
-            }
+            allSessionDates.add(sessionDate);
 
-            Promise.all(filePromises).then(() => {
-                // After parsing, filter session dates to weekdays only
-                allSessionDates = new Set(Array.from(allSessionDates).filter(isWeekday));
-                // Also filter each participant's daysPresentSet
-                for (const key in participants) {
-                    participants[key].daysPresentSet = new Set(Array.from(participants[key].daysPresentSet).filter(isWeekday));
-                }
-                // Populate dropdown with allNamesSet
-                populateTeacherDropdown();
-            }).catch((err) => {
-                console.error(err);
-                alert('An error occurred while processing the files.');
-            });
-        }
+            // Collect name for dropdown
+            if (name) allNamesSet.add(name);
 
-        function isWeekday(dateStr) {
-            // dateStr: "YYYY-MM-DD"
-            const d = new Date(dateStr);
-            const day = d.getDay(); // 0 = Sunday, 6 = Saturday
-            return day >= 1 && day <= 5; // Mon-Fri only
-        }
-
-        function populateTeacherDropdown() {
-            teacherSelect.innerHTML = '';
-            const namesArr = Array.from(allNamesSet).sort((a, b) => a.localeCompare(b));
-            namesArr.forEach(name => {
-                const option = document.createElement('option');
-                option.value = name;
-                option.textContent = name;
-                teacherSelect.appendChild(option);
-            });
-            teacherSelectContainer.classList.remove('hidden');
-        }
-
-        // Parse a single CSV file and update aggregates
-        function parseFile(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const csvText = e.target.result;
-                    Papa.parse(csvText, {
-                        header: true,
-                        skipEmptyLines: true,
-                        complete: function(results) {
-                            processRows(results.data, file.name);
-                            resolve();
-                        },
-                        error: function(err) {
-                            reject(err);
-                        }
-                    });
+            // Use name as key (case-insensitive)
+            const key = name.toLowerCase();
+            if (!participants[key]) {
+                participants[key] = {
+                    name: name || '(No Name)',
+                    email: email,
+                    totalMinutes: 0,
+                    daysPresentSet: new Set(),
+                    firstJoin: null,
+                    lastLeave: null
                 };
-                reader.onerror = function(err) {
-                    reject(err);
-                };
-                reader.readAsText(file);
-            });
-        }
-
-        // Extract date from filename e.g. participants_94181672501_2025_07_31.csv => 2025-07-31
-        function extractDateFromFilename(filename) {
-            const dateMatch = filename.match(/(\d{4})_(\d{2})_(\d{2})/);
-            if (dateMatch) {
-                return `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}`;
             }
-            return filename;
-        }
+            const participant = participants[key];
+            participant.totalMinutes += duration;
+            participant.daysPresentSet.add(sessionDate);
+            participant.firstJoin = earliestTime(participant.firstJoin, joinTime);
+            participant.lastLeave = latestTime(participant.lastLeave, leaveTime);
+        });
+    }
 
-        // Process parsed rows for a single meeting
-        function processRows(rows, filename) {
-            const meetingDate = extractDateFromFilename(filename);
-            allSessionDates.add(meetingDate);
-
-            rows.forEach(row => {
-                const normalizedRow = {};
-                for (const key in row) {
-                    if (!row.hasOwnProperty(key)) continue;
-                    const cleanedKey = key.replace(/^\uFEFF/, '');
-                    const lower = cleanedKey.trim().toLowerCase();
-                    normalizedRow[lower] = row[key];
-                }
-                const name = (normalizedRow['name (original name)'] || normalizedRow['name'] || '').trim();
-                const email = (normalizedRow['email'] || normalizedRow['user email'] || '').trim();
-                const duration = parseFloat(normalizedRow['duration (minutes)'] || normalizedRow['duration'] || normalizedRow['duration(minutes)'] || 0) || 0;
-                const joinTime = (normalizedRow['join time'] || normalizedRow['first join time'] || '').trim();
-                const leaveTime = (normalizedRow['leave time'] || normalizedRow['last leave time'] || '').trim();
-
-                if (!name && !email) {
-                    return;
-                }
-
-                // Collect name for dropdown
-                if (name) allNamesSet.add(name);
-
-                // Use name as key (case-insensitive)
-                const key = name.toLowerCase();
-                if (!participants[key]) {
-                    participants[key] = {
-                        name: name || '(No Name)',
-                        email: email,
-                        totalMinutes: 0,
-                        daysPresentSet: new Set(),
-                        firstJoin: null,
-                        lastLeave: null
-                    };
-                }
-                const participant = participants[key];
-                participant.totalMinutes += duration;
-                participant.daysPresentSet.add(meetingDate);
-                participant.firstJoin = earliestTime(participant.firstJoin, joinTime);
-                participant.lastLeave = latestTime(participant.lastLeave, leaveTime);
-            });
-        }
-
-        function earliestTime(a, b) {
-            if (!a) return b || null;
-            if (!b) return a;
-            const aDate = new Date(a);
-            const bDate = new Date(b);
-            return aDate <= bDate ? a : b;
-        }
-        function latestTime(a, b) {
-            if (!a) return b || null;
-            if (!b) return a;
-            const aDate = new Date(a);
-            const bDate = new Date(b);
-            return aDate >= bDate ? a : b;
-        }
-
-        // Called when user clicks "Generate Report" after selecting teacher
-        function finalizeResults() {
-            teacherSelectContainer.classList.add('hidden');
-            teacherNameChosen = teacherSelect.value;
-            teacherEmailChosen = ''; // If you want to use email, you can fetch here if available
-
-            // Remove teacher from participants
-            const teacherKey = teacherNameChosen.toLowerCase();
-            teacherRecord = participants[teacherKey];
-            if (teacherRecord) {
-                teacherDays = Array.from(allSessionDates).filter(d => teacherRecord.daysPresentSet.has(d)).length;
-                teacherDates = new Set(Array.from(teacherRecord.daysPresentSet));
-                delete participants[teacherKey];
-            } else {
-                teacherDays = Array.from(allSessionDates).length;
-                teacherRecord = null;
-                teacherDates = new Set();
-            }
-
-            // Use only weekdays for teacherDays
-            teacherDays = Array.from(allSessionDates).length;
-
-            // Build sorted list of teacher session dates (all weekdays)
-            const teacherDatesArr = Array.from(allSessionDates).sort();
-
-            // Helper to format absent dates grouped by month
-            function formatAbsentDaysByMonth(absentDateList) {
-                if (!absentDateList || absentDateList.length === 0) return '';
-                const monthMap = new Map();
-                for (const d of absentDateList) {
-                    const [y, m, day] = d.split('-');
-                    const key = `${y}-${m}`;
-                    const dayNum = parseInt(day, 10);
-                    if (!monthMap.has(key)) monthMap.set(key, []);
-                    monthMap.get(key).push(dayNum);
-                }
-                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                const parts = [];
-                const sortedMonthKeys = Array.from(monthMap.keys()).sort();
-                for (const key of sortedMonthKeys) {
-                    const [y, m] = key.split('-');
-                    const monthLabel = `${monthNames[parseInt(m,10)-1]}`;
-                    const days = monthMap.get(key).sort((a,b)=>a-b).join(', ');
-                    parts.push(`${monthLabel}: ${days}`);
-                }
-                return parts.join(' | ');
-            }
-
-            // Convert participants object to array
-            const rows = [];
-            for (const key in participants) {
-                const p = participants[key];
-                const daysPresent = p.daysPresentSet.size;
-                const daysAbsent = Math.max(teacherDays - daysPresent, 0);
-                const attendancePercent = teacherDays > 0 ? (daysPresent / teacherDays * 100) : 0;
-                rows.push({
-                    key: key,
-                    name: p.name,
-                    email: p.email,
-                    totalMinutes: p.totalMinutes,
-                    daysPresent: daysPresent,
-                    daysAbsent: daysAbsent,
-                    attendancePercent: attendancePercent,
-                    firstJoin: p.firstJoin || '',
-                    lastLeave: p.lastLeave || '',
-                    absentDaysDetail: formatAbsentDaysByMonth(
-                        Array.from(teacherDatesArr.filter(d => !p.daysPresentSet.has(d)))
-                    )
-                });
-            }
-            rows.sort((a, b) => b.totalMinutes - a.totalMinutes);
-
-            let topKey = null;
-            if (rows.length > 0) {
-                topKey = rows[0].key;
-            }
-
-            const header = ['Rank', 'Name', 'Email', 'Total Minutes', 'Days Present', 'Days Absent', 'Attendance %', 'Absent Days (by Month)', 'First Join', 'Last Leave', ''];
-            let html = '<tr>';
-            header.forEach(h => { html += `<th>${h}</th>`; });
-            html += '</tr>';
-
-            rows.forEach((row, index) => {
-                const failing = row.attendancePercent < 80;
-                html += `<tr${failing ? ' class="failing"' : ''}>`;
-                html += `<td>${index + 1}</td>`;
-                html += `<td>${escapeHtml(row.name)}</td>`;
-                html += `<td>${escapeHtml(row.email || '')}</td>`;
-                html += `<td>${row.totalMinutes.toFixed(1)}</td>`;
-                html += `<td>${row.daysPresent}</td>`;
-                html += `<td>${row.daysAbsent}</td>`;
-                html += `<td>${row.attendancePercent.toFixed(1)}%</td>`;
-                html += `<td>${escapeHtml(row.absentDaysDetail)}</td>`;
-                html += `<td>${escapeHtml(row.firstJoin)}</td>`;
-                html += `<td>${escapeHtml(row.lastLeave)}</td>`;
-                html += (row.key === topKey) ? `<td class="trophy">🏆</td>` : '<td></td>';
-                html += '</tr>';
-            });
-            resultsTable.innerHTML = html;
-            resultsTable.classList.remove('hidden');
-
-            let teacherMsg = '';
-            if (teacherRecord) {
-                const totalHours = (teacherRecord.totalMinutes / 60).toFixed(2);
-                teacherMsg = `${teacherNameChosen} (teacher) was present for ${teacherDays} session${teacherDays !== 1 ? 's' : ''}, totalling ${teacherRecord.totalMinutes.toFixed(1)} minutes (${totalHours} hours).`;
-            } else {
-                teacherMsg = 'The teacher was not detected in the uploaded files.';
-            }
-            teacherInfo.textContent = teacherMsg;
-
-            downloadCsvBtn.disabled = rows.length === 0;
-            downloadPdfBtn.disabled = rows.length === 0;
-        }
-
-        function escapeHtml(text) {
-            if (!text) return '';
-            return text
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#039;');
-        }
-
-        function downloadCsv() {
-            const rows = [];
-            const header = ['Rank','Name','Email','Total Minutes','Days Present','Days Absent','Attendance %','Absent Days (by Month)','First Join','Last Leave','Trophy'];
-            rows.push(header);
-            const tableRows = resultsTable.querySelectorAll('tr');
-            for (let i = 1; i < tableRows.length; i++) {
-                const cells = tableRows[i].children;
-                const row = [];
-                for (let j = 0; j < cells.length; j++) {
-                    let text = cells[j].textContent;
-                    if (header[j] === 'Attendance %') {
-                        text = text.replace('%','');
-                    }
-                    row.push('"' + text.replace(/"/g, '""') + '"');
-                }
-                rows.push(row);
-            }
-            const csvContent = rows.map(r => r.join(',')).join('\n');
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            link.setAttribute('href', URL.createObjectURL(blob));
-            link.setAttribute('download', 'class_time_report.csv');
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        function downloadPdf() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF({ orientation: 'landscape' });
-            doc.setFontSize(12);
-            doc.text('Class Time & Attendance Report', 14, 14);
-            if (teacherRecord) {
-                const teacherText = `Teacher: ${teacherNameChosen} | Sessions: ${teacherDays} | Total Minutes: ${teacherRecord.totalMinutes.toFixed(1)}`;
-                doc.setFontSize(10);
-                doc.text(teacherText, 14, 22);
-            }
-            const tableBody = [];
-            const headerRow = ['Rank', 'Name', 'Email', 'Total Minutes', 'Days Present', 'Days Absent', 'Attendance %', 'Absent Days (by Month)', 'First Join', 'Last Leave', ''];
-            const tableRows = resultsTable.querySelectorAll('tr');
-            for (let i = 1; i < tableRows.length; i++) {
-                const cells = tableRows[i].children;
-                const row = [];
-                for (let j = 0; j < cells.length; j++) {
-                    let text = cells[j].textContent;
-                    row.push(text);
-                }
-                tableBody.push(row);
-            }
-            doc.autoTable({
-                head: [headerRow],
-                body: tableBody,
-                startY: 28,
-                styles: { fontSize: 8 },
-                headStyles: { fillColor: [242, 242, 242] },
-                didParseCell: function (data) {
-                    if (data.section === 'body' && data.column.index >= 0) {
-                        const attendanceColIndex = 6;
-                        const attendancePercent = parseFloat(data.row.raw[attendanceColIndex]);
-                        if (!isNaN(attendancePercent) && attendancePercent < 80) {
-                            data.cell.styles.fillColor = [255, 230, 230];
-                        }
-                    }
-                }
-            });
-            doc.save('class_time_report.pdf');
-        }
-    })();
-    </script>
-</body>
-</html>
+    // ... rest of code unchanged (finalizeResults, escapeHtml, downloadCsv, downloadPdf)
+})();
+</script>
