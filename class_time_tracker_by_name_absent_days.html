@@ -18,6 +18,8 @@
         .hidden { display: none; }
         #teacherInfo { margin-top: 15px; font-weight: bold; }
         #teacherSelectContainer { margin-top: 15px; }
+        #excuseContainer { margin-top: 15px; }
+        #excuseContainer input[type="text"] { margin-right: 10px; }
     </style>
 </head>
 <body>
@@ -29,6 +31,13 @@
         <label for="teacherSelect">Select Teacher Name:</label>
         <select id="teacherSelect"></select>
         <button id="generateReportBtn">Generate Report</button>
+    </div>
+    <div id="excuseContainer" class="hidden">
+      <label for="excuseName">Student Name:</label>
+      <input type="text" id="excuseName" placeholder="Enter student name">
+      <label for="excuseDates">Excused Dates (comma separated YYYY-MM-DD):</label>
+      <input type="text" id="excuseDates" placeholder="e.g. 2025-10-01,2025-10-03">
+      <button id="addExcuseBtn">Add Excuses</button>
     </div>
     <button id="downloadCsvBtn" disabled>Download CSV</button>
     <button id="downloadPdfBtn" disabled>Download PDF</button>
@@ -50,6 +59,8 @@
         let allNamesSet = new Set();
         let teacherNameChosen = '';
         let teacherEmailChosen = '';
+        let excusedDates = {};
+        const TOTAL_DAYS = 40; // Set to 40 days for attendance percent calculation
 
         // Elements
         const fileInput = document.getElementById('fileInput');
@@ -61,11 +72,28 @@
         const downloadPdfBtn = document.getElementById('downloadPdfBtn');
         const resultsTable = document.getElementById('resultsTable');
         const teacherInfo = document.getElementById('teacherInfo');
+        const excuseContainer = document.getElementById('excuseContainer');
+        const excuseName = document.getElementById('excuseName');
+        const excuseDatesInput = document.getElementById('excuseDates');
+        const addExcuseBtn = document.getElementById('addExcuseBtn');
 
         processBtn.addEventListener('click', handleFiles);
         downloadCsvBtn.addEventListener('click', downloadCsv);
         downloadPdfBtn.addEventListener('click', downloadPdf);
         generateReportBtn.addEventListener('click', finalizeResults);
+        addExcuseBtn.addEventListener('click', function() {
+            const name = excuseName.value.trim().toLowerCase();
+            const dates = excuseDatesInput.value.trim().split(',').map(d => d.trim()).filter(d => d);
+            if (!name || dates.length === 0) {
+                alert("Enter student name and at least one date.");
+                return;
+            }
+            if (!excusedDates[name]) excusedDates[name] = new Set();
+            dates.forEach(d => excusedDates[name].add(d));
+            alert(`Excused dates added for ${name}.`);
+            excuseName.value = '';
+            excuseDatesInput.value = '';
+        });
 
         function handleFiles() {
             // Reset state
@@ -77,6 +105,7 @@
             allNamesSet = new Set();
             teacherNameChosen = '';
             teacherEmailChosen = '';
+            excusedDates = {};
 
             const files = fileInput.files;
             if (!files || files.length === 0) {
@@ -97,6 +126,7 @@
                     participants[key].daysPresentSet = new Set(Array.from(participants[key].daysPresentSet).filter(isWeekday));
                 }
                 populateTeacherDropdown();
+                excuseContainer.classList.remove('hidden');
             }).catch((err) => {
                 console.error(err);
                 alert('An error occurred while processing the files.');
@@ -146,7 +176,7 @@
             });
         }
 
-        // NEW: Extracts session date from "Join Time" column inside each row
+        // Extracts session date from "Join Time" column inside each row
         function getDateFromJoinTime(joinTime) {
             if (!joinTime) return null;
             // Try parsing strings like "2025-10-07 07:55:33" or "10/7/2025 07:55:33"
@@ -229,6 +259,7 @@
         // Called when user clicks "Generate Report" after selecting teacher
         function finalizeResults() {
             teacherSelectContainer.classList.add('hidden');
+            excuseContainer.classList.remove('hidden');
             teacherNameChosen = teacherSelect.value;
             teacherEmailChosen = ''; // If you want to use email, you can fetch here if available
 
@@ -278,9 +309,13 @@
             const rows = [];
             for (const key in participants) {
                 const p = participants[key];
+                // Add excused dates to daysPresentSet
+                if (excusedDates[key]) {
+                    excusedDates[key].forEach(d => p.daysPresentSet.add(d));
+                }
                 const daysPresent = p.daysPresentSet.size;
-                const daysAbsent = Math.max(teacherDays - daysPresent, 0);
-                const attendancePercent = teacherDays > 0 ? (daysPresent / teacherDays * 100) : 0;
+                const daysAbsent = Math.max(TOTAL_DAYS - daysPresent, 0);
+                const attendancePercent = TOTAL_DAYS > 0 ? (daysPresent / TOTAL_DAYS * 100) : 0;
                 rows.push({
                     key: key,
                     name: p.name,
