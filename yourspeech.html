@@ -20,6 +20,7 @@
     audio { margin-top: 8px; width: 100%; }
     .meta-row { margin-bottom: 10px; }
     .meta-label { font-weight: bold; color: #333; }
+    .meta-attempts { font-weight: bold; color: #a50; margin-left:15px; }
   </style>
 </head>
 <body>
@@ -37,6 +38,7 @@
     </div>
     <div class="meta-row">
       <span class="meta-label">Speech Duration: <span id="speechDuration">00:00</span></span>
+      <span class="meta-attempts">Attempts: <span id="attemptCount">0</span></span>
     </div>
     <button id="recordBtn" onclick="startRecording()">🎙️ Record</button>
     <button id="stopBtn" onclick="stopRecording()" disabled>⏹️ Stop</button>
@@ -69,10 +71,15 @@
     let recordStartTime = null;
     let recordEndTime = null;
 
+    // Attempts tracking
+    const attemptCountSpan = document.getElementById('attemptCount');
+    let attemptCount = 0;
+
     // UI elements for meta info
     const autoDate = document.getElementById('autoDate');
     const autoTime = document.getElementById('autoTime');
     const speechDuration = document.getElementById('speechDuration');
+    const studentNameInput = document.getElementById('studentName');
 
     // Helper: pad number to two digits
     function pad2(d) { return d.toString().padStart(2, '0'); }
@@ -91,7 +98,28 @@
       autoTime.textContent = dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     }
 
-    // --- Remove manual date input, now automatic via JS ---
+    // Get attempts for current name from localStorage
+    function getAttemptsForName(name) {
+      if (!name) return 0;
+      let count = localStorage.getItem('attempts_' + name);
+      return count ? parseInt(count, 10) : 0;
+    }
+
+    // Set attempts for current name in localStorage
+    function setAttemptsForName(name, count) {
+      if (!name) return;
+      localStorage.setItem('attempts_' + name, count);
+    }
+
+    // Update attempt count UI and value
+    function updateAttemptCount() {
+      const name = studentNameInput.value || 'Student';
+      attemptCount = getAttemptsForName(name);
+      attemptCountSpan.textContent = attemptCount;
+    }
+
+    // React to name input change
+    studentNameInput.addEventListener('input', updateAttemptCount);
 
     function startRecording() {
       // Browser support check
@@ -116,6 +144,14 @@
       // --- Set auto date/time at start ---
       recordStartTime = new Date();
       showDateTime(recordStartTime);
+
+      // --- Increment attempts and update UI/localStorage ---
+      const name = studentNameInput.value || 'Student';
+      let count = getAttemptsForName(name);
+      count += 1;
+      setAttemptsForName(name, count);
+      attemptCount = count;
+      attemptCountSpan.textContent = attemptCount;
 
       // --- Speech Recognition ---
       recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
@@ -181,52 +217,54 @@
       }
     }
 
-   function downloadPDF() {
-  const { jsPDF } = window.jspdf;
-  const name = document.getElementById('studentName').value || 'Student';
-  const date = autoDate.textContent || "";
-  const time = autoTime.textContent || "";
-  const duration = speechDuration.textContent || "00:00";
-  const doc = new jsPDF();
-  doc.setTextColor(0,0,0);
-  doc.text(`ESL Speaking Transcript\nName: ${name}\nDate: ${date}\nTime: ${time}\nDuration: ${duration}`, 10, 10);
+    function downloadPDF() {
+      const { jsPDF } = window.jspdf;
+      const name = studentNameInput.value || 'Student';
+      const date = autoDate.textContent || "";
+      const time = autoTime.textContent || "";
+      const duration = speechDuration.textContent || "00:00";
+      const attempts = getAttemptsForName(name);
+      const doc = new jsPDF();
+      doc.setTextColor(0,0,0);
+      doc.text(`ESL Speaking Transcript\nName: ${name}\nDate: ${date}\nTime: ${time}\nDuration: ${duration}\nAttempts: ${attempts}`, 10, 10);
 
-  // Transcript
-  doc.setTextColor(30, 90, 30);
-  let y = 42;
-  const transcriptLines = doc.splitTextToSize(transcriptBox.value, 180);
-  doc.text(transcriptLines, 10, y);
-  y += transcriptLines.length * 10; // Advance y by line count
+      // Transcript
+      doc.setTextColor(30, 90, 30);
+      let y = 52;
+      const transcriptLines = doc.splitTextToSize(transcriptBox.value, 180);
+      doc.text(transcriptLines, 10, y);
+      y += transcriptLines.length * 10;
 
-  // Feedback
-  const correction = document.getElementById('correctionText').textContent;
-  const suggestion = document.getElementById('correctionSuggestion').textContent;
-  if (correction || suggestion) {
-    doc.setTextColor(0,0,0);
-    y += 10;
-    doc.text("Feedback:", 10, y);
-    y += 8;
+      // Feedback
+      const correction = document.getElementById('correctionText').textContent;
+      const suggestion = document.getElementById('correctionSuggestion').textContent;
+      if (correction || suggestion) {
+        doc.setTextColor(0,0,0);
+        y += 10;
+        doc.text("Feedback:", 10, y);
+        y += 8;
 
-    doc.setTextColor(0,60,120);
-    const feedbackLines = doc.splitTextToSize(correction, 180);
-    doc.text(feedbackLines, 10, y);
-    y += feedbackLines.length * 10;
+        doc.setTextColor(0,60,120);
+        const feedbackLines = doc.splitTextToSize(correction, 180);
+        doc.text(feedbackLines, 10, y);
+        y += feedbackLines.length * 10;
 
-    doc.setTextColor(34, 136, 34);
-    y += 8;
-    doc.text("Suggested Correction:", 10, y);
-    y += 8;
+        doc.setTextColor(34, 136, 34);
+        y += 8;
+        doc.text("Suggested Correction:", 10, y);
+        y += 8;
 
-    const suggestionLines = doc.splitTextToSize(suggestion, 180);
-    doc.text(suggestionLines, 10, y);
-    y += suggestionLines.length * 10;
-  }
-  const filename = `${name.replace(/\s+/g,'_')}_${date.replace(/[\/]/g,'-')}_${time.replace(/:/g,'-')}_speaking.pdf`;
-  doc.save(filename);
-}
+        const suggestionLines = doc.splitTextToSize(suggestion, 180);
+        doc.text(suggestionLines, 10, y);
+        y += suggestionLines.length * 10;
+      }
+      const filename = `${name.replace(/\s+/g,'_')}_${date.replace(/[\/]/g,'-')}_${time.replace(/:/g,'-')}_speaking.pdf`;
+      doc.save(filename);
+    }
+
     function downloadAudio() {
       if (!audioBlob) return;
-      const name = document.getElementById('studentName').value || 'Student';
+      const name = studentNameInput.value || 'Student';
       const date = autoDate.textContent || "";
       const time = autoTime.textContent || "";
       const filename = `${name.replace(/\s+/g,'_')}_${date.replace(/[\/]/g,'-')}_${time.replace(/:/g,'-')}_speaking.wav`;
@@ -267,7 +305,8 @@
 
     // Show initial date/time on page load
     showDateTime(new Date());
+    // Show attempts for default name on load
+    updateAttemptCount();
   </script>
 </body>
 </html>
-
