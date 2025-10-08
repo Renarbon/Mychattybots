@@ -19,7 +19,8 @@
         #teacherInfo { margin-top: 15px; font-weight: bold; }
         #teacherSelectContainer { margin-top: 15px; }
         #excuseContainer { margin-top: 15px; }
-        #excuseContainer input[type="text"] { margin-right: 10px; }
+        #excuseDatesList { margin-top: 8px; margin-bottom: 8px; }
+        #excuseContainer select { margin-right: 10px; }
     </style>
 </head>
 <body>
@@ -33,10 +34,9 @@
         <button id="generateReportBtn">Generate Report</button>
     </div>
     <div id="excuseContainer" class="hidden">
-      <label for="excuseName">Student Name:</label>
-      <input type="text" id="excuseName" placeholder="Enter student name">
-      <label for="excuseDates">Excused Dates (comma separated YYYY-MM-DD):</label>
-      <input type="text" id="excuseDates" placeholder="e.g. 2025-10-01,2025-10-03">
+      <label for="excuseStudentSelect">Student Name:</label>
+      <select id="excuseStudentSelect"></select>
+      <div id="excuseDatesList"></div>
       <button id="addExcuseBtn">Add Excuses</button>
     </div>
     <button id="downloadCsvBtn" disabled>Download CSV</button>
@@ -60,6 +60,7 @@
         let teacherNameChosen = '';
         let teacherEmailChosen = '';
         let excusedDates = {};
+        let participantRows = {}; // key: name.toLowerCase(), value: row object
         const TOTAL_DAYS = 40; // Set to 40 days for attendance percent calculation
 
         // Elements
@@ -73,26 +74,30 @@
         const resultsTable = document.getElementById('resultsTable');
         const teacherInfo = document.getElementById('teacherInfo');
         const excuseContainer = document.getElementById('excuseContainer');
-        const excuseName = document.getElementById('excuseName');
-        const excuseDatesInput = document.getElementById('excuseDates');
+        const excuseStudentSelect = document.getElementById('excuseStudentSelect');
+        const excuseDatesList = document.getElementById('excuseDatesList');
         const addExcuseBtn = document.getElementById('addExcuseBtn');
 
         processBtn.addEventListener('click', handleFiles);
         downloadCsvBtn.addEventListener('click', downloadCsv);
         downloadPdfBtn.addEventListener('click', downloadPdf);
         generateReportBtn.addEventListener('click', finalizeResults);
+        excuseStudentSelect.addEventListener('change', updateExcuseDatesList);
         addExcuseBtn.addEventListener('click', function() {
-            const name = excuseName.value.trim().toLowerCase();
-            const dates = excuseDatesInput.value.trim().split(',').map(d => d.trim()).filter(d => d);
-            if (!name || dates.length === 0) {
-                alert("Enter student name and at least one date.");
+            const nameKey = excuseStudentSelect.value;
+            const checkedBoxes = excuseDatesList.querySelectorAll('input[type="checkbox"]:checked');
+            if (!nameKey || checkedBoxes.length === 0) {
+                alert("Select a student and at least one absent date to excuse.");
                 return;
             }
-            if (!excusedDates[name]) excusedDates[name] = new Set();
-            dates.forEach(d => excusedDates[name].add(d));
-            alert(`Excused dates added for ${name}.`);
-            excuseName.value = '';
-            excuseDatesInput.value = '';
+            if (!excusedDates[nameKey]) excusedDates[nameKey] = new Set();
+            checkedBoxes.forEach(box => excusedDates[nameKey].add(box.value));
+            alert(`Excused dates added for ${participantRows[nameKey].name}.`);
+            // Refresh report to update attendance
+            finalizeResults();
+            // Reselect current student to show updated absence
+            excuseStudentSelect.value = nameKey;
+            updateExcuseDatesList();
         });
 
         function handleFiles() {
@@ -106,6 +111,7 @@
             teacherNameChosen = '';
             teacherEmailChosen = '';
             excusedDates = {};
+            participantRows = {};
 
             const files = fileInput.files;
             if (!files || files.length === 0) {
@@ -126,7 +132,7 @@
                     participants[key].daysPresentSet = new Set(Array.from(participants[key].daysPresentSet).filter(isWeekday));
                 }
                 populateTeacherDropdown();
-                excuseContainer.classList.remove('hidden');
+                excuseContainer.classList.add('hidden');
             }).catch((err) => {
                 console.error(err);
                 alert('An error occurred while processing the files.');
@@ -150,6 +156,44 @@
                 teacherSelect.appendChild(option);
             });
             teacherSelectContainer.classList.remove('hidden');
+        }
+
+        function populateStudentDropdown() {
+            excuseStudentSelect.innerHTML = '';
+            // Only students (not teacher) in this dropdown
+            Object.keys(participantRows).map(key => {
+                const row = participantRows[key];
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = row.name;
+                excuseStudentSelect.appendChild(option);
+            });
+        }
+
+        function updateExcuseDatesList() {
+            excuseDatesList.innerHTML = '';
+            const nameKey = excuseStudentSelect.value;
+            if (!nameKey || !participantRows[nameKey]) return;
+
+            // Show list of absent dates (not already excused)
+            const absentDatesArr = participantRows[nameKey].absentDatesArr || [];
+            if (absentDatesArr.length === 0) {
+                excuseDatesList.innerHTML = '<em>No absences to excuse.</em>';
+                return;
+            }
+            // Remove already excused
+            const alreadyExcused = excusedDates[nameKey] ? new Set(excusedDates[nameKey]) : new Set();
+            const notExcused = absentDatesArr.filter(d => !alreadyExcused.has(d));
+            if (notExcused.length === 0) {
+                excuseDatesList.innerHTML = '<em>All absences already excused.</em>';
+                return;
+            }
+            notExcused.forEach(date => {
+                const label = document.createElement('label');
+                label.style.marginRight = '12px';
+                label.innerHTML = `<input type="checkbox" value="${date}"> ${date}`;
+                excuseDatesList.appendChild(label);
+            });
         }
 
         function parseFile(file) {
@@ -179,7 +223,6 @@
         // Extracts session date from "Join Time" column inside each row
         function getDateFromJoinTime(joinTime) {
             if (!joinTime) return null;
-            // Try parsing strings like "2025-10-07 07:55:33" or "10/7/2025 07:55:33"
             let d = new Date(joinTime);
             if (isNaN(d)) {
                 // Try parsing as MM/DD/YYYY
@@ -214,7 +257,7 @@
 
                 // Get session date from joinTime
                 const sessionDate = getDateFromJoinTime(joinTime);
-                if (!sessionDate) return; // skip if can't parse date
+                if (!sessionDate) return;
 
                 allSessionDates.add(sessionDate);
 
@@ -261,7 +304,7 @@
             teacherSelectContainer.classList.add('hidden');
             excuseContainer.classList.remove('hidden');
             teacherNameChosen = teacherSelect.value;
-            teacherEmailChosen = ''; // If you want to use email, you can fetch here if available
+            teacherEmailChosen = '';
 
             // Remove teacher from participants
             const teacherKey = teacherNameChosen.toLowerCase();
@@ -276,13 +319,9 @@
                 teacherDates = new Set();
             }
 
-            // Use only weekdays for teacherDays
             teacherDays = Array.from(allSessionDates).length;
-
-            // Build sorted list of teacher session dates (all weekdays)
             const teacherDatesArr = Array.from(allSessionDates).sort();
 
-            // Helper to format absent dates grouped by month
             function formatAbsentDaysByMonth(absentDateList) {
                 if (!absentDateList || absentDateList.length === 0) return '';
                 const monthMap = new Map();
@@ -307,6 +346,7 @@
 
             // Convert participants object to array
             const rows = [];
+            participantRows = {}; // clear and rebuild
             for (const key in participants) {
                 const p = participants[key];
                 // Add excused dates to daysPresentSet
@@ -314,8 +354,11 @@
                     excusedDates[key].forEach(d => p.daysPresentSet.add(d));
                 }
                 const daysPresent = p.daysPresentSet.size;
+                // Absence calculation: absent = TOTAL_DAYS - present
                 const daysAbsent = Math.max(TOTAL_DAYS - daysPresent, 0);
                 const attendancePercent = TOTAL_DAYS > 0 ? (daysPresent / TOTAL_DAYS * 100) : 0;
+                // Absent dates: all session dates not present, minus excused
+                const absentDatesArr = teacherDatesArr.filter(d => !p.daysPresentSet.has(d));
                 rows.push({
                     key: key,
                     name: p.name,
@@ -326,10 +369,10 @@
                     attendancePercent: attendancePercent,
                     firstJoin: p.firstJoin || '',
                     lastLeave: p.lastLeave || '',
-                    absentDaysDetail: formatAbsentDaysByMonth(
-                        Array.from(teacherDatesArr.filter(d => !p.daysPresentSet.has(d)))
-                    )
+                    absentDaysDetail: formatAbsentDaysByMonth(absentDatesArr),
+                    absentDatesArr: absentDatesArr // for UI
                 });
+                participantRows[key] = rows[rows.length-1];
             }
             rows.sort((a, b) => b.totalMinutes - a.totalMinutes);
 
@@ -373,6 +416,10 @@
 
             downloadCsvBtn.disabled = rows.length === 0;
             downloadPdfBtn.disabled = rows.length === 0;
+
+            // Student dropdown for excuses
+            populateStudentDropdown();
+            updateExcuseDatesList();
         }
 
         function escapeHtml(text) {
