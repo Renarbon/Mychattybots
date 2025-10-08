@@ -62,6 +62,8 @@
         let excusedDates = {};
         let participantRows = {}; // key: name.toLowerCase(), value: row object
 
+        const N = 40; // Target total sessions for percent calculation
+
         // Elements
         const fileInput = document.getElementById('fileInput');
         const processBtn = document.getElementById('processBtn');
@@ -139,9 +141,8 @@
         }
 
         function isWeekday(dateStr) {
-            // dateStr: "YYYY-MM-DD"
             const d = new Date(dateStr);
-            const day = d.getDay(); // 0 = Sunday, 6 = Saturday
+            const day = d.getDay();
             return day >= 1 && day <= 5;
         }
 
@@ -159,7 +160,6 @@
 
         function populateStudentDropdown() {
             excuseStudentSelect.innerHTML = '';
-            // Only students (not teacher) in this dropdown
             Object.keys(participantRows).map(key => {
                 const row = participantRows[key];
                 const option = document.createElement('option');
@@ -173,14 +173,11 @@
             excuseDatesList.innerHTML = '';
             const nameKey = excuseStudentSelect.value;
             if (!nameKey || !participantRows[nameKey]) return;
-
-            // Show list of absent dates (not already excused)
             const absentDatesArr = participantRows[nameKey].absentDatesArr || [];
             if (absentDatesArr.length === 0) {
                 excuseDatesList.innerHTML = '<em>No absences to excuse.</em>';
                 return;
             }
-            // Remove already excused
             const alreadyExcused = excusedDates[nameKey] ? new Set(excusedDates[nameKey]) : new Set();
             const notExcused = absentDatesArr.filter(d => !alreadyExcused.has(d));
             if (notExcused.length === 0) {
@@ -219,19 +216,16 @@
             });
         }
 
-        // Extracts session date from "Join Time" column inside each row
         function getDateFromJoinTime(joinTime) {
             if (!joinTime) return null;
             let d = new Date(joinTime);
             if (isNaN(d)) {
-                // Try parsing as MM/DD/YYYY
                 const match = joinTime.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
                 if (match) {
                     return `${match[3]}-${match[1].padStart(2,'0')}-${match[2].padStart(2,'0')}`;
                 }
                 return null;
             }
-            // Always output as YYYY-MM-DD
             return `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`;
         }
 
@@ -254,16 +248,13 @@
                     return;
                 }
 
-                // Get session date from joinTime
                 const sessionDate = getDateFromJoinTime(joinTime);
                 if (!sessionDate) return;
 
                 allSessionDates.add(sessionDate);
 
-                // Collect name for dropdown
                 if (name) allNamesSet.add(name);
 
-                // Use name as key (case-insensitive)
                 const key = name.toLowerCase();
                 if (!participants[key]) {
                     participants[key] = {
@@ -298,14 +289,12 @@
             return aDate >= bDate ? a : b;
         }
 
-        // Called when user clicks "Generate Report" after selecting teacher
         function finalizeResults() {
             teacherSelectContainer.classList.add('hidden');
             excuseContainer.classList.remove('hidden');
             teacherNameChosen = teacherSelect.value;
             teacherEmailChosen = '';
 
-            // Remove teacher from participants
             const teacherKey = teacherNameChosen.toLowerCase();
             teacherRecord = participants[teacherKey];
             if (teacherRecord) {
@@ -318,7 +307,6 @@
                 teacherDates = new Set();
             }
 
-            // Use actual sessions held for all calculations
             const totalSessionsHeld = allSessionDates.size;
             const teacherDatesArr = Array.from(allSessionDates).sort();
 
@@ -344,19 +332,18 @@
                 return parts.join(' | ');
             }
 
-            // Convert participants object to array
             const rows = [];
-            participantRows = {}; // clear and rebuild
+            participantRows = {};
             for (const key in participants) {
                 const p = participants[key];
-                // Add excused dates to daysPresentSet
                 if (excusedDates[key]) {
                     excusedDates[key].forEach(d => p.daysPresentSet.add(d));
                 }
                 const daysPresent = p.daysPresentSet.size;
-                const daysAbsent = totalSessionsHeld - daysPresent;
-                const attendancePercent = totalSessionsHeld > 0 ? (daysPresent / totalSessionsHeld * 100) : 0;
                 const absentDatesArr = teacherDatesArr.filter(d => !p.daysPresentSet.has(d));
+                const actualAbsences = absentDatesArr.length;
+                const daysAbsent = actualAbsences;
+                const attendancePercent = ((N - daysAbsent) / N) * 100;
                 rows.push({
                     key: key,
                     name: p.name,
@@ -368,7 +355,7 @@
                     firstJoin: p.firstJoin || '',
                     lastLeave: p.lastLeave || '',
                     absentDaysDetail: formatAbsentDaysByMonth(absentDatesArr),
-                    absentDatesArr: absentDatesArr // for UI
+                    absentDatesArr: absentDatesArr
                 });
                 participantRows[key] = rows[rows.length-1];
             }
@@ -415,7 +402,6 @@
             downloadCsvBtn.disabled = rows.length === 0;
             downloadPdfBtn.disabled = rows.length === 0;
 
-            // Student dropdown for excuses
             populateStudentDropdown();
             updateExcuseDatesList();
         }
