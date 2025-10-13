@@ -49,29 +49,28 @@
   <h1>Student Averages Viewer</h1>
   <input type="file" id="fileInput" accept=".xlsx, .xls" />
   <div id="output"></div>
-  <button id="exportCsv" style="display:none;">Export CSV</button>
+  <<button id="exportCsv" style="display:none;" disabled>Export CSV</button>
+<script>
+  document.getElementById('fileInput').addEventListener('change', handleFile, false);
+  document.getElementById('exportCsv').addEventListener('click', exportCSV);
 
-  <script>
-    document.getElementById('fileInput').addEventListener('change', handleFile, false);
-    document.getElementById('exportCsv').addEventListener('click', exportCSV);
+  let finalData = [];
 
-    let finalData = [];
+  function handleFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
 
-    function handleFile(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
         const data = new Uint8Array(e.target.result);
         const workbook = XLSX.read(data, { type: 'array' });
-
-        // Get Online Practice and Test Generator sheets
         const onlineSheet = workbook.Sheets["Online Practice"];
         const testSheet = workbook.Sheets["Test Generator"];
-
         if (!onlineSheet || !testSheet) {
           alert("The file must contain 'Online Practice' and 'Test Generator' sheets.");
+          document.getElementById('exportCsv').style.display = 'none';
+          document.getElementById('exportCsv').disabled = true;
           return;
         }
 
@@ -80,7 +79,6 @@
 
         const studentScores = {};
 
-        // Process Online Practice (Assignments)
         onlineData.forEach(row => {
           const name = row["Student Name"] || row["Name"];
           if (!name) return;
@@ -90,7 +88,6 @@
           studentScores[name].assignmentAvg = avg;
         });
 
-        // Process Test Generator (Tests)
         testData.forEach(row => {
           const name = row["Student Name"] || row["Name"];
           if (!name) return;
@@ -100,7 +97,6 @@
           studentScores[name].testAvg = avg;
         });
 
-        // Combine data
         finalData = Object.entries(studentScores).map(([name, data]) => ({
           "Student Name": name,
           "Assignments Average": (data.assignmentAvg || 0).toFixed(2),
@@ -108,38 +104,67 @@
         }));
 
         displayTable(finalData);
-        document.getElementById('exportCsv').style.display = 'inline-block';
-      };
-      reader.readAsArrayBuffer(file);
-    }
+        const exportBtn = document.getElementById('exportCsv');
+        exportBtn.style.display = finalData.length ? 'inline-block' : 'none';
+        exportBtn.disabled = !finalData.length;
+        console.log("Final data for export:", finalData);
+      } catch (err) {
+        alert("Error processing file: " + err.message);
+        console.error(err);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
 
-    function displayTable(data) {
-      if (data.length === 0) return;
-      let html = '<table><thead><tr>';
-      Object.keys(data[0]).forEach(key => html += `<th>${key}</th>`);
-      html += '</tr></thead><tbody>';
-      data.forEach(row => {
-        html += '<tr>';
-        Object.values(row).forEach(val => html += `<td>${val}</td>`);
-        html += '</tr>';
-      });
-      html += '</tbody></table>';
-      document.getElementById('output').innerHTML = html;
-    }
+  function displayTable(data) {
+    if (data.length === 0) return;
+    let html = '<table><thead><tr>';
+    Object.keys(data[0]).forEach(key => html += `<th>${key}</th>`);
+    html += '</tr></thead><tbody>';
+    data.forEach(row => {
+      html += '<tr>';
+      Object.values(row).forEach(val => html += `<td>${val}</td>`);
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+    document.getElementById('output').innerHTML = html;
+  }
 
-    function exportCSV() {
-      if (finalData.length === 0) return;
-      const headers = Object.keys(finalData[0]).join(",") + "\n";
-      const rows = finalData.map(row => Object.values(row).join(",")).join("\n");
-      const csvContent = headers + rows;
+  function escapeCsvValue(val) {
+    if (val == null) return '';
+    val = String(val);
+    if (/[",\n]/.test(val)) {
+      val = '"' + val.replace(/"/g, '""') + '"';
+    }
+    return val;
+  }
+
+  function exportCSV() {
+    try {
+      if (finalData.length === 0) {
+        alert("No data to export!");
+        return;
+      }
+      const headers = Object.keys(finalData[0]);
+      const rows = finalData.map(row => headers.map(h => escapeCsvValue(row[h])).join(","));
+      const csvContent = headers.join(",") + "\n" + rows.join("\n");
       const blob = new Blob([csvContent], { type: "text/csv" });
       const url = URL.createObjectURL(blob);
+
       const a = document.createElement("a");
+      a.style.display = 'none';
       a.href = url;
       a.download = "student_averages.csv";
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      console.log("CSV download triggered.");
+    } catch (err) {
+      alert("Error exporting CSV: " + err.message);
+      console.error(err);
     }
-  </script>
+  }
+</script>
 </body>
 </html>
