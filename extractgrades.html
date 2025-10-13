@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Student Data Viewer</title>
+<title>Student Data Viewer & Exporter</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   body {
@@ -14,7 +14,7 @@
   h1 {
     color: #333;
   }
-  input[type="file"] {
+  input[type="file"], button {
     margin-bottom: 20px;
   }
   table {
@@ -39,12 +39,17 @@
 </style>
 </head>
 <body>
-  <h1>Student Data Viewer</h1>
+  <h1>Student Data Viewer & Exporter</h1>
   <input type="file" id="fileInput" accept=".xlsx, .xls" />
+  <button id="exportBtn" disabled>Export to CSV</button>
   <div id="output"></div>
 
   <script>
+    let processedData = [];
+    let headers = [];
+
     document.getElementById('fileInput').addEventListener('change', handleFile, false);
+    document.getElementById('exportBtn').addEventListener('click', exportCSV, false);
 
     function handleFile(event) {
       const file = event.target.files[0];
@@ -59,22 +64,76 @@
         const worksheet = workbook.Sheets[sheetName];
         const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-        displayTable(json);
+        if (json.length < 2) return alert("Excel file must contain data with headers!");
+
+        headers = json[0];
+        const studentRows = json.slice(1);
+
+        // Assumptions: Student info columns first, then test columns, then assignment columns.
+        // Adjust these indexes according to your Excel structure.
+        // Example: [Name, ID, Test1, Test2, Assignment1, Assignment2]
+        const nameIdx = headers.findIndex(h => h.toLowerCase().includes("name"));
+        const idIdx = headers.findIndex(h => h.toLowerCase().includes("id"));
+        // Test columns detection:
+        const testIdxs = headers
+          .map((h, i) => h.toLowerCase().includes("test") ? i : -1)
+          .filter(i => i !== -1);
+        // Assignment columns detection:
+        const assignmentIdxs = headers
+          .map((h, i) => h.toLowerCase().includes("assign") ? i : -1)
+          .filter(i => i !== -1);
+
+        processedData = studentRows.map(row => {
+          // Get tests and assignments
+          const tests = testIdxs.map(i => parseFloat(row[i]) || 0).filter(n => !isNaN(n));
+          const assignments = assignmentIdxs.map(i => parseFloat(row[i]) || 0).filter(n => !isNaN(n));
+          const testAvg = tests.length ? (tests.reduce((a,b)=>a+b,0) / tests.length).toFixed(2) : '';
+          const assignmentAvg = assignments.length ? (assignments.reduce((a,b)=>a+b,0) / assignments.length).toFixed(2) : '';
+          return {
+            Name: row[nameIdx] || '',
+            ID: row[idIdx] || '',
+            TestAverage: testAvg,
+            AssignmentAverage: assignmentAvg
+          };
+        });
+
+        displayTable(processedData);
+        document.getElementById('exportBtn').disabled = false;
       };
       reader.readAsArrayBuffer(file);
     }
 
     function displayTable(data) {
-      let html = '<table>';
-      data.forEach((row, i) => {
+      if (!data.length) return;
+      let html = '<table><tr>';
+      Object.keys(data[0]).forEach(key => html += `<th>${key}</th>`);
+      html += '</tr>';
+      data.forEach(row => {
         html += '<tr>';
-        row.forEach(cell => {
-          html += i === 0 ? `<th>${cell || ''}</th>` : `<td>${cell || ''}</td>`;
-        });
+        Object.values(row).forEach(val => html += `<td>${val}</td>`);
         html += '</tr>';
       });
       html += '</table>';
       document.getElementById('output').innerHTML = html;
+    }
+
+    function exportCSV() {
+      if (!processedData.length) return;
+      // Convert processedData to CSV
+      const keys = Object.keys(processedData[0]);
+      const csvRows = [
+        keys.join(','),
+        ...processedData.map(row => keys.map(k => `"${row[k]}"`).join(','))
+      ];
+      const csvContent = csvRows.join('\n');
+      // Download
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'student_averages.csv';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
   </script>
 </body>
