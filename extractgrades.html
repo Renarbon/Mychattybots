@@ -49,7 +49,7 @@
   <h1>Student Averages Viewer</h1>
   <input type="file" id="fileInput" accept=".xlsx, .xls" />
   <div id="output"></div>
-  <button id="exportCsv" style="display:none;">Export CSV</button>
+  <button id="exportCsv" style="display:none;" disabled>Export CSV</button>
 
   <script>
     document.getElementById('fileInput').addEventListener('change', handleFile, false);
@@ -72,6 +72,8 @@
 
         if (!onlineSheet || !testSheet) {
           alert("The file must contain 'Online Practice' and 'Test Generator' sheets.");
+          document.getElementById('exportCsv').style.display = 'none';
+          document.getElementById('exportCsv').disabled = true;
           return;
         }
 
@@ -108,7 +110,11 @@
         }));
 
         displayTable(finalData);
-        document.getElementById('exportCsv').style.display = 'inline-block';
+
+        // Show and enable export button if there is data
+        const exportBtn = document.getElementById('exportCsv');
+        exportBtn.style.display = finalData.length ? 'inline-block' : 'none';
+        exportBtn.disabled = !finalData.length;
       };
       reader.readAsArrayBuffer(file);
     }
@@ -127,18 +133,31 @@
       document.getElementById('output').innerHTML = html;
     }
 
+    // Escape CSV values for safety
+    function escapeCsvValue(val) {
+      if (val == null) return '';
+      val = String(val);
+      if (/[",\n]/.test(val)) {
+        val = '"' + val.replace(/"/g, '""') + '"';
+      }
+      return val;
+    }
+
     function exportCSV() {
       if (finalData.length === 0) return;
-      const headers = Object.keys(finalData[0]).join(",") + "\n";
-      const rows = finalData.map(row => Object.values(row).join(",")).join("\n");
-      const csvContent = headers + rows;
+      const headers = Object.keys(finalData[0]);
+      const rows = finalData.map(row => headers.map(h => escapeCsvValue(row[h])).join(","));
+      const csvContent = headers.join(",") + "\n" + rows.join("\n");
       const blob = new Blob([csvContent], { type: "text/csv" });
       const url = URL.createObjectURL(blob);
+
       const a = document.createElement("a");
       a.href = url;
       a.download = "student_averages.csv";
+      document.body.appendChild(a); // Required for Firefox
       a.click();
-      URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000); // Delay to ensure download works
     }
   </script>
 </body>
