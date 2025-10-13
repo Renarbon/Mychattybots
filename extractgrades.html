@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Student Data Viewer & Exporter</title>
+<title>Student Averages Viewer</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   body {
@@ -14,7 +14,7 @@
   h1 {
     color: #333;
   }
-  input[type="file"], button {
+  input[type="file"] {
     margin-bottom: 20px;
   }
   table {
@@ -30,110 +30,115 @@
   th {
     background: #4CAF50;
     color: white;
-    position: sticky;
-    top: 0;
   }
-  tbody tr:nth-child(even) {
+  tr:nth-child(even) {
     background: #f2f2f2;
+  }
+  button {
+    margin-top: 20px;
+    padding: 10px 15px;
+    background-color: #4CAF50;
+    border: none;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
   }
 </style>
 </head>
 <body>
-  <h1>Student Data Viewer & Exporter</h1>
+  <h1>Student Averages Viewer</h1>
   <input type="file" id="fileInput" accept=".xlsx, .xls" />
-  <button id="exportBtn" disabled>Export to CSV</button>
   <div id="output"></div>
+  <button id="exportCsv" style="display:none;">Export CSV</button>
 
   <script>
-    let processedData = [];
-    let headers = [];
-
     document.getElementById('fileInput').addEventListener('change', handleFile, false);
-    document.getElementById('exportBtn').addEventListener('click', exportCSV, false);
+    document.getElementById('exportCsv').addEventListener('click', exportCSV);
+
+    let finalData = [];
 
     function handleFile(event) {
       const file = event.target.files[0];
       if (!file) return;
+
       const reader = new FileReader();
       reader.onload = (e) => {
         const data = new Uint8Array(e.target.result);
         const workbook = XLSX.read(data, { type: 'array' });
 
-        // Read the first sheet
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        // Get Online Practice and Test Generator sheets
+        const onlineSheet = workbook.Sheets["Online Practice"];
+        const testSheet = workbook.Sheets["Test Generator"];
 
-        if (json.length < 2) return alert("Excel file must contain data with headers!");
+        if (!onlineSheet || !testSheet) {
+          alert("The file must contain 'Online Practice' and 'Test Generator' sheets.");
+          return;
+        }
 
-        headers = json[0];
-        const studentRows = json.slice(1);
+        const onlineData = XLSX.utils.sheet_to_json(onlineSheet);
+        const testData = XLSX.utils.sheet_to_json(testSheet);
 
-        // Assumptions: Student info columns first, then test columns, then assignment columns.
-        // Adjust these indexes according to your Excel structure.
-        // Example: [Name, ID, Test1, Test2, Assignment1, Assignment2]
-        const nameIdx = headers.findIndex(h => h.toLowerCase().includes("name"));
-        const idIdx = headers.findIndex(h => h.toLowerCase().includes("id"));
-        // Test columns detection:
-        const testIdxs = headers
-          .map((h, i) => h.toLowerCase().includes("test") ? i : -1)
-          .filter(i => i !== -1);
-        // Assignment columns detection:
-        const assignmentIdxs = headers
-          .map((h, i) => h.toLowerCase().includes("assign") ? i : -1)
-          .filter(i => i !== -1);
+        const studentScores = {};
 
-        processedData = studentRows.map(row => {
-          // Get tests and assignments
-          const tests = testIdxs.map(i => parseFloat(row[i]) || 0).filter(n => !isNaN(n));
-          const assignments = assignmentIdxs.map(i => parseFloat(row[i]) || 0).filter(n => !isNaN(n));
-          const testAvg = tests.length ? (tests.reduce((a,b)=>a+b,0) / tests.length).toFixed(2) : '';
-          const assignmentAvg = assignments.length ? (assignments.reduce((a,b)=>a+b,0) / assignments.length).toFixed(2) : '';
-          return {
-            Name: row[nameIdx] || '',
-            ID: row[idIdx] || '',
-            TestAverage: testAvg,
-            AssignmentAverage: assignmentAvg
-          };
+        // Process Online Practice (Assignments)
+        onlineData.forEach(row => {
+          const name = row["Student Name"] || row["Name"];
+          if (!name) return;
+          const scores = Object.values(row).filter(v => typeof v === "number");
+          const avg = scores.length ? (scores.reduce((a,b)=>a+b,0)/scores.length) : 0;
+          if (!studentScores[name]) studentScores[name] = {};
+          studentScores[name].assignmentAvg = avg;
         });
 
-        displayTable(processedData);
-        document.getElementById('exportBtn').disabled = false;
+        // Process Test Generator (Tests)
+        testData.forEach(row => {
+          const name = row["Student Name"] || row["Name"];
+          if (!name) return;
+          const scores = Object.values(row).filter(v => typeof v === "number");
+          const avg = scores.length ? (scores.reduce((a,b)=>a+b,0)/scores.length) : 0;
+          if (!studentScores[name]) studentScores[name] = {};
+          studentScores[name].testAvg = avg;
+        });
+
+        // Combine data
+        finalData = Object.entries(studentScores).map(([name, data]) => ({
+          "Student Name": name,
+          "Assignments Average": (data.assignmentAvg || 0).toFixed(2),
+          "Tests Average": (data.testAvg || 0).toFixed(2)
+        }));
+
+        displayTable(finalData);
+        document.getElementById('exportCsv').style.display = 'inline-block';
       };
       reader.readAsArrayBuffer(file);
     }
 
     function displayTable(data) {
-      if (!data.length) return;
-      let html = '<table><tr>';
+      if (data.length === 0) return;
+      let html = '<table><thead><tr>';
       Object.keys(data[0]).forEach(key => html += `<th>${key}</th>`);
-      html += '</tr>';
+      html += '</tr></thead><tbody>';
       data.forEach(row => {
         html += '<tr>';
         Object.values(row).forEach(val => html += `<td>${val}</td>`);
         html += '</tr>';
       });
-      html += '</table>';
+      html += '</tbody></table>';
       document.getElementById('output').innerHTML = html;
     }
 
     function exportCSV() {
-      if (!processedData.length) return;
-      // Convert processedData to CSV
-      const keys = Object.keys(processedData[0]);
-      const csvRows = [
-        keys.join(','),
-        ...processedData.map(row => keys.map(k => `"${row[k]}"`).join(','))
-      ];
-      const csvContent = csvRows.join('\n');
-      // Download
-      const blob = new Blob([csvContent], { type: 'text/csv' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = 'student_averages.csv';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      if (finalData.length === 0) return;
+      const headers = Object.keys(finalData[0]).join(",") + "\n";
+      const rows = finalData.map(row => Object.values(row).join(",")).join("\n");
+      const csvContent = headers + rows;
+      const blob = new Blob([csvContent], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "student_averages.csv";
+      a.click();
+      URL.revokeObjectURL(url);
     }
   </script>
 </body>
