@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Data Viewer</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 30px;
+    background: #f7f7f7;
+  }
+  h1 {
+    color: #333;
+  }
+  input[type="file"] {
+    margin-bottom: 20px;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    background: white;
+  }
+  th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+  }
+  th {
+    background: #4CAF50;
+    color: white;
+    position: sticky;
+    top: 0;
+  }
+  tbody tr:nth-child(even) {
+    background: #f2f2f2;
+  }
+</style>
+</head>
+<body>
+  <h1>Student Data Viewer</h1>
+  <input type="file" id="fileInput" accept=".xlsx, .xls" />
+  <div id="output"></div>
+
+  <script>
+    document.getElementById('fileInput').addEventListener('change', handleFile, false);
+
+    function handleFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+
+        // Read the first sheet
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+        displayTable(json);
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function displayTable(data) {
+      let html = '<table>';
+      data.forEach((row, i) => {
+        html += '<tr>';
+        row.forEach(cell => {
+          html += i === 0 ? `<th>${cell || ''}</th>` : `<td>${cell || ''}</td>`;
+        });
+        html += '</tr>';
+      });
+      html += '</table>';
+      document.getElementById('output').innerHTML = html;
+    }
+  </script>
+</body>
+</html>
