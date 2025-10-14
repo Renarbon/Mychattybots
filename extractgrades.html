@@ -1,170 +1,358 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Student Averages Viewer</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Student Averages - Robust Export</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
-  body {
-    font-family: Arial, sans-serif;
-    margin: 30px;
-    background: #f7f7f7;
-  }
-  h1 {
-    color: #333;
-  }
-  input[type="file"] {
-    margin-bottom: 20px;
-  }
-  table {
-    border-collapse: collapse;
-    width: 100%;
-    background: white;
-  }
-  th, td {
-    border: 1px solid #ddd;
-    padding: 8px;
-    text-align: left;
-  }
-  th {
-    background: #4CAF50;
-    color: white;
-  }
-  tr:nth-child(even) {
-    background: #f2f2f2;
-  }
-  button {
-    margin-top: 20px;
-    padding: 10px 15px;
-    background-color: #4CAF50;
-    border: none;
-    color: white;
-    border-radius: 5px;
-    cursor: pointer;
-  }
+  body { font-family: Arial, sans-serif; margin: 20px; background:#fafafa; color:#222 }
+  h1 { margin-bottom:8px }
+  .row { display:flex; gap:12px; align-items:center; margin-bottom:12px }
+  select, button { padding:8px 10px; }
+  table { width:100%; border-collapse:collapse; margin-top:12px; background:white }
+  th, td { border:1px solid #ddd; padding:6px; text-align:left; }
+  th { background:#1f7a8c; color:white; position:sticky; top:0 }
+  .controls { margin-top:10px }
+  .col-list { max-height:200px; overflow:auto; border:1px solid #ccc; padding:8px; background:white }
+  label.colitem { display:block; margin:2px 0; font-size:13px }
+  .notice { color:#a33; margin-top:8px }
 </style>
 </head>
 <body>
-  <h1>Student Averages Viewer</h1>
-  <input type="file" id="fileInput" accept=".xlsx, .xls" />
-  <div id="output"></div>
-  <<button id="exportCsv" style="display:none;" disabled>Export CSV</button>
+  <h1>Student Averages — Robust CSV Export</h1>
+
+  <div class="row">
+    <input id="fileInput" type="file" accept=".xlsx,.xls,.csv" />
+    <button id="autoProcess" disabled>Auto Process</button>
+    <button id="exportCsv" disabled>Export CSV</button>
+  </div>
+
+  <div class="row">
+    <label>Detected Name column:
+      <select id="nameSelect"><option>—</option></select>
+    </label>
+
+    <label>Detected ID column:
+      <select id="idSelect"><option>—</option></select>
+    </label>
+  </div>
+
+  <div style="margin-top:8px">
+    <strong>Columns (choose assignment/test columns if needed)</strong>
+    <div class="col-list" id="colsContainer"></div>
+  </div>
+
+  <div class="controls">
+    <button id="recompute" disabled>Recompute Averages</button>
+    <div id="status" style="margin-top:8px"></div>
+  </div>
+
+  <div id="preview"></div>
+  <div class="notice" id="warn" style="display:none"></div>
+
 <script>
-  document.getElementById('fileInput').addEventListener('change', handleFile, false);
-  document.getElementById('exportCsv').addEventListener('click', exportCSV);
+/* Utility helpers */
+function tryNumberFromCell(v) {
+  // return numeric value or null
+  if(v === null || v === undefined) return null;
+  if(typeof v === 'number' && !isNaN(v)) return v;
+  let s = String(v).trim();
+  if(s === '') return null;
+  // Remove commas used as thousands separators
+  s = s.replace(/,/g, '');
+  // Look for the first numeric-looking substring (support 85, 85.5, 85/100, 85%)
+  const match = s.match(/-?\d+(\.\d+)?/);
+  if(!match) return null;
+  const num = parseFloat(match[0]);
+  if(isNaN(num)) return null;
+  return num;
+}
 
-  let finalData = [];
+function average(values) {
+  const nums = values.filter(v => v !== null && v !== undefined && !isNaN(v));
+  if(nums.length === 0) return null;
+  const sum = nums.reduce((a,b)=>a+b,0);
+  return Math.round((sum/nums.length) * 100) / 100;
+}
 
-  function handleFile(event) {
-    const file = event.target.files[0];
-    if (!file) return;
+/* App state */
+let workbook = null;
+let sheets = {};
+let combinedCols = []; // unique set of column headers across both sheets used
+let onlineData = [], testData = [];
+let processedRows = [];
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const onlineSheet = workbook.Sheets["Online Practice"];
-        const testSheet = workbook.Sheets["Test Generator"];
-        if (!onlineSheet || !testSheet) {
-          alert("The file must contain 'Online Practice' and 'Test Generator' sheets.");
-          document.getElementById('exportCsv').style.display = 'none';
-          document.getElementById('exportCsv').disabled = true;
-          return;
-        }
+/* UI refs */
+const fileInput = document.getElementById('fileInput');
+const autoBtn = document.getElementById('autoProcess');
+const exportBtn = document.getElementById('exportCsv');
+const nameSelect = document.getElementById('nameSelect');
+const idSelect = document.getElementById('idSelect');
+const colsContainer = document.getElementById('colsContainer');
+const recomputeBtn = document.getElementById('recompute');
+const preview = document.getElementById('preview');
+const status = document.getElementById('status');
+const warn = document.getElementById('warn');
 
-        const onlineData = XLSX.utils.sheet_to_json(onlineSheet);
-        const testData = XLSX.utils.sheet_to_json(testSheet);
-
-        const studentScores = {};
-
-        onlineData.forEach(row => {
-          const name = row["Student Name"] || row["Name"];
-          if (!name) return;
-          const scores = Object.values(row).filter(v => typeof v === "number");
-          const avg = scores.length ? (scores.reduce((a,b)=>a+b,0)/scores.length) : 0;
-          if (!studentScores[name]) studentScores[name] = {};
-          studentScores[name].assignmentAvg = avg;
-        });
-
-        testData.forEach(row => {
-          const name = row["Student Name"] || row["Name"];
-          if (!name) return;
-          const scores = Object.values(row).filter(v => typeof v === "number");
-          const avg = scores.length ? (scores.reduce((a,b)=>a+b,0)/scores.length) : 0;
-          if (!studentScores[name]) studentScores[name] = {};
-          studentScores[name].testAvg = avg;
-        });
-
-        finalData = Object.entries(studentScores).map(([name, data]) => ({
-          "Student Name": name,
-          "Assignments Average": (data.assignmentAvg || 0).toFixed(2),
-          "Tests Average": (data.testAvg || 0).toFixed(2)
-        }));
-
-        displayTable(finalData);
-        const exportBtn = document.getElementById('exportCsv');
-        exportBtn.style.display = finalData.length ? 'inline-block' : 'none';
-        exportBtn.disabled = !finalData.length;
-        console.log("Final data for export:", finalData);
-      } catch (err) {
-        alert("Error processing file: " + err.message);
-        console.error(err);
-      }
-    };
-    reader.readAsArrayBuffer(file);
+fileInput.addEventListener('change', async (e) => {
+  const f = e.target.files[0];
+  if(!f) return;
+  status.textContent = 'Loading file…';
+  warn.style.display = 'none';
+  const data = await f.arrayBuffer();
+  workbook = XLSX.read(data, {type:'array', cellDates:true});
+  // Try to find the sheets by name (case-insensitive)
+  const names = workbook.SheetNames;
+  const onlineName = names.find(n=>/online practice/i.test(n)) || names.find(n=>/online/i.test(n));
+  const testName = names.find(n=>/test generator/i.test(n)) || names.find(n=>/test/i.test(n));
+  if(!onlineName || !testName) {
+    warn.style.display = 'block';
+    warn.textContent = "Warning: couldn't find exact sheet names 'Online Practice' and 'Test Generator'. Available sheets: " + names.join(', ');
   }
+  onlineData = onlineName ? XLSX.utils.sheet_to_json(workbook.Sheets[onlineName], {defval:''}) : [];
+  testData = testName ? XLSX.utils.sheet_to_json(workbook.Sheets[testName], {defval:''}) : [];
 
-  function displayTable(data) {
-    if (data.length === 0) return;
-    let html = '<table><thead><tr>';
-    Object.keys(data[0]).forEach(key => html += `<th>${key}</th>`);
-    html += '</tr></thead><tbody>';
-    data.forEach(row => {
-      html += '<tr>';
-      Object.values(row).forEach(val => html += `<td>${val}</td>`);
-      html += '</tr>';
+  // Build union of columns
+  const colsSet = new Set();
+  [onlineData, testData].forEach(arr=>{
+    arr.forEach(r=>{
+      Object.keys(r).forEach(k=>colsSet.add(k));
     });
-    html += '</tbody></table>';
-    document.getElementById('output').innerHTML = html;
-  }
+  });
+  combinedCols = Array.from(colsSet);
+  buildColumnControls(combinedCols);
 
-  function escapeCsvValue(val) {
-    if (val == null) return '';
-    val = String(val);
-    if (/[",\n]/.test(val)) {
-      val = '"' + val.replace(/"/g, '""') + '"';
+  // Populate name/id selects with heuristics
+  populateNameIdSelects(combinedCols);
+
+  status.textContent = `Loaded. Online rows: ${onlineData.length}, Test rows: ${testData.length}`;
+  autoBtn.disabled = false;
+  recomputeBtn.disabled = false;
+  exportBtn.disabled = true;
+  processedRows = [];
+  preview.innerHTML = '';
+});
+
+function buildColumnControls(cols) {
+  colsContainer.innerHTML = '';
+  cols.forEach(col=>{
+    const idAssign = 'assign_' + encodeURIComponent(col);
+    const idTest = 'test_' + encodeURIComponent(col);
+    const div = document.createElement('div');
+    div.innerHTML = `
+      <label class="colitem"><strong>${col}</strong>
+        <span style="margin-left:8px; font-size:12px; color:#555">
+          <input type="checkbox" class="assignCb" id="${idAssign}" data-col="${col}"> assignment
+          <input type="checkbox" class="testCb" id="${idTest}" data-col="${col}" style="margin-left:8px"> test
+        </span>
+      </label>`;
+    colsContainer.appendChild(div);
+  });
+
+  // Try to auto-check likely assignment/test columns by name
+  document.querySelectorAll('.assignCb').forEach(cb=>{
+    const c = cb.dataset.col.toLowerCase();
+    if(/assign|practice|homework|work|task|online/i.test(c)) cb.checked = true;
+  });
+  document.querySelectorAll('.testCb').forEach(cb=>{
+    const c = cb.dataset.col.toLowerCase();
+    if(/test|exam|quiz|score|final|midterm/i.test(c)) cb.checked = true;
+  });
+}
+
+function populateNameIdSelects(cols) {
+  nameSelect.innerHTML = '<option>—</option>';
+  idSelect.innerHTML = '<option>—</option>';
+  // heuristics
+  const nameCandidates = cols.filter(c=>/name|student|alumno|estudiante/i.test(c)).concat(cols.filter(c=>!/score|test|assign|id|date|grade/i.test(c)));
+  const idCandidates = cols.filter(c=>/id|ident|code|student number|matricula/i.test(c));
+  const uniqueName = Array.from(new Set(nameCandidates.concat(cols))).slice(0,20);
+  uniqueName.forEach(c=>{
+    const o = document.createElement('option'); o.value = c; o.textContent = c; nameSelect.appendChild(o);
+  });
+  idCandidates.forEach(c=>{
+    const o = document.createElement('option'); o.value = c; o.textContent = c; idSelect.appendChild(o);
+  });
+}
+
+autoBtn.addEventListener('click', () => {
+  // auto-check: assignment columns = those likely in onlineData; test columns = those likely in testData
+  // determine numeric columns in each sheet
+  const onlineCols = detectNumericColumns(onlineData);
+  const testCols = detectNumericColumns(testData);
+
+  document.querySelectorAll('.assignCb').forEach(cb=>{
+    cb.checked = onlineCols.includes(cb.dataset.col);
+  });
+  document.querySelectorAll('.testCb').forEach(cb=>{
+    cb.checked = testCols.includes(cb.dataset.col);
+  });
+
+  // pick name column if empty: try Online sheet headers first
+  const pick = detectNameColumn(onlineData) || detectNameColumn(testData) || combinedCols.find(c=>/name|student/i.test(c));
+  if(pick) {
+    nameSelect.value = pick;
+  }
+  status.textContent = 'Auto-detection applied. Review column choices then click "Recompute Averages".';
+});
+
+function detectNumericColumns(arr) {
+  if(!arr || arr.length===0) return [];
+  const cols = Object.keys(arr[0]);
+  const numeric = [];
+  cols.forEach(col=>{
+    let found = false;
+    for(let i=0;i<Math.min(arr.length,50);i++){
+      const v = arr[i][col];
+      if(tryNumberFromCell(v) !== null) { found=true; break; }
     }
-    return val;
-  }
+    if(found) numeric.push(col);
+  });
+  return numeric;
+}
 
-  function exportCSV() {
-    try {
-      if (finalData.length === 0) {
-        alert("No data to export!");
-        return;
+function detectNameColumn(arr) {
+  if(!arr || arr.length===0) return null;
+  const cols = Object.keys(arr[0]);
+  // choose column with many string unique values and few numeric values
+  let best = null; let bestScore = -1;
+  cols.forEach(col=>{
+    let strings=0, nums=0, unique = new Set();
+    for(let i=0;i<Math.min(arr.length,100);i++){
+      const v = arr[i][col];
+      if(v === null || v === undefined || v === '') continue;
+      if(tryNumberFromCell(v) !== null) nums++;
+      else strings++;
+      unique.add(String(v).trim());
+    }
+    const score = strings - nums + (unique.size/100);
+    if(score > bestScore) { bestScore = score; best = col; }
+  });
+  return best;
+}
+
+// recompute averages using current selections
+recomputeBtn.addEventListener('click', () => {
+  status.textContent = 'Computing averages…';
+  processedRows = computeAverages();
+  renderPreview(processedRows);
+  exportBtn.disabled = processedRows.length === 0;
+  status.textContent = `Computed ${processedRows.length} students.`;
+});
+
+function computeAverages() {
+  // Determine which columns are selected for assignments/tests
+  const assignmentCols = Array.from(document.querySelectorAll('.assignCb:checked')).map(cb=>cb.dataset.col);
+  const testCols = Array.from(document.querySelectorAll('.testCb:checked')).map(cb=>cb.dataset.col);
+  const nameCol = nameSelect.value && nameSelect.value !== '—' ? nameSelect.value : null;
+  const idCol = idSelect.value && idSelect.value !== '—' ? idSelect.value : null;
+
+  // Build mapping of studentName -> arrays for assignment/test values
+  const map = new Map();
+
+  function addRowToMap(row, isAssignment) {
+    // determine name using nameCol fallback heuristics if necessary
+    let name = nameCol ? row[nameCol] : null;
+    if(!name) {
+      // try any candidate: columns with 'name' or first string-like column
+      for(const k of Object.keys(row)) {
+        if(/name|student|alumno|estudiante/i.test(k) && row[k]) { name = row[k]; break; }
       }
-      const headers = Object.keys(finalData[0]);
-      const rows = finalData.map(row => headers.map(h => escapeCsvValue(row[h])).join(","));
-      const csvContent = headers.join(",") + "\n" + rows.join("\n");
-      const blob = new Blob([csvContent], { type: "text/csv" });
-      const url = URL.createObjectURL(blob);
-
-      const a = document.createElement("a");
-      a.style.display = 'none';
-      a.href = url;
-      a.download = "student_averages.csv";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-      console.log("CSV download triggered.");
-    } catch (err) {
-      alert("Error exporting CSV: " + err.message);
-      console.error(err);
+      if(!name) {
+        // try first stringish column
+        for(const k of Object.keys(row)) {
+          if(tryNumberFromCell(row[k]) === null && String(row[k]).trim() !== '') { name = row[k]; break; }
+        }
+      }
     }
+    if(!name) return;
+    name = String(name).trim();
+    if(!map.has(name)) map.set(name, {assignVals:[], testVals:[], id: null});
+    const entry = map.get(name);
+    if(idCol && row[idCol]) entry.id = row[idCol];
+
+    const cols = isAssignment ? assignmentCols : testCols;
+    // if none selected, fallback to numeric columns in the sheet row
+    const useCols = cols.length ? cols : Object.keys(row);
+    useCols.forEach(c=>{
+      if(!(c in row)) return;
+      const num = tryNumberFromCell(row[c]);
+      if(num !== null) {
+        if(isAssignment) entry.assignVals.push(num);
+        else entry.testVals.push(num);
+      }
+    });
   }
+
+  onlineData.forEach(r => addRowToMap(r, true));
+  testData.forEach(r => addRowToMap(r, false));
+
+  // produce array of results
+  const results = [];
+  for(const [name, data] of map.entries()) {
+    const assignAvg = average(data.assignVals);
+    const testAvg = average(data.testVals);
+    results.push({
+      'Student Name': name,
+      'ID': data.id || '',
+      'Assignments Average': assignAvg !== null ? assignAvg.toFixed(2) : '',
+      'Tests Average': testAvg !== null ? testAvg.toFixed(2) : '',
+      'Assignments Count': data.assignVals.length,
+      'Tests Count': data.testVals.length
+    });
+  }
+
+  // optional: sort by name
+  results.sort((a,b)=>a['Student Name'].localeCompare(b['Student Name']));
+  return results;
+}
+
+function renderPreview(rows) {
+  if(!rows || rows.length===0) {
+    preview.innerHTML = '<p>No student data found. Adjust column selections and try again.</p>';
+    return;
+  }
+  let html = '<table><thead><tr>';
+  Object.keys(rows[0]).forEach(k=> html += `<th>${k}</th>`);
+  html += '</tr></thead><tbody>';
+  rows.forEach(r=>{
+    html += '<tr>';
+    Object.values(r).forEach(v=> html += `<td>${String(v)}</td>`);
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  preview.innerHTML = html;
+}
+
+/* CSV export with robust quoting and UTF-8 BOM */
+exportBtn.addEventListener('click', () => {
+  if(!processedRows || processedRows.length === 0) {
+    alert('No data to export. Click "Recompute Averages" first.');
+    return;
+  }
+  const cols = Object.keys(processedRows[0]);
+  let csv = '\uFEFF' + cols.map(h => `"${String(h).replace(/"/g,'""')}"`).join(',') + '\n';
+  for(const r of processedRows) {
+    const row = cols.map(c => {
+      const v = r[c] === null || r[c] === undefined ? '' : String(r[c]);
+      return `"${v.replace(/"/g,'""')}"`;
+    }).join(',');
+    csv += row + '\n';
+  }
+
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'student_averages.csv';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  status.textContent = 'CSV exported.';
+});
+
 </script>
 </body>
 </html>
