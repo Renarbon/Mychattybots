@@ -55,97 +55,79 @@
   <script>
     // ------ 1. YOUR QUIZ DATA HERE ------
     const scriptLines = [
-      {
-        phrase: "Break the ice",
-        options: [
-          "Start a conversation in a social setting",
-          "Literally shatter frozen water",
-          "Become very angry suddenly"
-        ],
-        correct: 0
-      },
-      {
-        phrase: "Hit the sack",
-        options: [
-          "Go to bed",
-          "Punch a pillow",
-          "Pack your bags"
-        ],
-        correct: 0
-      },
-      {
-        phrase: "Under the weather",
-        options: [
-          "Feeling sick",
-          "Caught in the rain",
-          "Very happy"
-        ],
-        correct: 0
-      },
-      {
-        phrase: "Piece of cake",
-        options: [
-          "Very easy",
-          "A slice of dessert",
-          "Something delicious"
-        ],
-        correct: 0
-      },
-      {
-        phrase: "Cost an arm and a leg",
-        options: [
-          "Very expensive",
-          "Involves hard labor",
-          "Needs body strength"
-        ],
-        correct: 0
-      },
-      {
-        phrase: "Let the cat out of the bag",
-        options: [
-          "Reveal a secret",
-          "Let your pet escape",
-          "Forget something important"
-        ],
-        correct: 0
-      },
-      {
-        phrase: "Burn the midnight oil",
-        options: [
-          "Stay up late working or studying",
-          "Start a fire at night",
-          "Light a candle at dinner"
-        ],
-        correct: 0
-      },
-      {
-        phrase: "Hit the books",
-        options: [
-          "Study hard",
-          "Throw your books",
-          "Write a story"
-        ],
-        correct: 0
-      },
-      {
-        phrase: "Bite the bullet",
-        options: [
-          "Face a difficult situation bravely",
-          "Eat something hard",
-          "Act quickly"
-        ],
-        correct: 0
-      },
-      {
-        phrase: "Once in a blue moon",
-        options: [
-          "Very rarely",
-          "During the night",
-          "When the sky is clear"
-        ],
-        correct: 0
-      }
-    ];
+  {
+    phrase: `I aced it`,
+    options: [
+      `means you did great on something`,
+      `Doing something the wrong way`,
+      `Feeling happy for no reason`
+    ],
+    correct: 0
+  },
+  {
+    phrase: `no-brainer`,
+    options: [
+      `It means feeling confused`,
+      `If the reason for making a decision is obvious`,
+      `Ignoring a problem`
+    ],
+    correct: 1
+  },
+  {
+    phrase: `buckle down`,
+    options: [
+      `Put your seat belt on`,
+      `Doing something the wrong way`,
+      `When you know you have to pay attention to a task`
+    ],
+    correct: 2
+  },
+  {
+    phrase: `Bragging`,
+    options: [
+      ` excessively proud and boastful talk about one's achievements`,
+      `make a problem bigger`,
+      `It means feeling confused`
+    ],
+    correct: 0
+  },
+  {
+    phrase: `right up your alley`,
+    options: [
+      `Solving a puzzle`,
+      `something you'd be really good at.`,
+      `Making a quick decision`
+    ],
+    correct: 1
+  },
+  {
+    phrase: `putting something off`,
+    options: [
+      `Doing something in advance`,
+      `removing something`,
+      `postponing  something`
+    ],
+    correct: 2
+  },
+  {
+    phrase: `clinched it for me`,
+    options: [
+      `made it clear for me`,
+      `Going on vacation`,
+      `aced it`
+    ],
+    correct: 0
+  },
+  {
+    phrase: `Don't take it personally.`,
+    options: [
+      ` I've treated everyone this way.`,
+      `that is too bad`,
+      `Doing something the wrong way`
+    ],
+    correct: 0
+  }
+];
  function shuffleOptionsAndCorrectIndex() {
       scriptLines.forEach(q => {
         let arr = q.options.map((opt, idx) => ({opt, idx}));
@@ -418,3 +400,4 @@
   </script>
 </body>
 </html>
+
