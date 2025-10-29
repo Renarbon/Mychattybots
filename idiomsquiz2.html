@@ -54,7 +54,7 @@
   </form>
 
   <script>
-    // ------ 1. YOUR QUIZ DATA HERE ------
+    // ------ 1. QUIZ DATA ------
     const scriptLines = [
   {
     phrase: "lost my cool",
@@ -125,6 +125,25 @@
     }
     shuffleOptionsAndCorrectIndex();
 
+    // ------ 2. SIMPLE ATTEMPT TRACKING (localStorage) ------
+    // Tracks attempts per student locally. The attempt number will be appended to the Date line in the PDF (no label).
+    function attemptsStorageKey(name) {
+      return `idiomsquiz2_attempts_${name.replace(/\s+/g,'_').toLowerCase()}`;
+    }
+
+    function incrementAttempts(name) {
+      const key = attemptsStorageKey(name);
+      const current = parseInt(localStorage.getItem(key) || '0', 10);
+      const next = current + 1;
+      localStorage.setItem(key, String(next));
+      return next;
+    }
+
+    function getAttempts(name) {
+      const key = attemptsStorageKey(name);
+      return parseInt(localStorage.getItem(key) || '0', 10);
+    }
+
     // ------ 3. QUIZ LOGIC ------
     let scriptStep = 0;
     let transcript = [];
@@ -132,6 +151,7 @@
     let scores = [];
     let quizComplete = false;
     let pdfDownloaded = false;
+    let attemptCount = 0; // set when quiz starts
 
     const conversationDiv = document.getElementById('conversation');
     const textOutput = document.getElementById('textOutput');
@@ -149,6 +169,11 @@
         alert("Please enter your name!");
         return;
       }
+
+      // increment local attempts for this student/assignment
+      attemptCount = incrementAttempts(studentName);
+
+      // keep UI unchanged; attempt number will only appear in the PDF date
       studentNameInput.style.display = 'none';
       startBtn.style.display = 'none';
       scriptStep = 0;
@@ -220,7 +245,6 @@
           feedback = `Quiz complete! Your score is ${percent} out of 100. You can improve, ${studentName}. Try again!`;
         }
         addMessage('bot', feedback);
-        // *** USE ELEVENLABS HERE FOR FEEDBACK ***
         playWithElevenLabs(feedback);
 
         // Hide all input/buttons except PDF/submit
@@ -310,7 +334,13 @@
       doc.text(`Idioms Speaking Quiz`, 10, 15);
       doc.setFontSize(12);
       doc.text(`Name: ${studentName}`, 10, 23);
-      doc.text(`Date: ${now.toLocaleString()}`, 10, 30);
+
+      // Include date and the attempt number appended after a dash (no label)
+      // Ensure attemptCount is set; if not, try to read from storage
+      if (!attemptCount) attemptCount = getAttempts(studentName) || 0;
+      const dateWithAttempt = `${now.toLocaleString()} -${attemptCount}`;
+      doc.text(`Date: ${dateWithAttempt}`, 10, 30);
+
       const total = scriptLines.length;
       const correct = scores.filter(Boolean).length;
       const percent = Math.round((correct/total)*100);
