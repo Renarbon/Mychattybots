@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>ESL ChattyBot – You are the advisor (Bot is Student)</title>
+  <title>ESL ChattyBot – You are the one who backed into someone's car)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: Arial; padding: 20px; background: #f2f2f2; }
     #chat { background: white; padding: 20px; max-width: 700px; margin: auto; border-radius: 10px; }
     .message { margin: 10px 0; }
-    .user { color: #0b2e8a; } /* Counselor */
-    .bot { color: green; }    /* Student (bot) */
+    .user { color: #0b2e8a; }
+    .bot { color: green; }
     input, button { padding: 10px; margin: 5px; }
     input[readonly] { background-color: #eee; }
     #studentInput { width: 90%; padding: 8px; }
@@ -18,23 +18,15 @@
 </head>
 <body>
   <div id="chat">
-    <h2>🧑‍💼 ESL ChattyBot – You are the career advisor (read the blue parts, you might need to wait 5 seconds for the voice to start)</h2>
+    <h2>🧑‍💼 ESL ChattyBot – You are the one who caused the problem, you might need to wait 3–5 seconds for voices to load)</h2>
     <label>Your Name: <input id="studentName" type="text" autocomplete="off" /></label>
-    <button id="startBtn" disabled>Start</button>
+    <button id="startBtn">Start</button>
     <span style="margin-left:15px; font-size:0.98em;">Date: <span id="sessionDate"></span></span>
     <br>
     <label for="voice-select"><b>Student Voice:</b></label>
-    <select id="voice-select">
-      <option value="adam">Adam</option>
-      <option value="sarah">Sarah</option>
-      <option value="emily">Emily</option>
-      <option value="james">James</option>
-      <option value="jenny">Jenny</option>
-      <option value="nicole">Nicole</option>
-      <option value="santa">Santa</option>
-    </select>
+    <select id="voice-select"></select>
     <div style="margin: 12px 0; color: #007aff; background: #e6e6ff; border-radius: 6px; padding: 8px; max-width: 600px;">
-      <b>Instructions:</b> <b>You</b> are the <b>career advisor</b> (read the green part aloud each turn). ChattyBot will play the <b>student</b> with the selected voice.
+      <b>Instructions:</b> <b>You</b> are <b>A</b> (read the blue parts aloud each turn). ChattyBot will play <b>B</b> with the selected voice.
     </div>
     <div id="conversation"></div>
     <button onclick="startRecording()" id="recordButton" disabled>🎙️ Record</button>
@@ -44,25 +36,20 @@
   </div>
   <script>
     // === SCRIPT DATA ===
-    // Bot (student) lines – green
     const botLines = [
-      "I'd like some advice. I've been considering taking up hotel management.",
-      "I was. But I've given it some thought, and I've decided I'm not cut out for science.",
-      "Well, I'd like to enroll in a good program. I was hoping you could steer me in the right direction.",
-      "That's great."
+      "What happened?",
+      "How bad is it?",
+      "Look, these things happen. I'm sure we can work something out."
     ];
-    // User (counselor) lines – gray
     const scriptLines = [
-      "So, NAME, what brings you here today?",
-      "Hotel management. Correct me if I'm wrong, but weren't you studying marine biology?",
-      "OK. So how can I help?",
-      "Give me a day or two to look into it. I'll get back to you before the end of the week.",
-      "My pleasure. And I'd be more than happy to write you a recommendation if you decide to apply."
+      "I'm really sorry, but I have some bad news.",
+      "I'm afraid I just backed into your car while I was parking mine. It was totally my fault.",
+      "Pretty bad. It's going to be expensive to fix. I'm so embarrassed.",
+      "Well, I insist on paying for it. And please accept my apology. I feel awful about it."
     ];
 
-    // === STATE ===
     let userName = "";
-    let botName = ""; // The bot's name matches the custom name
+    let botName = "";
     let currentLine = 0;
     let tempUserText = "";
     let awaitingUser = false;
@@ -70,55 +57,59 @@
     const transcript = [];
     const conversationDiv = document.getElementById('conversation');
 
-    // Date auto-fill
+    // --- Attempt tracking (local only) ---
+    // Tracks attempts per student locally. The attempt number will be appended to the Date in the PDF.
+    function attemptsStorageKey(name) {
+      return `unit2comactivator_attempts_${name.replace(/\s+/g,'_').toLowerCase()}`;
+    }
+    function incrementAttempts(name) {
+      const key = attemptsStorageKey(name);
+      const current = parseInt(localStorage.getItem(key) || '0', 10);
+      const next = current + 1;
+      localStorage.setItem(key, String(next));
+      return next;
+    }
+    function getAttempts(name) {
+      const key = attemptsStorageKey(name);
+      return parseInt(localStorage.getItem(key) || '0', 10);
+    }
+    let attemptCount = 0; // set when starting the conversation
+
     document.getElementById("sessionDate").textContent = new Date().toLocaleDateString();
 
-    // === Custom voice mapping ===
-    // Map your friendly names to parts of real SpeechSynthesis voice names (case-insensitive partial match)
-    const customVoiceMap = {
-      adam:        "Google US English",   // e.g., Chrome voice
-      sarah:       "Google UK English Female",
-      emily:       "Microsoft Zira",
-      james:       "Microsoft David",
-      jenny:       "Google UK English Female",
-      nicole:      "Google AU English Female",
-      santa:       "Google Deutsch"
-    };
-
-    // Loads available SpeechSynthesis voices and enables start when ready
-    function voicesReady() {
-      // nothing needed here, just a signal
-      document.getElementById("startBtn").disabled = false;
-    }
-    function waitForVoices() {
+    // === Load voices (Google English voices if available) ===
+    function loadVoices() {
       const voices = speechSynthesis.getVoices();
-      if (voices.length > 0) {
-        voicesReady();
-      } else {
-        setTimeout(waitForVoices, 100);
-      }
-    }
-    if (typeof speechSynthesis !== "undefined") {
-      if (speechSynthesis.onvoiceschanged !== undefined) {
-        speechSynthesis.onvoiceschanged = waitForVoices;
-      }
-      window.onload = waitForVoices;
-    }
+      const select = document.getElementById("voice-select");
+      select.innerHTML = "";
 
-    // === Speak with mapped SpeechSynthesis voice ===
+      // Prioritize Google English voices
+      const englishVoices = voices.filter(v => v.lang && v.lang.startsWith("en"));
+      englishVoices.sort((a, b) => {
+        const aGoogle = a.name.toLowerCase().includes("google");
+        const bGoogle = b.name.toLowerCase().includes("google");
+        if (aGoogle && !bGoogle) return -1;
+        if (!aGoogle && bGoogle) return 1;
+        return (a.name || "").localeCompare(b.name || "");
+      });
+
+      englishVoices.forEach(v => {
+        const opt = document.createElement("option");
+        opt.value = v.name;
+        opt.textContent = v.name + " (" + v.lang + ")";
+        select.appendChild(opt);
+      });
+    }
+    speechSynthesis.onvoiceschanged = loadVoices;
+    window.onload = loadVoices;
+
+    // === Speak with SpeechSynthesis ===
     function speakWithVoice(text) {
       return new Promise(resolve => {
         const utter = new SpeechSynthesisUtterance(text);
-        const selectedCustom = document.getElementById('voice-select').value;
+        const voiceName = document.getElementById('voice-select').value;
         const voices = speechSynthesis.getVoices();
-        let mapped = customVoiceMap[selectedCustom];
-        let voice = null;
-        if (mapped) {
-          // Try to find a voice that matches the mapped string
-          voice = voices.find(v => v.name.toLowerCase().includes(mapped.toLowerCase()));
-        }
-        // Fallback: use the first English voice
-        if (!voice) voice = voices.find(v => v.lang && v.lang.startsWith("en"));
+        const voice = voices.find(v => v.name === voiceName);
         if (voice) utter.voice = voice;
         utter.onend = resolve;
         speechSynthesis.speak(utter);
@@ -128,26 +119,20 @@
     function addMessage(who, text) {
       const d = document.createElement('div');
       d.className = `message ${who}`;
-      // who=='user' = counselor; who=='bot' = student
-      let label = who === 'user' ? userName || "Counselor" : botName || "Student";
+      let label = who === 'user' ? userName || "A" : botName || "B";
       d.textContent = `${label}: ${text}`;
       conversationDiv.appendChild(d);
       transcript.push({ who, text });
       conversationDiv.scrollTop = conversationDiv.scrollHeight;
     }
 
-    // --- Start conversation after name is entered & start pressed/Enter
     document.getElementById("startBtn").onclick = startConversation;
-    document.getElementById("studentName").addEventListener("keydown", function(e) {
+    document.getElementById("studentName").addEventListener("keydown", e => {
       if (e.key === "Enter") startConversation();
     });
 
     function capitalize(str) {
       return str.charAt(0).toUpperCase() + str.slice(1);
-    }
-
-    function getBotName() {
-      return document.getElementById('voice-select').selectedOptions[0].textContent;
     }
 
     function startConversation() {
@@ -157,46 +142,41 @@
         alert("Please enter your name.");
         return;
       }
-      botName = getBotName();
+
+      // increment local attempts for this student/assignment
+      attemptCount = incrementAttempts(userName);
+
+      botName = capitalize(document.getElementById('voice-select').value || '');
       document.getElementById("startBtn").disabled = true;
       document.getElementById("studentName").disabled = true;
-      document.getElementById("recordButton").disabled = false;
-      document.getElementById("sendButton").disabled = true;
-      document.getElementById("pdfBtn").disabled = true;
       conversationDiv.innerHTML = "";
       transcript.length = 0;
       currentLine = 0;
       conversationStarted = true;
 
-      // User (counselor) starts
       let firstLine = scriptLines[0].replace("NAME", botName);
       addMessage('user', firstLine);
+      document.getElementById("recordButton").disabled = false;
       awaitingUser = true;
     }
 
-    // Show bot (student) reply and prepare next line
     function showBotReply() {
       if (currentLine < botLines.length) {
         setTimeout(() => {
           addMessage('bot', botLines[currentLine]);
           speakWithVoice(botLines[currentLine]).then(() => {
             currentLine++;
-           if (currentLine < scriptLines.length) {
-  // Show next user prompt (counselor line)
-  addMessage('user', scriptLines[currentLine].replace("NAME", botName));
-  document.getElementById("recordButton").disabled = false;
-  awaitingUser = true;
-} else {
-  // Conversation is finished!
-  document.getElementById("pdfBtn").disabled = false;
-  document.getElementById("recordButton").disabled = true;
-  awaitingUser = false;
-}
+            if (currentLine < scriptLines.length) {
+              addMessage('user', scriptLines[currentLine].replace("NAME", botName));
+              document.getElementById("recordButton").disabled = false;
+              awaitingUser = true;
+            } else {
+              document.getElementById("pdfBtn").disabled = false;
+            }
           });
-        }, 900);
+        }, 800);
       } else {
         document.getElementById("pdfBtn").disabled = false;
-        document.getElementById("recordButton").disabled = true;
       }
     }
 
@@ -214,7 +194,6 @@
 
     function submitUserResponse() {
       if (!tempUserText || !awaitingUser) return;
-      // Save what user (counselor) actually said
       transcript.push({ who: "counselorResponse", text: tempUserText });
       document.getElementById("studentInput").value = "";
       document.getElementById("sendButton").disabled = true;
@@ -223,20 +202,25 @@
       awaitingUser = false;
       showBotReply();
     }
-
     document.getElementById("sendButton").onclick = submitUserResponse;
 
-    // --- PDF EXPORT ---
+    // === PDF EXPORT ===
     function downloadPDF() {
       const { jsPDF } = window.jspdf;
-      const name = userName || 'Counselor';
-      const date = document.getElementById('sessionDate').textContent;
       const doc = new jsPDF();
+      const name = userName || 'A';
+      const date = document.getElementById('sessionDate').textContent || new Date().toLocaleDateString();
+
+      // Ensure attemptCount is set; if not, read from storage
+      if (!attemptCount) attemptCount = getAttempts(userName) || 0;
+
+      const dateWithAttempt = `${date} -${attemptCount}`;
+
       doc.setTextColor(0, 0, 0);
-      doc.text(`Conversation Transcript\nCounselor: ${name}\nStudent: ${botName}\nDate: ${date}`, 10, 10);
+      doc.text(`Conversation Transcript\nA: ${name}\nB: ${botName}\nDate: ${dateWithAttempt}`, 10, 10);
       let y = 35;
       transcript.forEach(entry => {
-        let whoLabel = entry.who === 'bot' ? botName : entry.who === 'user' ? name : 'Counselor (spoken)';
+        let whoLabel = entry.who === 'bot' ? botName : entry.who === 'user' ? name : 'A';
         doc.setTextColor(entry.who === 'bot' ? 0 : 11, entry.who === 'bot' ? 150 : 46, entry.who === 'bot' ? 0 : 138);
         const lines = doc.splitTextToSize(`${whoLabel}: ${entry.text}`, 180);
         lines.forEach(line => {
@@ -245,7 +229,9 @@
           if (y > 280) { doc.addPage(); y = 20; }
         });
       });
-      const filename = `${name.replace(/\s+/g, '_')}_${date.replace(/[\/]/g, '-')}_unit1_student.pdf`;
+
+      const safeDate = (date.replace(/[\/]/g, '-') + `-${attemptCount}`);
+      const filename = `${name.replace(/\s+/g, '_')}_${safeDate}_unit2_student.pdf`;
       doc.save(filename);
     }
     document.getElementById("pdfBtn").onclick = downloadPDF;
