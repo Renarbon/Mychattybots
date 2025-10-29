@@ -57,6 +57,24 @@
     const transcript = [];
     const conversationDiv = document.getElementById('conversation');
 
+    // --- Attempt tracking (local only) ---
+    // Tracks attempts per student locally. The attempt number will be appended to the Date in the PDF.
+    function attemptsStorageKey(name) {
+      return `unit2comactivator_attempts_${name.replace(/\s+/g,'_').toLowerCase()}`;
+    }
+    function incrementAttempts(name) {
+      const key = attemptsStorageKey(name);
+      const current = parseInt(localStorage.getItem(key) || '0', 10);
+      const next = current + 1;
+      localStorage.setItem(key, String(next));
+      return next;
+    }
+    function getAttempts(name) {
+      const key = attemptsStorageKey(name);
+      return parseInt(localStorage.getItem(key) || '0', 10);
+    }
+    let attemptCount = 0; // set when starting the conversation
+
     document.getElementById("sessionDate").textContent = new Date().toLocaleDateString();
 
     // === Load voices (Google English voices if available) ===
@@ -66,13 +84,13 @@
       select.innerHTML = "";
 
       // Prioritize Google English voices
-      const englishVoices = voices.filter(v => v.lang.startsWith("en"));
+      const englishVoices = voices.filter(v => v.lang && v.lang.startsWith("en"));
       englishVoices.sort((a, b) => {
         const aGoogle = a.name.toLowerCase().includes("google");
         const bGoogle = b.name.toLowerCase().includes("google");
         if (aGoogle && !bGoogle) return -1;
         if (!aGoogle && bGoogle) return 1;
-        return a.name.localeCompare(b.name);
+        return (a.name || "").localeCompare(b.name || "");
       });
 
       englishVoices.forEach(v => {
@@ -124,7 +142,11 @@
         alert("Please enter your name.");
         return;
       }
-      botName = capitalize(document.getElementById('voice-select').value);
+
+      // increment local attempts for this student/assignment
+      attemptCount = incrementAttempts(userName);
+
+      botName = capitalize(document.getElementById('voice-select').value || '');
       document.getElementById("startBtn").disabled = true;
       document.getElementById("studentName").disabled = true;
       conversationDiv.innerHTML = "";
@@ -187,9 +209,15 @@
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
       const name = userName || 'A';
-      const date = document.getElementById('sessionDate').textContent;
+      const date = document.getElementById('sessionDate').textContent || new Date().toLocaleDateString();
+
+      // Ensure attemptCount is set; if not, read from storage
+      if (!attemptCount) attemptCount = getAttempts(userName) || 0;
+
+      const dateWithAttempt = `${date} -${attemptCount}`;
+
       doc.setTextColor(0, 0, 0);
-      doc.text(`Conversation Transcript\nA: ${name}\nB: ${botName}\nDate: ${date}`, 10, 10);
+      doc.text(`Conversation Transcript\nA: ${name}\nB: ${botName}\nDate: ${dateWithAttempt}`, 10, 10);
       let y = 35;
       transcript.forEach(entry => {
         let whoLabel = entry.who === 'bot' ? botName : entry.who === 'user' ? name : 'A';
@@ -201,7 +229,9 @@
           if (y > 280) { doc.addPage(); y = 20; }
         });
       });
-      const filename = `${name.replace(/\s+/g, '_')}_${date.replace(/[\/]/g, '-')}_unit2_student.pdf`;
+
+      const safeDate = (date.replace(/[\/]/g, '-') + `-${attemptCount}`);
+      const filename = `${name.replace(/\s+/g, '_')}_${safeDate}_unit2_student.pdf`;
       doc.save(filename);
     }
     document.getElementById("pdfBtn").onclick = downloadPDF;
