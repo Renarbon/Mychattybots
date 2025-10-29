@@ -160,6 +160,25 @@ function shuffleOptionsAndCorrectIndex() {
     }
     shuffleOptionsAndCorrectIndex();
 
+    // ------ 2. SIMPLE ATTEMPT TRACKING (localStorage) ------
+    // Tracks attempts per student locally. Only the attempt number will be added to the PDF date (no label).
+    function attemptsStorageKey(name) {
+      return `idiomsquiz_attempts_${name.replace(/\s+/g,'_').toLowerCase()}`;
+    }
+
+    function incrementAttempts(name) {
+      const key = attemptsStorageKey(name);
+      const current = parseInt(localStorage.getItem(key) || '0', 10);
+      const next = current + 1;
+      localStorage.setItem(key, String(next));
+      return next;
+    }
+
+    function getAttempts(name) {
+      const key = attemptsStorageKey(name);
+      return parseInt(localStorage.getItem(key) || '0', 10);
+    }
+
     // ------ 3. QUIZ LOGIC ------
     let scriptStep = 0;
     let transcript = [];
@@ -167,6 +186,7 @@ function shuffleOptionsAndCorrectIndex() {
     let scores = [];
     let quizComplete = false;
     let pdfDownloaded = false;
+    let attemptCount = 0; // will be set when starting the quiz
 
     const conversationDiv = document.getElementById('conversation');
     const textOutput = document.getElementById('textOutput');
@@ -184,6 +204,11 @@ function shuffleOptionsAndCorrectIndex() {
         alert("Please enter your name!");
         return;
       }
+
+      // increment local attempts for this student/assignment
+      attemptCount = incrementAttempts(studentName);
+
+      // keep UI unchanged (user asked "just the pdf"); do not display attempt anywhere in UI
       studentNameInput.style.display = 'none';
       startBtn.style.display = 'none';
       scriptStep = 0;
@@ -332,7 +357,8 @@ function shuffleOptionsAndCorrectIndex() {
     function addMessage(who, text) {
       const div = document.createElement('div');
       div.className = `message ${who}`;
-      div.textContent = `${who === 'user' ? 'You' : 'Bot'}: ${text}`;
+      div.textContent = \
+        `${who === 'user' ? 'You' : 'Bot'}: ${text}`;
       conversationDiv.appendChild(div);
       conversationDiv.scrollTop = conversationDiv.scrollHeight;
     }
@@ -345,7 +371,13 @@ function shuffleOptionsAndCorrectIndex() {
       doc.text(`Idioms Speaking Quiz`, 10, 15);
       doc.setFontSize(12);
       doc.text(`Name: ${studentName}`, 10, 23);
-      doc.text(`Date: ${now.toLocaleString()}`, 10, 30);
+
+      // Include date and the attempt number appended after a dash (no label)
+      // Ensure attemptCount is set; if not, try to read from storage
+      if (!attemptCount) attemptCount = getAttempts(studentName) || 0;
+      const dateWithAttempt = `${now.toLocaleString()} -${attemptCount}`;
+      doc.text(`Date: ${dateWithAttempt}`, 10, 30);
+
       const total = scriptLines.length;
       const correct = scores.filter(Boolean).length;
       const percent = Math.round((correct/total)*100);
