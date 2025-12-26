@@ -42,7 +42,7 @@
     let finished = false;
 
     let conversation = [
-      { role: "system", content: "You are an employer who asks 6 job-related questions and provides motivational feedback." }
+      { role: "system", content: "You are an employer and will ask the student who pretends to be looking for a job 6 simple questions related to his/her previous job or skills. At the end, tell the student something motivational based on their responses." }
     ];
     let transcript = [];
 
@@ -64,13 +64,14 @@
         opt.textContent = `${v.name} (${v.lang})`;
         voiceSelect.appendChild(opt);
       });
-
-      const defaultIndex = voices.findIndex(v => v.lang.startsWith("en"));
+      let defaultIndex = voices.findIndex(v => v.lang.startsWith("en") && v.name.toLowerCase().includes("google"));
+      if (defaultIndex === -1) defaultIndex = voices.findIndex(v => v.lang.startsWith("en"));
       if (defaultIndex !== -1) voiceSelect.value = defaultIndex;
     }
     window.speechSynthesis.onvoiceschanged = loadVoices;
 
     function speakText(text) {
+      if (!voices.length) loadVoices();
       const utterance = new SpeechSynthesisUtterance(text);
       const selectedIndex = voiceSelect.value;
       if (voices[selectedIndex]) utterance.voice = voices[selectedIndex];
@@ -124,9 +125,9 @@
         const closingMessage = "Great job! You've completed the practice.";
         addMessage('bot', closingMessage);
         speakText(closingMessage);
-        status.textContent = "Conversation finished. Download your PDF below.";
+        status.textContent = "Conversation finished. You can download your PDF now.";
         pdfBtn.style.display = '';
-        transcript.push({ question: conversation.slice(-2)[0]?.content || "", answer: userMessage });
+        transcript.push({ question: conversation[conversation.length - 2]?.content || "", answer: userMessage, bot: closingMessage });
         return;
       }
 
@@ -134,24 +135,27 @@
       addMessage('bot', botResponse);
       speakText(botResponse);
 
-      transcript.push({ question: conversation.slice(-2)[0]?.content || "", answer: userMessage });
+      transcript.push({ question: conversation[conversation.length - 2]?.content || "", answer: userMessage, bot: botResponse });
     };
 
     pdfBtn.onclick = async () => {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
-      doc.text("Chat Practice Transcript", 10, 10);
+      doc.setFontSize(14);
+      doc.text("Chat Conversation", 10, 12);
       doc.text(`Student: ${studentName}`, 10, 20);
 
-      let y = 30;
-      transcript.forEach(({ question, answer }, idx) => {
-        doc.text(`Q${idx + 1}: ${question}`, 10, y);
-        y += 10;
-        doc.text(`A${idx + 1}: ${answer}`, 10, y);
-        y += 10;
+      let y = 32;
+      transcript.forEach((entry, index) => {
+        doc.text(`Q${index + 1}: ${entry.question}`, 10, y);
+        y += 6;
+        doc.text(`Your Answer: ${entry.answer}`, 10, y);
+        y += 6;
+        doc.text(`Bot: ${entry.bot}`, 10, y);
+        y += 8;
       });
 
-      doc.save(`${studentName.replace(/\\W/g, '_')}_chat_transcript.pdf`);
+      doc.save(`${studentName.replace(/[^a-z0-9]/gi, '_')}_Conversation.pdf`);
     };
   </script>
 </body>
