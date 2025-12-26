@@ -34,9 +34,8 @@
   <button id="download-pdf" style="display:none;">Download PDF</button>
 
   <script>
-    const GRAMMAR_API_URL = "https://chattybot-backend.onrender.com/api/grammar-correct";
-    const CHATBOT_API_URL = "https://chattybot-backend.onrender.com/api/chatbot";
-    const MAX_QUESTIONS = 7;
+    const CHATBOT_API_URL = "https://api.openai.com/v1/chat/completions";
+    const API_KEY = "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";
 
     let studentName = '';
     let questionCount = 0;
