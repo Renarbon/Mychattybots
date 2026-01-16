@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Drag-and-Drop Causative: have / get Quiz</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #f9f9f9;
+    }
+    #phrases {
+      margin-bottom: 20px;
+    }
+    .phrase-box {
+      padding: 8px 10px;
+      margin: 6px;
+      background-color: #007bff;
+      color: white;
+      display: inline-block;
+      border-radius: 4px;
+      cursor: move;
+      user-select: none;
+    }
+    .drop-target {
+      border: 2px dashed #aaa;
+      display: inline-block;
+      min-width: 220px;
+      min-height: 26px;
+      vertical-align: middle;
+      padding: 6px;
+      border-radius: 4px;
+      background-color: #fff;
+      margin-left: 6px;
+    }
+    .question {
+      margin-bottom: 16px;
+    }
+    .correct {
+      border: 2px solid green !important;
+      background-color: #e0ffe0 !important;
+    }
+    .wrong {
+      border: 2px solid red !important;
+      background-color: #ffe0e0 !important;
+    }
+    button {
+      padding: 10px 14px;
+      margin-top: 12px;
+      cursor: pointer;
+    }
+    form {
+      margin-top: 18px;
+    }
+    textarea {
+      display: none;
+    }
+    #scoreSummary {
+      margin-top: 12px;
+      font-weight: bold;
+    }
+    input[readonly] {
+      background-color: #f0f0f0;
+      border: 1px solid #ccc;
+      padding: 6px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Drag-and-Drop: Causative (have / get)</h2>
+  <p>Drag the correct causative phrase (using "have" + base form, or "get" + to + infinitive) into each blank. Enter your name and email before submitting:</p>
+
+  <form name="drag-quiz" method="POST" data-netlify="true">
+    <input type="hidden" name="form-name" value="drag-quiz" />
+    <label for="student">Name:</label>
+    <input type="text" id="student" name="student" required /><br /><br />
+    <label for="email">Email:</label>
+    <input type="email" id="email" name="email" /><br /><br />
+
+    <!-- Visible read-only score field so it appears in Netlify emails -->
+    <label for="scoreInput">Score (included in confirmation email):</label>
+    <input type="text" id="scoreInput" name="score" readonly /><br /><br />
+
+    <!-- answers are submitted but hidden from the student -->
+    <textarea name="answers" id="answers"></textarea>
+    <button type="button" onclick="checkAnswers()">Check Answers and Submit</button>
+  </form>
+
+  <div id="scoreSummary" aria-live="polite"></div>
+
+  <div id="phrases" aria-label="Causative phrases">
+    <span class="phrase-box" draggable="true">got the plumber to repair</span>
+    <span class="phrase-box" draggable="true">had the students hand in</span>
+    <span class="phrase-box" draggable="true">had the intern organize</span>
+    <span class="phrase-box" draggable="true">got my assistant to leave a message</span>
+    <span class="phrase-box" draggable="true">had Tom cover</span>
+    <span class="phrase-box" draggable="true">got her friend to bake</span>
+    <span class="phrase-box" draggable="true">had the plumber fix</span>
+    <span class="phrase-box" draggable="true">got the manager to send a reminder</span>
+    <span class="phrase-box" draggable="true">had my brother carry</span>
+    <span class="phrase-box" draggable="true">got the author to rewrite the chapter</span>
+  </div>
+
+  <div class="quiz">
+    <div class="question">
+      <b>1.</b> I couldn't fix the sink, so I <span class="drop-target" data-answer="got the plumber to repair"></span> it.
+    </div>
+    <div class="question">
+      <b>2.</b> The deadline was tomorrow, so the teacher <span class="drop-target" data-answer="had the students hand in"></span> their homework.
+    </div>
+    <div class="question">
+      <b>3.</b> The office needed the files sorted, so they <span class="drop-target" data-answer="had the intern organize"></span>.
+    </div>
+    <div class="question">
+      <b>4.</b> I couldn't reach him by phone, so I <span class="drop-target" data-answer="got my assistant to leave a message"></span>.
+    </div>
+    <div class="question">
+      <b>5.</b> We were running late, so I <span class="drop-target" data-answer="had Tom cover"></span> the meeting for us.
+    </div>
+    <div class="question">
+      <b>6.</b> She wanted a special cake, so she <span class="drop-target" data-answer="got her friend to bake"></span>.
+    </div>
+    <div class="question">
+      <b>7.</b> The ceiling was leaking, so the landlord <span class="drop-target" data-answer="had the plumber fix"></span>.
+    </div>
+    <div class="question">
+      <b>8.</b> They weren't replying to emails, so we <span class="drop-target" data-answer="got the manager to send a reminder"></span>.
+    </div>
+    <div class="question">
+      <b>9.</b> I couldn't carry the furniture alone, so I <span class="drop-target" data-answer="had my brother carry"></span> it for me.
+    </div>
+    <div class="question">
+      <b>10.</b> The publisher wanted changes, so they <span class="drop-target" data-answer="got the author to rewrite the chapter"></span>.
+    </div>
+  </div>
+
+  <script>
+    // Drag and drop behavior
+    const phrasePool = document.getElementById('phrases');
+    const phrases = document.querySelectorAll('.phrase-box');
+    let dragged = null;
+
+    phrases.forEach((box) => {
+      box.addEventListener('dragstart', (e) => {
+        dragged = e.target;
+      });
+    });
+
+    // Allow dragging items that are returned to the pool later
+    phrasePool.addEventListener('dragover', (e) => e.preventDefault());
+    phrasePool.addEventListener('drop', (e) => {
+      e.preventDefault();
+      if (dragged) {
+        // If dropped back into the pool, make it draggable again and append
+        dragged.setAttribute('draggable', 'true');
+        phrasePool.appendChild(dragged);
+        dragged = null;
+      }
+    });
+
+    const targets = document.querySelectorAll('.drop-target');
+
+    targets.forEach((target) => {
+      target.addEventListener('dragover', (e) => e.preventDefault());
+      target.addEventListener('drop', (e) => {
+        e.preventDefault();
+        if (dragged) {
+          // If there is already something in the target, move it back to the phrase pool
+          if (target.firstChild) {
+            const previous = target.firstChild;
+            previous.setAttribute('draggable', 'true');
+            phrasePool.appendChild(previous);
+          }
+          // Move the dragged element into the target and make it non-draggable while placed
+          dragged.setAttribute('draggable', 'false');
+          target.innerHTML = '';
+          target.appendChild(dragged);
+          dragged = null;
+        }
+      });
+    });
+
+    function checkAnswers() {
+      let score = 0;
+      let answersList = [];
+
+      targets.forEach((target, index) => {
+        const answer = target.dataset.answer;
+        const userInput = target.textContent.trim();
+        const isCorrect = userInput === answer;
+        if (isCorrect) {
+          target.classList.add('correct');
+          target.classList.remove('wrong');
+          score++;
+        } else {
+          target.classList.add('wrong');
+          target.classList.remove('correct');
+        }
+        answersList.push(`Q${index + 1}: "${userInput || '[no answer]'}" (Correct: "${answer}")`);
+      });
+
+      const total = targets.length;
+      const percentage = Math.round((score / total) * 100);
+
+      // Put the score into the form field that will be included in Netlify's email
+      document.getElementById('scoreInput').value = `${percentage}% (${score}/${total})`;
+
+      // Also put detailed answers into hidden textarea for instructors
+      document.getElementById('answers').value = answersList.join('\n');
+
+      // Show a small on-page summary so the student sees the result before submit
+      const summary = document.getElementById('scoreSummary');
+      summary.textContent = `You scored ${percentage}% — ${score} out of ${total}. The result will be sent with your submission.`;
+
+      // Small delay so student sees colors and summary, then submit the form
+      setTimeout(() => {
+        document.forms['drag-quiz'].submit();
+      }, 1200);
+    }
+  </script>
+</body>
+</html>
