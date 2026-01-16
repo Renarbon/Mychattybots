@@ -3,34 +3,39 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Drag-and-Drop Phrase Quiz</title>
+  <title>Drag-and-Drop Tag Questions Quiz</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       padding: 20px;
       background-color: #f9f9f9;
     }
+    #phrases {
+      margin-bottom: 20px;
+    }
     .phrase-box {
-      padding: 8px;
-      margin: 5px;
+      padding: 8px 10px;
+      margin: 6px;
       background-color: #007bff;
       color: white;
       display: inline-block;
       border-radius: 4px;
       cursor: move;
+      user-select: none;
     }
     .drop-target {
       border: 2px dashed #aaa;
       display: inline-block;
-      min-width: 150px;
-      min-height: 24px;
+      min-width: 160px;
+      min-height: 26px;
       vertical-align: middle;
-      padding: 5px;
+      padding: 6px;
       border-radius: 4px;
       background-color: #fff;
+      margin-left: 6px;
     }
     .question {
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
     .correct {
       border: 2px solid green !important;
@@ -41,67 +46,99 @@
       background-color: #ffe0e0 !important;
     }
     button {
-      padding: 10px;
-      margin-top: 15px;
+      padding: 10px 14px;
+      margin-top: 12px;
+      cursor: pointer;
     }
     form {
-      margin-top: 30px;
+      margin-top: 18px;
     }
     textarea {
       display: none;
     }
+    #scoreSummary {
+      margin-top: 12px;
+      font-weight: bold;
+    }
+    input[readonly] {
+      background-color: #f0f0f0;
+      border: 1px solid #ccc;
+      padding: 6px;
+      border-radius: 4px;
+    }
   </style>
 </head>
 <body>
-  <h2>Drag-and-Drop Phrase Quiz</h2>
-  <p>Please enter your name and email before submitting:</p>
+  <h2>Drag-and-Drop Tag Questions Quiz</h2>
+  <p>Drag the correct tag question into each blank. Enter your name and email before submitting:</p>
+
   <form name="drag-quiz" method="POST" data-netlify="true">
     <input type="hidden" name="form-name" value="drag-quiz" />
     <label for="student">Name:</label>
     <input type="text" id="student" name="student" required /><br /><br />
     <label for="email">Email:</label>
     <input type="email" id="email" name="email" /><br /><br />
-    <input type="hidden" name="score" id="scoreInput" />
+
+    <!-- Visible read-only score field so it appears in Netlify emails -->
+    <label for="scoreInput">Score (included in confirmation email):</label>
+    <input type="text" id="scoreInput" name="score" readonly /><br /><br />
+
+    <!-- answers are submitted but hidden from the student -->
     <textarea name="answers" id="answers"></textarea>
     <button type="button" onclick="checkAnswers()">Check Answers and Submit</button>
   </form>
 
-  <div id="phrases">
-    <span class="phrase-box" draggable="true">a snitch</span>
-    <span class="phrase-box" draggable="true">got carried away</span>
-    <span class="phrase-box" draggable="true">it serves him right</span>
-    <span class="phrase-box" draggable="true">make things right</span>
-    <span class="phrase-box" draggable="true">own up to</span>
-    <span class="phrase-box" draggable="true">tell on me</span>
-    <span class="phrase-box" draggable="true">that's not the worst of it</span>
-    <span class="phrase-box" draggable="true">things got out of hand</span>
+  <div id="scoreSummary" aria-live="polite"></div>
+
+  <div id="phrases" aria-label="Tag phrases">
+    <span class="phrase-box" draggable="true">aren't they?</span>
+    <span class="phrase-box" draggable="true">did you?</span>
+    <span class="phrase-box" draggable="true">can't she?</span>
+    <span class="phrase-box" draggable="true">shouldn't we?</span>
+    <span class="phrase-box" draggable="true">will he?</span>
+    <span class="phrase-box" draggable="true">did they?</span>
+    <span class="phrase-box" draggable="true">shall we?</span>
+    <span class="phrase-box" draggable="true">haven't you?</span>
+    <span class="phrase-box" draggable="true">wouldn't they?</span>
+    <span class="phrase-box" draggable="true">wasn't she?</span>
   </div>
 
   <div class="quiz">
     <div class="question">
-      <b>1.</b> A: I'm in trouble. I just broke mom's favorite vase. Please don't
-      <span class="drop-target" data-answer="tell on me"></span>, OK?<br />
-      B: Don't worry. Your secret is safe with me. I'm not
-      <span class="drop-target" data-answer="a snitch"></span>!
+      <b>1.</b> They're coming to the party, <span class="drop-target" data-answer="aren't they?"></span>
     </div>
     <div class="question">
-      <b>2.</b> A: Oh, no! I messed up big time. I forgot to hand in my final assignment.<br />
-      B: Well, can you email the professor and ask if you can hand it in today?<br />
-      A: But <span class="drop-target" data-answer="that's not the worst of it"></span>. I haven't even started the assignment!
+      <b>2.</b> You didn't like the movie, <span class="drop-target" data-answer="did you?"></span>
     </div>
     <div class="question">
-      <b>3.</b> A: Who ate all the cake? Billy?<br />
-      B: I'm sorry, Mom. I <span class="drop-target" data-answer="got carried away"></span>. It was so good!
+      <b>3.</b> She can swim well, <span class="drop-target" data-answer="can't she?"></span>
     </div>
     <div class="question">
-      <b>4.</b> A: Brenda, I'm so sorry I forgot your birthday!<br />
-      B: Oh Amy, that's OK.<br />
-      A: Still, let me <span class="drop-target" data-answer="make things right"></span>. Can I buy you dinner this week?<br />
-      B: Well, you certainly don't need to, but yes, I'd enjoy that.
+      <b>4.</b> We should leave now, <span class="drop-target" data-answer="shouldn't we?"></span>
+    </div>
+    <div class="question">
+      <b>5.</b> He won't forget, <span class="drop-target" data-answer="will he?"></span>
+    </div>
+    <div class="question">
+      <b>6.</b> Nobody called, <span class="drop-target" data-answer="did they?"></span>
+    </div>
+    <div class="question">
+      <b>7.</b> Let's go for a walk, <span class="drop-target" data-answer="shall we?"></span>
+    </div>
+    <div class="question">
+      <b>8.</b> You have finished the report, <span class="drop-target" data-answer="haven't you?"></span>
+    </div>
+    <div class="question">
+      <b>9.</b> They'd like more coffee, <span class="drop-target" data-answer="wouldn't they?"></span>
+    </div>
+    <div class="question">
+      <b>10.</b> She was at home yesterday, <span class="drop-target" data-answer="wasn't she?"></span>
     </div>
   </div>
 
   <script>
+    // Drag and drop behavior
+    const phrasePool = document.getElementById('phrases');
     const phrases = document.querySelectorAll('.phrase-box');
     let dragged = null;
 
@@ -118,16 +155,16 @@
       target.addEventListener('drop', (e) => {
         e.preventDefault();
         if (dragged) {
+          // If there is already something in the target, move it back to the phrase pool
           if (target.firstChild) {
-            document.getElementById('phrases').appendChild(target.firstChild);
+            const previous = target.firstChild;
+            previous.setAttribute('draggable', 'true');
+            phrasePool.appendChild(previous);
           }
-          const newBox = document.createElement('span');
-          newBox.className = 'phrase-box';
-          newBox.textContent = dragged.textContent;
-          newBox.setAttribute('draggable', 'false');
+          // Move the dragged element into the target and make it non-draggable while placed
+          dragged.setAttribute('draggable', 'false');
           target.innerHTML = '';
-          target.appendChild(newBox);
-          dragged.remove();
+          target.appendChild(dragged);
           dragged = null;
         }
       });
@@ -149,16 +186,26 @@
           target.classList.add('wrong');
           target.classList.remove('correct');
         }
-        answersList.push(`Q${index + 1}: "${userInput}" (Correct: "${answer}")`);
+        answersList.push(`Q${index + 1}: "${userInput || '[no answer]'}" (Correct: "${answer}")`);
       });
 
-      const percentage = Math.round((score / targets.length) * 100);
-      document.getElementById('scoreInput').value = percentage + "%";
+      const total = targets.length;
+      const percentage = Math.round((score / total) * 100);
+
+      // Put the score into the form field that will be included in Netlify's email
+      document.getElementById('scoreInput').value = `${percentage}% (${score}/${total})`;
+
+      // Also put detailed answers into hidden textarea for instructors
       document.getElementById('answers').value = answersList.join('\n');
 
+      // Show a small on-page summary so the student sees the result before submit
+      const summary = document.getElementById('scoreSummary');
+      summary.textContent = `You scored ${percentage}% — ${score} out of ${total}. The result will be sent with your submission.`;
+
+      // Small delay so student sees colors and summary, then submit the form
       setTimeout(() => {
         document.forms['drag-quiz'].submit();
-      }, 1000);
+      }, 1200);
     }
   </script>
 </body>
