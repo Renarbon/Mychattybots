@@ -91,16 +91,16 @@
   <div id="scoreSummary" aria-live="polite"></div>
 
   <div id="phrases" aria-label="Tag phrases">
-    <span class="phrase-box" draggable="true">aren't they?</span>
-    <span class="phrase-box" draggable="true">did you?</span>
-    <span class="phrase-box" draggable="true">can't she?</span>
-    <span class="phrase-box" draggable="true">shouldn't we?</span>
-    <span class="phrase-box" draggable="true">will he?</span>
-    <span class="phrase-box" draggable="true">did they?</span>
-    <span class="phrase-box" draggable="true">shall we?</span>
-    <span class="phrase-box" draggable="true">haven't you?</span>
-    <span class="phrase-box" draggable="true">wouldn't they?</span>
-    <span class="phrase-box" draggable="true">wasn't she?</span>
+    <span class="phrase-box">aren't they?</span>
+    <span class="phrase-box">did you?</span>
+    <span class="phrase-box">can't she?</span>
+    <span class="phrase-box">shouldn't we?</span>
+    <span class="phrase-box">will he?</span>
+    <span class="phrase-box">did they?</span>
+    <span class="phrase-box">shall we?</span>
+    <span class="phrase-box">haven't you?</span>
+    <span class="phrase-box">wouldn't they?</span>
+    <span class="phrase-box">wasn't she?</span>
   </div>
 
   <div class="quiz">
@@ -137,37 +137,84 @@
   </div>
 
   <script>
-    // Drag and drop behavior
+    // Utility: Fisher-Yates shuffle an array in place
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
     const phrasePool = document.getElementById('phrases');
-    const phrases = document.querySelectorAll('.phrase-box');
     let dragged = null;
 
-    phrases.forEach((box) => {
-      box.addEventListener('dragstart', (e) => {
+    // Attach ondragstart handler to an element
+    function setDraggableHandler(el) {
+      el.setAttribute('draggable', 'true');
+      el.ondragstart = (e) => {
         dragged = e.target;
-      });
+      };
+    }
+
+    // Initialize draggable handlers for all phrase boxes currently in the pool
+    function initDraggables() {
+      const boxes = phrasePool.querySelectorAll('.phrase-box');
+      boxes.forEach(setDraggableHandler);
+    }
+
+    // Shuffle the phrase pool children
+    function shufflePool() {
+      const boxes = Array.from(phrasePool.querySelectorAll('.phrase-box'));
+      shuffleArray(boxes);
+      boxes.forEach((b) => phrasePool.appendChild(b));
+    }
+
+    // Make phrase pool accept drops (so students can return items) and reshuffle when items are returned
+    phrasePool.addEventListener('dragover', (e) => e.preventDefault());
+    phrasePool.addEventListener('drop', (e) => {
+      e.preventDefault();
+      if (dragged) {
+        // Make draggable again and append
+        setDraggableHandler(dragged);
+        phrasePool.appendChild(dragged);
+        dragged = null;
+        // Reshuffle pool whenever an item is returned
+        shufflePool();
+        initDraggables();
+      }
     });
 
+    // Setup target drop behavior; when a target's previous item is returned to pool, reshuffle
     const targets = document.querySelectorAll('.drop-target');
-
     targets.forEach((target) => {
       target.addEventListener('dragover', (e) => e.preventDefault());
       target.addEventListener('drop', (e) => {
         e.preventDefault();
         if (dragged) {
-          // If there is already something in the target, move it back to the phrase pool
+          // If there is already something in the target, move it back to the phrase pool and reshuffle
           if (target.firstChild) {
             const previous = target.firstChild;
-            previous.setAttribute('draggable', 'true');
+            setDraggableHandler(previous);
             phrasePool.appendChild(previous);
+            // After returning previous, shuffle pool and reattach handlers
+            shufflePool();
+            initDraggables();
           }
-          // Move the dragged element into the target and make it non-draggable while placed
+          // Move the dragged element into the target and disable dragging while placed
           dragged.setAttribute('draggable', 'false');
+          dragged.ondragstart = null;
           target.innerHTML = '';
           target.appendChild(dragged);
           dragged = null;
         }
       });
+    });
+
+    // Run initialization after DOM is ready: shuffle then attach handlers
+    window.addEventListener('DOMContentLoaded', () => {
+      shufflePool();
+      initDraggables();
     });
 
     function checkAnswers() {
