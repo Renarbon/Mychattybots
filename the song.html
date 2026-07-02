@@ -702,6 +702,8 @@ document.getElementById("submitBtn").style.display="inline-block";
 async function submitScore(){
 
 const student=document.getElementById("student").value;
+const totalQuestions = answers.length;
+const percentage = Math.round((score / totalQuestions) * 100);    
 
 const data={
 
@@ -711,7 +713,7 @@ song:"What Could Go Wrong",
 
 score:score,
 
-percentage:(score*10),
+percentage:percentage,
 
 attempts:attempts,
 
