@@ -154,8 +154,12 @@ button:hover{
 <h1>🎵 What Could Go Wrong?</h1>
 
 <label>Student Name</label>
-
 <input id="student" placeholder="Enter your name">
+
+<br><br>
+
+<label>Email Address</label>
+<input id="email" type="email" placeholder="Enter your email">
 
 <div class="stats">
 
@@ -701,7 +705,8 @@ document.getElementById("submitBtn").style.display="inline-block";
 
 async function submitScore(){
 
-const student=document.getElementById("student").value;
+const student = document.getElementById("student").value;
+const email = document.getElementById("email").value;
 const totalQuestions = answers.length;
 const percentage = Math.round((score / totalQuestions) * 100);    
 
