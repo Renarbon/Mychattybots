@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>What Could Go Wrong - Speaking Quiz</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    font-family:Segoe UI,Arial,sans-serif;
+    background:#0f172a;
+    color:white;
+    padding:25px;
+}
+
+.container{
+    max-width:900px;
+    margin:auto;
+}
+
+.card{
+    background:#1e293b;
+    border-radius:15px;
+    padding:25px;
+    box-shadow:0 0 25px rgba(0,0,0,.35);
+}
+
+h1{
+    text-align:center;
+    margin-bottom:20px;
+}
+
+input{
+    width:100%;
+    padding:12px;
+    font-size:17px;
+    border:none;
+    border-radius:8px;
+    margin-bottom:20px;
+}
+
+.stats{
+    display:flex;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-bottom:20px;
+}
+
+.stat{
+    background:#111827;
+    padding:12px;
+    border-radius:10px;
+    flex:1;
+    text-align:center;
+}
+
+.progress{
+    width:100%;
+    height:14px;
+    background:#374151;
+    border-radius:50px;
+    overflow:hidden;
+    margin:20px 0;
+}
+
+#bar{
+    height:100%;
+    width:0%;
+    background:#22c55e;
+    transition:.4s;
+}
+
+audio{
+    width:100%;
+    margin:20px 0;
+}
+
+.question{
+    background:#0f172a;
+    padding:18px;
+    border-radius:12px;
+    margin-bottom:20px;
+}
+
+.line{
+    margin:8px 0;
+    font-size:18px;
+}
+
+.blank{
+
+    border:2px dashed #60a5fa;
+    padding:12px;
+    border-radius:8px;
+    margin:10px 0;
+    background:#172554;
+}
+
+button{
+
+    background:#2563eb;
+    color:white;
+    border:none;
+    padding:10px 18px;
+    border-radius:8px;
+    cursor:pointer;
+    margin-top:10px;
+}
+
+button:hover{
+
+    background:#1d4ed8;
+
+}
+
+.correct{
+
+    background:#14532d;
+    color:#dcfce7;
+
+}
+
+.finish{
+
+    text-align:center;
+    margin-top:35px;
+}
+
+#submitBtn{
+
+    display:none;
+    font-size:18px;
+    padding:15px 30px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="card">
+
+<h1>🎵 What Could Go Wrong?</h1>
+
+<label>Student Name</label>
+
+<input id="student" placeholder="Enter your name">
+
+<div class="stats">
+
+<div class="stat">
+
+<b>Score</b>
+
+<h2 id="score">0 / 10</h2>
+
+</div>
+
+<div class="stat">
+
+<b>Attempts</b>
+
+<h2 id="attempts">0</h2>
+
+</div>
+
+<div class="stat">
+
+<b>Time</b>
+
+<h2 id="timer">00:00</h2>
+
+</div>
+
+</div>
+
+<div class="progress">
+
+<div id="bar"></div>
+
+</div>
+
+<h3>🎵 Listen to the song</h3>
+
+<audio controls>
+
+<source src="What Could Go Wrong_.mp3" type="audio/mpeg">
+
+</audio>
+
+<!-- QUESTION 1 -->
+
+<div class="question">
+
+<div class="line">
+
+Every time I log online,
+
+</div>
+
+<div class="line">
+
+Somebody tells me,
+
+</div>
+
+<div class="blank">
+
+____________________________
+
+</div>
+
+<div class="line">
+
+Come on, can't you see?
+
+</div>
+
+<button onclick="record(0)">🎤 Record</button>
+
+</div>
+
+<!-- QUESTION 2 -->
+
+<div class="question">
+
+<div class="line">
+
+I roll my eyes and shake my head,
+
+</div>
+
+<div class="blank">
+
+____________________________
+
+</div>
+
+<div class="line">
+
+They're asking me again today,
+
+</div>
+
+<button onclick="record(1)">🎤 Record</button>
+
+</div>
+
+<!-- QUESTION 3 -->
+
+<div class="question">
+
+<div class="line">
+
+They're asking me again today,
+
+</div>
+
+<div class="blank">
+
+____________________________
+
+</div>
+
+<div class="line">
+
+"You don't have two-factor yet?"
+
+</div>
+
+<button onclick="record(2)">🎤 Record</button>
+
+</div>
+
+<!-- QUESTION 4 -->
+
+<div class="question">
+
+<div class="line">
+
+"You don't have two-factor yet?"
+
+</div>
+
+<div class="line">
+
+Everybody asks me why.
+
+</div>
+
+<div class="blank">
+
+____________________________
+
+</div>
+
+<div class="line">
+
+But I just laugh and smile.
+
+</div>
+
+<button onclick="record(3)">🎤 Record</button>
+
+</div>
+
+<!-- QUESTION 5 -->
+
+<div class="question">
+
+<div class="blank">
+
+____________________________
+
+</div>
+
+<div class="line">
+
+That's what I always say.
+
+</div>
+
+<div class="line">
+
+But these days,
+
+</div>
+
+<button onclick="record(4)">🎤 Record</button>
+
+</div>
+
+<hr style="margin:35px 0">
+
+<h3>🎵 Continue Listening</h3>
+
+<audio controls>
+
+<source src="What Could Go Wrong_.mp3" type="audio/mpeg">
+
+</audio>
+
+<!-- CONTINÚA EN LA PARTE 1B -->
+<!-- QUESTION 6 -->
+
+<div class="question">
+
+<div class="line">
+
+Things don't work that way.
+
+</div>
+
+<div class="blank">
+
+____________________________
+
+</div>
+
+<div class="line">
+
+A little extra security.
+
+</div>
+
+<button onclick="record(5)">🎤 Record</button>
+
+</div>
+
+<!-- QUESTION 7 -->
+
+<div class="question">
+
+<div class="line">
+
+I use a password manager,
+
+</div>
+
+<div class="line">
+
+I think I'm doing fine.
+
+</div>
+
+<div class="blank">
+
+____________________________
+
+</div>
+
+<div class="line">
+
+They're working overtime.
+
+</div>
+
+<button onclick="record(6)">🎤 Record</button>
+
+</div>
+
+<!-- QUESTION 8 -->
+
+<div class="question">
+
+<div class="blank">
+
+____________________________
+
+</div>
+
+<div class="line">
+
+I always ask.
+
+</div>
+
+<div class="line">
+
+I'm careful every day.
+
+</div>
+
+<button onclick="record(7)">🎤 Record</button>
+
+</div>
+
+<!-- QUESTION 9 -->
+
+<div class="question">
+
+<div class="line">
+
+Sometimes it feels
+
+</div>
+
+<div class="blank">
+
+____________________________
+
+</div>
+
+<div class="line">
+
+Too many codes,
+
+</div>
+
+<button onclick="record(8)">🎤 Record</button>
+
+</div>
+
+<!-- QUESTION 10 -->
+
+<div class="question">
+
+<div class="blank">
+
+____________________________
+
+</div>
+
+<div class="line">
+
+It's worth the wait.
+
+</div>
+
+<div class="line">
+
+Protect your account
+
+</div>
+
+<button onclick="record(9)">🎤 Record</button>
+
+</div>
+
+<div class="finish">
+
+<h2 id="finishMessage"></h2>
+
+<button id="submitBtn" onclick="submitScore()">
+
+📤 Submit Score
+
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+const answers=[
+
+"Update this change your password",
+
+"I say just leave me be",
+
+"For the upteenth time you see",
+
+"They say I'm playing with fire",
+
+"What could go wrong",
+
+"You just can't beat",
+
+"But hackers keep on getting smarter",
+
+"What are the odds",
+
+"A little over the top",
+
+"But take my word for it"
+
+];
+
+let score=0;
+let attempts=0;
+let current=0;
+let seconds=0;
+// =============================
+// TIMER
+// =============================
+
+setInterval(() => {
+
+    seconds++;
+
+    let m = Math.floor(seconds / 60);
+    let s = seconds % 60;
+
+    document.getElementById("timer").innerHTML =
+        String(m).padStart(2,"0")+":"+
+        String(s).padStart(2,"0");
+
+},1000);
+
+
+// =============================
+// NORMALIZE
+// =============================
+
+function normalize(text){
+
+    return text
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]/g,"")
+    .replace(/\s+/g," ")
+    .trim();
+
+}
+
+
+// =============================
+// RECORD
+// =============================
+
+function record(index){
+
+    attempts++;
+
+    document.getElementById("attempts").innerHTML=attempts;
+
+    if(!window.webkitSpeechRecognition){
+
+        alert("Use Google Chrome");
+
+        return;
+
+    }
+
+    const rec=new webkitSpeechRecognition();
+
+    rec.lang="en-US";
+
+    rec.interimResults=false;
+
+    rec.maxAlternatives=1;
+
+    rec.start();
+
+    rec.onresult=(event)=>{
+
+        let speech=event.results[0][0].transcript;
+
+        checkAnswer(index,speech);
+
+    };
+
+}
+
+
+// =============================
+// CHECK ANSWER
+// =============================
+
+function checkAnswer(index,speech){
+
+    let student=normalize(speech);
+
+    let correct=normalize(answers[index]);
+
+    let words=correct.split(" ");
+
+    let matches=0;
+
+    words.forEach(word=>{
+
+        if(student.includes(word)){
+
+            matches++;
+
+        }
+
+    });
+
+    let similarity=matches/words.length;
+
+    if(similarity>=0.70){
+
+        score++;
+
+        document.getElementById("score").innerHTML=
+
+            score+" / 10";
+
+        document.getElementsByClassName("blank")[index].innerHTML=
+
+            "✅ "+answers[index];
+
+        document.getElementsByClassName("blank")[index]
+        .classList.add("correct");
+
+        let percent=(score/10)*100;
+
+        document.getElementById("bar").style.width=
+
+            percent+"%";
+
+        if(score==10){
+
+            finishQuiz();
+
+        }
+
+    }
+
+    else{
+
+        alert(
+
+"Almost!\n\nYou said:\n\n"+speech
+
+        );
+
+    }
+
+}
+
+
+
+// =============================
+// FINISH
+// =============================
+
+function finishQuiz(){
+
+document.getElementById("finishMessage").innerHTML=
+
+"🏆 Congratulations!";
+
+document.getElementById("submitBtn").style.display="inline-block";
+
+}
+
+
+
+// =============================
+// GOOGLE SHEETS
+// =============================
+
+async function submitScore(){
+
+const student=document.getElementById("student").value;
+
+const data={
+
+student:student,
+
+song:"What Could Go Wrong",
+
+score:score,
+
+percentage:(score*10),
+
+attempts:attempts,
+
+time:document.getElementById("timer").innerHTML,
+
+certificate:"",
+
+wrongLines:""
+
+};
+
+try{
+
+await fetch(
+
+"https://script.google.com/macros/s/AKfycbz7LMouN1mQEqgx275zt8bf3pX30f38TNarBr6FtRljrK-kCN85hhIcfeXQip2RIAw-/exec",
+
+{
+
+method:"POST",
+
+body:JSON.stringify(data)
+
+}
+
+);
+
+alert("Score Submitted!");
+
+}
+
+catch(e){
+
+alert("Could not connect to Google Sheets.");
+
+}
+
+}
+
+</script>
+
+</body>
+
+</html>
