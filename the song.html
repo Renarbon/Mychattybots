@@ -705,43 +705,23 @@ const student=document.getElementById("student").value;
 const totalQuestions = answers.length;
 const percentage = Math.round((score / totalQuestions) * 100);    
 
-const data={
-
-student:student,
-
-song:"What Could Go Wrong",
-
-score:score,
-
-percentage:percentage,
-
-attempts:attempts,
-
-time:document.getElementById("timer").innerHTML,
-
-certificate:"",
-
-wrongLines:""
-
-};
-
 try{
 
-await fetch(
 
-"https://script.google.com/macros/s/AKfycbz7LMouN1mQEqgx275zt8bf3pX30f38TNarBr6FtRljrK-kCN85hhIcfeXQip2RIAw-/exec",
+const time = document.getElementById("timer").innerHTML;
 
-{
+const url =
+"https://script.google.com/macros/s/AKfycbyKe6CcUhuo8aE3eYvNBXEz3R4WE-aRF_q0fsnYIPl1kY29o5iXwfADNkn83_FEM8QT/exec" +
+"?student=" + encodeURIComponent(student) +
+"&score=" + percentage +
+"&attempts=" + attempts +
+"&time=" + encodeURIComponent(time);
 
-method:"POST",
+await fetch(url, {
+    method: "GET"
+});
 
-body:JSON.stringify(data)
-
-}
-
-);
-
-alert("Score Submitted!");
+alert("✅ Results successfully sent to Google Sheets!");
 
 }
 
