@@ -78,9 +78,19 @@ input{
     transition:.4s;
 }
 
+.audio-container{
+    position:sticky;
+    top:0;
+    background:#1e293b;
+    padding:15px;
+    border-radius:12px;
+    margin:20px 0;
+    z-index:100;
+    box-shadow:0 4px 15px rgba(0,0,0,.3);
+}
+
 audio{
     width:100%;
-    margin:20px 0;
 }
 
 .question{
@@ -96,7 +106,6 @@ audio{
 }
 
 .blank{
-
     border:2px dashed #60a5fa;
     padding:12px;
     border-radius:8px;
@@ -105,7 +114,6 @@ audio{
 }
 
 button{
-
     background:#2563eb;
     color:white;
     border:none;
@@ -116,26 +124,20 @@ button{
 }
 
 button:hover{
-
     background:#1d4ed8;
-
 }
 
 .correct{
-
     background:#14532d;
     color:#dcfce7;
-
 }
 
 .finish{
-
     text-align:center;
     margin-top:35px;
 }
 
 #submitBtn{
-
     display:none;
     font-size:18px;
     padding:15px 30px;
@@ -205,15 +207,17 @@ button:hover{
 
 </div>
 
+<div class="audio-container">
+
 <h3>🎵 Listen to the song</h3>
 
 <audio controls>
 
-<source src="my-music
-/What Could Go Wrong_.mp3
-" type="audio/mpeg">
+<source src="my-music/What Could Go Wrong_.mp3" type="audio/mpeg">
 
 </audio>
+
+</div>
 
 <!-- QUESTION 1 -->
 
@@ -359,17 +363,6 @@ But these days,
 
 <hr style="margin:35px 0">
 
-<h3>🎵 Continue Listening</h3>
-
-<audio controls>
-
-<source src="my-music
-/What Could Go Wrong_.mp3
-" type="audio/mpeg">
-
-</audio>
-
-<!-- CONTINÚA EN LA PARTE 1B -->
 <!-- QUESTION 6 -->
 
 <div class="question">
