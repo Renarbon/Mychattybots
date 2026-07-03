@@ -517,7 +517,7 @@ Protect your account
 
 <script>
 
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyKe6CcUhuo8aE3eYvNBXEz3R4WE-aRF_q0fsnYIPl1kY29o5iXwfADNkn83_FEM8QT/exec";
+const SCRIPT_URL = "https://cors-anywhere.herokuapp.com/https://script.google.com/macros/s/AKfycbyKe6CcUhuo8aE3eYvNBXEz3R4WE-aRF_q0fsnYIPl1kY29o5iXwfADNkn83_FEM8QT/exec";
 
 const answers=[
 
@@ -755,6 +755,12 @@ function submitScore(){
         return;
     }
     
+    // Bloquear el botón ANTES de hacer la solicitud
+    scoreSubmitted = true;
+    const btn = document.getElementById("submitBtn");
+    btn.disabled = true;
+    btn.textContent = "📤 Submitting...";
+    
     const data = new URLSearchParams({
         student: student,
         email: email,
@@ -769,10 +775,6 @@ function submitScore(){
         body: data
     })
     .then(response => {
-        scoreSubmitted = true;
-        
-        const btn = document.getElementById("submitBtn");
-        btn.disabled = true;
         btn.textContent = "✅ Score Submitted";
         btn.style.background = "#10b981";
         
@@ -780,6 +782,9 @@ function submitScore(){
     })
     .catch(error => {
         console.error('Error:', error);
+        scoreSubmitted = false;
+        btn.disabled = false;
+        btn.textContent = "📤 Submit Score";
         alert("Error submitting score. Please try again.");
     });
 }
