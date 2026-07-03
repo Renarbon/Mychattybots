@@ -555,6 +555,7 @@ let attempts=0;
 let current=0;
 let seconds=0;
 let scoreSubmitted=false;
+let answeredQuestions=new Set();
 
 // =============================
 // TIMER
@@ -595,10 +596,6 @@ function normalize(text){
 
 function record(index){
 
-    attempts++;
-
-    document.getElementById("attempts").innerHTML=attempts;
-
     if(!window.webkitSpeechRecognition){
 
         alert("Use Google Chrome");
@@ -634,6 +631,12 @@ function record(index){
 
 function checkAnswer(index,speech){
 
+    // Incrementar intentos solo si es la primera vez que intenta esta pregunta
+    if(!answeredQuestions.has(index)){
+        attempts++;
+        document.getElementById("attempts").innerHTML=attempts;
+    }
+
     let student=normalize(speech);
 
     let correct=normalize(answers[index]);
@@ -668,6 +671,8 @@ function checkAnswer(index,speech){
 
         document.getElementsByClassName("blank")[index]
         .classList.add("correct");
+
+        answeredQuestions.add(index);
 
         let percent=(score/10)*100;
 
@@ -735,6 +740,7 @@ function submitScore(){
         student: student,
         email: email,
         score: score + " / 10",
+        attempts: attempts,
         time: time,
         date: new Date().toLocaleString()
     });
