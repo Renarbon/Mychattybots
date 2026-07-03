@@ -141,6 +141,16 @@ button:hover{
     padding:15px 30px;
 }
 
+#submitBtn:disabled{
+    background:#10b981;
+    cursor:not-allowed;
+    opacity:0.8;
+}
+
+#submitBtn:disabled:hover{
+    background:#10b981;
+}
+
 </style>
 
 </head>
@@ -544,6 +554,8 @@ let score=0;
 let attempts=0;
 let current=0;
 let seconds=0;
+let scoreSubmitted=false;
+
 // =============================
 // TIMER
 // =============================
@@ -705,6 +717,11 @@ document.getElementById("submitBtn").style.display="inline-block";
 
 function submitScore(){
     
+    if(scoreSubmitted){
+        alert("⚠️ Your score has already been submitted!");
+        return;
+    }
+    
     let student = document.getElementById("student").value;
     let email = document.getElementById("email").value;
     let time = document.getElementById("timer").innerHTML;
@@ -727,8 +744,14 @@ function submitScore(){
         body: data
     })
     .then(response => {
+        scoreSubmitted = true;
+        
+        const btn = document.getElementById("submitBtn");
+        btn.disabled = true;
+        btn.textContent = "✅ Score Submitted";
+        btn.style.background = "#10b981";
+        
         alert("✅ Score submitted successfully!");
-        document.getElementById("submitBtn").disabled = true;
     })
     .catch(error => {
         console.error('Error:', error);
