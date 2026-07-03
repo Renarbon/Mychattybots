@@ -517,8 +517,16 @@ Protect your account
 
 <script>
 
-// Usar la URL de Google Apps Script proporcionada (sin proxy CORS)
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxBDre-QQTvg2WIhzoafn336VyZOdx54xE1QGxX9JCyF7VZ_D9XAODASSoQOmz5W7hC/exec";
+// Google Form Configuration
+const GOOGLE_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLScrp0TUsSEPmS6ckMMFS1_HXng5bIg8nFFYSLJ1n6zeo_voTA/formResponse";
+
+const FORM_FIELDS = {
+    student: "entry.1908517999",
+    email: "entry.1479626233",
+    score: "entry.1105955459",
+    attempts: "entry.1098134799",
+    duration: "entry.368430519"
+};
 
 const answers=[
 
@@ -591,7 +599,7 @@ function normalize(text){
 
 function record(index){
 
-    if(!window.webkitSpeechRecognition && !window.SpeechRecognition){
+    if(!window.webkitSpeechRecognition){
 
         alert("Use Google Chrome");
 
@@ -599,8 +607,7 @@ function record(index){
 
     }
 
-    const RecClass = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const rec=new RecClass();
+    const rec=new webkitSpeechRecognition();
 
     rec.lang="en-US";
 
@@ -738,7 +745,7 @@ document.getElementById("submitBtn").style.display="inline-block";
 }
 
 // =============================
-// SUBMIT SCORE
+// SUBMIT SCORE TO GOOGLE FORM
 // =============================
 
 function submitScore(){
@@ -763,38 +770,32 @@ function submitScore(){
     btn.disabled = true;
     btn.textContent = "📤 Submitting...";
     
-    const data = new URLSearchParams({
-        student: student,
-        email: email,
-        score: score,
-        attempts: attempts,
-        time: time,
-        date: new Date().toLocaleString()
-    });
+    // Crear FormData para enviar a Google Forms
+    const formData = new FormData();
+    formData.append(FORM_FIELDS.student, student);
+    formData.append(FORM_FIELDS.email, email);
+    formData.append(FORM_FIELDS.score, score);
+    formData.append(FORM_FIELDS.attempts, attempts);
+    formData.append(FORM_FIELDS.duration, time);
     
-    fetch(SCRIPT_URL, {
+    // Enviar a Google Forms usando fetch
+    fetch(GOOGLE_FORM_URL, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
-        },
-        body: data
+        body: formData,
+        mode: 'no-cors'
     })
-    .then(response => response.json())
-    .then(result => {
-        if (result && result.result === 'success') {
-            btn.textContent = "✅ Score Submitted";
-            btn.style.background = "#10b981";
-            alert("✅ Score submitted successfully!");
-        } else {
-            throw new Error(result && result.message ? result.message : 'Unknown response from server');
-        }
+    .then(response => {
+        btn.textContent = "✅ Score Submitted";
+        btn.style.background = "#10b981";
+        
+        alert("✅ Score submitted successfully!\n\nStudent: " + student + "\nScore: " + score + "/100\nAttempts: " + attempts);
     })
     .catch(error => {
         console.error('Error:', error);
         scoreSubmitted = false;
         btn.disabled = false;
         btn.textContent = "📤 Submit Score";
-        alert("Error submitting score. Please try again. Check DevTools Network/Console for details.");
+        alert("Error submitting score. Please try again.");
     });
 }
 
