@@ -514,6 +514,8 @@ Protect your account
 
 <script>
 
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyKe6CcUhuo8aE3eYvNBXEz3R4WE-aRF_q0fsnYIPl1kY29o5iXwfADNkn83_FEM8QT/exec";
+
 const answers=[
 
 "Update this change your password",
@@ -697,6 +699,42 @@ document.getElementById("submitBtn").style.display="inline-block";
 
 }
 
+// =============================
+// SUBMIT SCORE
+// =============================
+
+function submitScore(){
+    
+    let student = document.getElementById("student").value;
+    let email = document.getElementById("email").value;
+    let time = document.getElementById("timer").innerHTML;
+    
+    if(!student || !email){
+        alert("Please complete your name and email");
+        return;
+    }
+    
+    const data = new URLSearchParams({
+        student: student,
+        email: email,
+        score: score + " / 10",
+        time: time,
+        date: new Date().toLocaleString()
+    });
+    
+    fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: data
+    })
+    .then(response => {
+        alert("✅ Score submitted successfully!");
+        document.getElementById("submitBtn").disabled = true;
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert("Error submitting score. Please try again.");
+    });
+}
 
 </script>
 
