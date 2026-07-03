@@ -177,7 +177,7 @@ button:hover{
 
 <b>Score</b>
 
-<h2 id="score">0 / 10</h2>
+<h2 id="score">0 / 100</h2>
 
 </div>
 
@@ -551,6 +551,7 @@ const answers=[
 ];
 
 let score=0;
+let correctAnswers=0;
 let attempts=0;
 let current=0;
 let seconds=0;
@@ -659,11 +660,12 @@ function checkAnswer(index,speech){
 
     if(similarity>=0.70){
 
-        score++;
+        correctAnswers++;
 
-        document.getElementById("score").innerHTML=
+        // Calcular puntuación basada en intentos totales
+        score = calculateScore();
 
-            score+" / 10";
+        document.getElementById("score").innerHTML = score + " / 100";
 
         document.getElementsByClassName("blank")[index].innerHTML=
 
@@ -674,13 +676,13 @@ function checkAnswer(index,speech){
 
         answeredQuestions.add(index);
 
-        let percent=(score/10)*100;
+        let percent=(correctAnswers/10)*100;
 
         document.getElementById("bar").style.width=
 
             percent+"%";
 
-        if(score==10){
+        if(correctAnswers==10){
 
             finishQuiz();
 
@@ -698,6 +700,30 @@ function checkAnswer(index,speech){
 
     }
 
+}
+
+
+// =============================
+// CALCULATE SCORE (100 POINTS)
+// =============================
+
+function calculateScore(){
+    
+    // Fórmula: (Respuestas correctas / 10) × 100 × (factor de intentos)
+    // Factor de intentos penaliza por cada intento extra
+    
+    let baseScore = (correctAnswers / 10) * 100;
+    
+    // Penalización por intentos: máximo 100 puntos si 10 intentos (uno por pregunta)
+    // Si necesita más intentos, pierde puntos
+    let attemptPenalty = 1 - ((attempts - correctAnswers) * 0.02);
+    
+    // Mínimo 60% incluso con muchos intentos
+    attemptPenalty = Math.max(0.6, attemptPenalty);
+    
+    let finalScore = Math.round(baseScore * attemptPenalty);
+    
+    return finalScore;
 }
 
 
@@ -739,7 +765,7 @@ function submitScore(){
     const data = new URLSearchParams({
         student: student,
         email: email,
-        score: score + " / 10",
+        score: score,
         attempts: attempts,
         time: time,
         date: new Date().toLocaleString()
