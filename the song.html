@@ -517,7 +517,8 @@ Protect your account
 
 <script>
 
-const SCRIPT_URL = "https://cors-anywhere.herokuapp.com/https://script.google.com/macros/s/AKfycbyKe6CcUhuo8aE3eYvNBXEz3R4WE-aRF_q0fsnYIPl1kY29o5iXwfADNkn83_FEM8QT/exec";
+// Usar la URL de Google Apps Script proporcionada (sin proxy CORS)
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxBDre-QQTvg2WIhzoafn336VyZOdx54xE1QGxX9JCyF7VZ_D9XAODASSoQOmz5W7hC/exec";
 
 const answers=[
 
@@ -590,7 +591,7 @@ function normalize(text){
 
 function record(index){
 
-    if(!window.webkitSpeechRecognition){
+    if(!window.webkitSpeechRecognition && !window.SpeechRecognition){
 
         alert("Use Google Chrome");
 
@@ -598,7 +599,8 @@ function record(index){
 
     }
 
-    const rec=new webkitSpeechRecognition();
+    const RecClass = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const rec=new RecClass();
 
     rec.lang="en-US";
 
@@ -772,20 +774,27 @@ function submitScore(){
     
     fetch(SCRIPT_URL, {
         method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+        },
         body: data
     })
-    .then(response => {
-        btn.textContent = "✅ Score Submitted";
-        btn.style.background = "#10b981";
-        
-        alert("✅ Score submitted successfully!");
+    .then(response => response.json())
+    .then(result => {
+        if (result && result.result === 'success') {
+            btn.textContent = "✅ Score Submitted";
+            btn.style.background = "#10b981";
+            alert("✅ Score submitted successfully!");
+        } else {
+            throw new Error(result && result.message ? result.message : 'Unknown response from server');
+        }
     })
     .catch(error => {
         console.error('Error:', error);
         scoreSubmitted = false;
         btn.disabled = false;
         btn.textContent = "📤 Submit Score";
-        alert("Error submitting score. Please try again.");
+        alert("Error submitting score. Please try again. Check DevTools Network/Console for details.");
     });
 }
 
