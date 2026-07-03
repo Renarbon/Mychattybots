@@ -698,46 +698,6 @@ document.getElementById("submitBtn").style.display="inline-block";
 }
 
 
-
-// =============================
-// GOOGLE SHEETS
-// =============================
-
-async function submitScore(){
-
-const student = document.getElementById("student").value;
-const email = document.getElementById("email").value;
-const totalQuestions = answers.length;
-const percentage = Math.round((score / totalQuestions) * 100);    
-
-try{
-
-
-const time = document.getElementById("timer").innerHTML;
-
-const url =
-"https://script.google.com/macros/s/AKfycbyKe6CcUhuo8aE3eYvNBXEz3R4WE-aRF_q0fsnYIPl1kY29o5iXwfADNkn83_FEM8QT/exec" +
-"?student=" + encodeURIComponent(student) +
-"&score=" + percentage +
-"&attempts=" + attempts +
-"&time=" + encodeURIComponent(time);
-
-await fetch(url, {
-    method: "GET"
-});
-
-alert("✅ Results successfully sent to Google Sheets!");
-
-}
-
-catch(e){
-
-alert("Could not connect to Google Sheets.");
-
-}
-
-}
-
 </script>
 
 </body>
