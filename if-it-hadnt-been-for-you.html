@@ -82,6 +82,14 @@ audio{width:100%;}
     margin:10px 0;
     background:#172554;
 }
+.hint-line{
+    display:none;
+    margin-top:8px;
+    color:#cbd5e1;
+    font-style:italic;
+    font-size:16px;
+    line-height:1.4;
+}
 button{
     background:#2563eb;
     color:white;
@@ -148,6 +156,7 @@ button:hover{background:#1d4ed8;}
     <div class="line">I almost missed my morning train,</div>
     <div class="line">The sky was dark with pouring rain.</div>
     <div class="blank">____________________________</div>
+    <div class="hint-line"></div>
     <div class="line">If it hadn't been for you.</div>
     <button onclick="record(0)">🎤 Record</button>
 </div>
@@ -155,6 +164,7 @@ button:hover{background:#1d4ed8;}
 <div class="question">
     <div class="line">The engine stopped, the road was slow,</div>
     <div class="blank">____________________________</div>
+    <div class="hint-line"></div>
     <div class="line">I'd still be standing in the blue...</div>
     <button onclick="record(1)">🎤 Record</button>
 </div>
@@ -163,12 +173,14 @@ button:hover{background:#1d4ed8;}
     <div class="line">Yesterday has come and gone,</div>
     <div class="line">Somehow life kept moving on.</div>
     <div class="blank">____________________________</div>
+    <div class="hint-line"></div>
     <button onclick="record(2)">🎤 Record</button>
 </div>
 
 <div class="question">
     <div class="line">If it weren't for you,</div>
     <div class="blank">____________________________</div>
+    <div class="hint-line"></div>
     <div class="line">You're the light that gets me through,</div>
     <button onclick="record(3)">🎤 Record</button>
 </div>
@@ -177,6 +189,7 @@ button:hover{background:#1d4ed8;}
     <div class="line">If it weren't for you,</div>
     <div class="line">I'd be lost without a clue.</div>
     <div class="blank">____________________________</div>
+    <div class="hint-line"></div>
     <button onclick="record(4)">🎤 Record</button>
 </div>
 
@@ -185,6 +198,7 @@ button:hover{background:#1d4ed8;}
 <div class="question">
     <div class="line">I caught the flight just in the nick of time,</div>
     <div class="blank">____________________________</div>
+    <div class="hint-line"></div>
     <div class="line">I smiled because I finally knew...</div>
     <button onclick="record(5)">🎤 Record</button>
 </div>
@@ -193,12 +207,14 @@ button:hover{background:#1d4ed8;}
     <div class="line">The phone call came before the storm,</div>
     <div class="line">It kept my worried heart so warm.</div>
     <div class="blank">____________________________</div>
+    <div class="hint-line"></div>
     <button onclick="record(6)">🎤 Record</button>
 </div>
 
 <div class="question">
     <div class="line">Yesterday you changed my fate...</div>
     <div class="blank">____________________________</div>
+    <div class="hint-line"></div>
     <div class="line">If it hadn't been for your helping hand,</div>
     <button onclick="record(7)">🎤 Record</button>
 </div>
@@ -206,6 +222,7 @@ button:hover{background:#1d4ed8;}
 <div class="question">
     <div class="line">If it weren't for your loving heart,</div>
     <div class="blank">____________________________</div>
+    <div class="hint-line"></div>
     <div class="line">If it weren't for you...</div>
     <button onclick="record(8)">🎤 Record</button>
 </div>
@@ -213,6 +230,7 @@ button:hover{background:#1d4ed8;}
 <div class="question">
     <div class="line">If it hadn't been for you...</div>
     <div class="blank">____________________________</div>
+    <div class="hint-line"></div>
     <div class="line">Past or present, one thing's true...</div>
     <button onclick="record(9)">🎤 Record</button>
 </div>
@@ -251,6 +269,19 @@ const answers = [
     "Today you make my whole world great",
     "I'd fall apart before I start",
     "I'd never know the things I do"
+];
+
+const supportLines = [
+    "If it hadn't been for you.",
+    "If it hadn't been for you.",
+    "🎵 Chorus (Present)",
+    "You're the light that gets me through, Every day begins with you.",
+    "Life is better thanks to you.",
+    "If it hadn't been for you.",
+    "If it hadn't been for you.",
+    "If it hadn't been for your helping hand, I never would have reached this land.",
+    "🎵 Final Chorus: Every dream comes shining through. Every sunrise feels brand new. If it weren't for you.",
+    "Past or present, one thing's true... I'm thankful... because of you."
 ];
 
 let score = 0;
@@ -311,6 +342,10 @@ function checkAnswer(index, speech){
 
         document.getElementsByClassName("blank")[index].innerHTML = "✅ " + answers[index];
         document.getElementsByClassName("blank")[index].classList.add("correct");
+
+        const hint = document.getElementsByClassName("hint-line")[index];
+        hint.innerHTML = "🎤 Continue: " + supportLines[index];
+        hint.style.display = "block";
 
         answeredQuestions.add(index);
 
