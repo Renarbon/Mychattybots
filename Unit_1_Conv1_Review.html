@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Idioms Challenge - Speaking Quiz</title>
+
+<style>
+.avis-logo{
+    display:block;
+    margin:0 auto 10px;
+    max-width:120px;
+    height:auto;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+    font-family:Segoe UI,Arial,sans-serif;
+    background:#0f172a;
+    color:white;
+    padding:25px;
+}
+.container{max-width:900px;margin:auto;}
+.card{
+    background:#1e293b;
+    border-radius:15px;
+    padding:25px;
+    box-shadow:0 0 25px rgba(0,0,0,.35);
+}
+h1{text-align:center;margin-bottom:20px;}
+p.subtitle{
+    text-align:center;
+    margin-bottom:20px;
+    color:#cbd5e1;
+}
+input{
+    width:100%;
+    padding:12px;
+    font-size:17px;
+    border:none;
+    border-radius:8px;
+    margin-bottom:20px;
+}
+.stats{
+    display:flex;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-bottom:20px;
+}
+.stat{
+    background:#111827;
+    padding:12px;
+    border-radius:10px;
+    flex:1;
+    text-align:center;
+}
+.progress{
+    width:100%;
+    height:14px;
+    background:#374151;
+    border-radius:50px;
+    overflow:hidden;
+    margin:20px 0;
+}
+#bar{
+    height:100%;
+    width:0%;
+    background:#22c55e;
+    transition:.4s;
+}
+.word-bank{
+    background:#0f172a;
+    border:1px solid #334155;
+    border-radius:12px;
+    padding:15px;
+    margin:18px 0 26px;
+}
+.word-bank h3{
+    margin-bottom:10px;
+    color:#93c5fd;
+}
+.choices{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+}
+.choice-pill{
+    background:#1f2937;
+    border:1px solid #475569;
+    border-radius:999px;
+    padding:8px 12px;
+    font-size:14px;
+    color:#e2e8f0;
+}
+.question{
+    background:#0f172a;
+    padding:18px;
+    border-radius:12px;
+    margin-bottom:20px;
+}
+.line{margin:8px 0;font-size:20px;}
+.line.a{color:#cbd5e1;}
+.line.b{color:#ffffff;}
+.blank{
+    border:2px dashed #60a5fa;
+    padding:12px;
+    border-radius:8px;
+    margin:10px 0;
+    background:#172554;
+    min-height:48px;
+    display:flex;
+    align-items:center;
+}
+.options{
+    margin:10px 0;
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+    gap:8px;
+}
+.option{
+    background:#111827;
+    border:1px solid #334155;
+    border-radius:8px;
+    padding:10px;
+    font-size:14px;
+    color:#cbd5e1;
+}
+.hint-line{
+    display:none;
+    margin-top:8px;
+    color:#cbd5e1;
+    font-style:italic;
+    font-size:16px;
+    line-height:1.4;
+}
+.feedback{
+    margin-top:8px;
+    font-size:14px;
+    color:#fca5a5;
+    display:none;
+}
+button{
+    background:#2563eb;
+    color:white;
+    border:none;
+    padding:10px 18px;
+    border-radius:8px;
+    cursor:pointer;
+    margin-top:10px;
+}
+button:hover{background:#1d4ed8;}
+.correct{background:#14532d !important;color:#dcfce7 !important;border-color:#16a34a !important;}
+.finish{text-align:center;margin-top:35px;}
+#submitBtn{
+    display:none;
+    font-size:18px;
+    padding:15px 30px;
+}
+#submitBtn:disabled{
+    background:#10b981;
+    cursor:not-allowed;
+    opacity:0.8;
+}
+#submitBtn:disabled:hover{background:#10b981;}
+.footer-note{
+    margin-top:28px;
+    text-align:center;
+    font-size:15px;
+    color:#cbd5e1;
+    opacity:0.95;
+}
+.small-note{
+    font-size:13px;
+    color:#94a3b8;
+    margin-top:8px;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+<div class="card">
+
+<h1>🧠 Idioms Speaking Challenge</h1>
+<p class="subtitle">Choose mentally from the options, then say the <b>complete missing phrase</b> aloud.</p>
+
+<label>Student Name</label>
+<input id="student" placeholder="Enter your name">
+
+<label>Email Address</label>
+<input id="email" type="email" placeholder="Enter your email">
+
+<div class="stats">
+    <div class="stat"><b>Score</b><h2 id="score">0 / 100</h2></div>
+    <div class="stat"><b>Attempts</b><h2 id="attempts">0</h2></div>
+    <div class="stat"><b>Time</b><h2 id="timer">00:00</h2></div>
+</div>
+
+<div class="progress"><div id="bar"></div></div>
+
+<div class="word-bank">
+    <h3>Word/Phrase Box (3 extra choices)</h3>
+    <div class="choices" id="globalChoices"></div>
+    <div class="small-note">⚠️ Challenge mode: high accuracy threshold + stronger penalty for extra attempts.</div>
+</div>
+
+<div id="questionsWrap"></div>
+
+<div class="finish">
+    <h2 id="finishMessage"></h2>
+    <button id="submitBtn" onclick="submitScore()">📤 Submit Score</button>
+</div>
+
+<div class="footer-note">
+    <img src="images/avis.png" alt="Avis logo" class="avis-logo">
+    🎼 An original activity by Avis, adapted as a speaking challenge.
+</div>
+
+</div>
+</div>
+
+<script>
+const GOOGLE_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSeC28pmzFYoI4t1CdqOs0_T1Kkey11iaWeA7A-BZhg3uQLpwg/formResponse";
+
+const FORM_FIELDS = {
+    student: "entry.1908517999",
+    email: "entry.1479626233",
+    score: "entry.1105955459",
+    attempts: "entry.1098134799",
+    duration: "entry.368430519"
+};
+
+// Full phrase bank (8 correct + 3 extras)
+const phraseBank = [
+    "Better late than never",
+    "bragging",
+    "buckle down",
+    "clinched it",
+    "don't take it personally",
+    "I aced it",
+    "I mean that as a compliment",
+    "it was a no-brainer",
+    "putting it off",
+    "right up your alley",
+    "what it takes"
+];
+
+const questions = [
+    {
+        a: "A: So, how’d you do on the chemistry exam?",
+        bStart: "B: I got a 100!",
+        answer: "I aced it",
+        options: ["I aced it","bragging","what it takes","putting it off"]
+    },
+    {
+        a: "A: How are you going to get all your work done? You have so much to do.",
+        bStart: "B: I’ve just got to",
+        bEnd: "and do it. It can’t be late.",
+        answer: "buckle down",
+        options: ["buckle down","right up your alley","clinched it","don't take it personally"]
+    },
+    {
+        a: "A: You’ve been talking about changing careers, but you still haven’t filled out the application.",
+        bStart: "B: I know. I keep",
+        bEnd: "because I’m afraid I might not be qualified.",
+        answer: "putting it off",
+        options: ["putting it off","I aced it","bragging","it was a no-brainer"]
+    },
+    {
+        a: "A: I’m glad you accepted that job offer at the university.",
+        bStart: "B: Well,",
+        bEnd: "The benefits are fantastic.",
+        answer: "it was a no-brainer",
+        options: ["it was a no-brainer","what it takes","I mean that as a compliment","buckle down"]
+    },
+    {
+        a: "A: What do you think about the new position opening up in marketing?",
+        bStart: "B: I think it’s",
+        bEnd: "You should definitely apply.",
+        answer: "right up your alley",
+        options: ["right up your alley","Better late than never","clinched it","don't take it personally"]
+    },
+    {
+        a: "A: Do you think Karl has",
+        bEnd: "to be a lawyer?",
+        bStart: "A: Do you think Karl has",
+        answer: "what it takes",
+        options: ["what it takes","bragging","I aced it","putting it off"]
+    },
+    {
+        a: "A: I can’t believe you finally achieved your goal as an entrepreneur.",
+        bStart: "B:",
+        bEnd: "I couldn’t have done it without your support.",
+        answer: "I clinched it",
+        aliases: ["clinched it","I clinched it"],
+        options: ["clinched it","it was a no-brainer","Better late than never","right up your alley"]
+    },
+    {
+        a: "A: I hope Sharon didn’t think I was",
+        bEnd: "about my test score.",
+        bStart: "A: I hope Sharon didn’t think I was",
+        answer: "bragging",
+        options: ["bragging","I mean that as a compliment","don't take it personally","what it takes"]
+    }
+];
+
+let score = 0;
+let correctAnswers = 0;
+let attempts = 0;
+let seconds = 0;
+let scoreSubmitted = false;
+let answeredQuestions = new Set();
+
+function normalize(text){
+    return text
+      .toLowerCase()
+      .replace(/’/g,"'")
+      .replace(/[^a-z0-9' ]/g,"")
+      .replace(/\s+/g," ")
+      .trim();
+}
+
+function levenshtein(a,b){
+    const m = a.length, n = b.length;
+    const dp = Array.from({length:m+1},()=>Array(n+1).fill(0));
+    for(let i=0;i<=m;i++) dp[i][0]=i;
+    for(let j=0;j<=n;j++) dp[0][j]=j;
+    for(let i=1;i<=m;i++){
+        for(let j=1;j<=n;j++){
+            const cost = a[i-1]===b[j-1]?0:1;
+            dp[i][j] = Math.min(
+                dp[i-1][j]+1,
+                dp[i][j-1]+1,
+                dp[i-1][j-1]+cost
+            );
+        }
+    }
+    return dp[m][n];
+}
+
+function similarityScore(spoken, expected){
+    const s = normalize(spoken);
+    const e = normalize(expected);
+    if(!s || !e) return 0;
+
+    // exact shortcut
+    if(s === e) return 1;
+
+    // token overlap
+    const eWords = e.split(" ");
+    let tokenMatches = 0;
+    eWords.forEach(w => { if(s.includes(w)) tokenMatches++; });
+    const tokenRatio = tokenMatches / eWords.length;
+
+    // edit-distance ratio
+    const dist = levenshtein(s, e);
+    const maxLen = Math.max(s.length, e.length);
+    const editRatio = maxLen ? (1 - dist / maxLen) : 0;
+
+    // weighted
+    return (tokenRatio * 0.55) + (editRatio * 0.45);
+}
+
+function isCorrect(spoken, q){
+    const targets = q.aliases ? q.aliases : [q.answer];
+    let best = 0;
+    targets.forEach(t => { best = Math.max(best, similarityScore(spoken,t)); });
+
+    // Challenge threshold (stricter)
+    return { ok: best >= 0.85, ratio: best };
+}
+
+function buildUI(){
+    const globalChoices = document.getElementById("globalChoices");
+    phraseBank.forEach(p => {
+        const span = document.createElement("span");
+        span.className = "choice-pill";
+        span.textContent = p;
+        globalChoices.appendChild(span);
+    });
+
+    const wrap = document.getElementById("questionsWrap");
+    questions.forEach((q, i) => {
+        const div = document.createElement("div");
+        div.className = "question";
+        div.innerHTML = `
+            <div class="line a">${q.a}</div>
+            <div class="line b">${q.bStart ? q.bStart : ""} <span class="blank" id="blank-${i}">____________________________</span> ${q.bEnd ? q.bEnd : ""}</div>
+            <div class="options">
+                ${q.options.map(op => `<div class="option">${op}</div>`).join("")}
+            </div>
+            <div class="hint-line" id="hint-${i}"></div>
+            <div class="feedback" id="feedback-${i}"></div>
+            <button onclick="record(${i})">🎤 Record Answer ${i+1}</button>
+        `;
+        wrap.appendChild(div);
+    });
+}
+
+setInterval(() => {
+    seconds++;
+    let m = Math.floor(seconds / 60);
+    let s = seconds % 60;
+    document.getElementById("timer").innerHTML =
+        String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+}, 1000);
+
+function record(index){
+    if(answeredQuestions.has(index)) return;
+
+    if(!window.webkitSpeechRecognition){
+        alert("Use Google Chrome");
+        return;
+    }
+    const rec = new webkitSpeechRecognition();
+    rec.lang = "en-US";
+    rec.interimResults = false;
+    rec.maxAlternatives = 1;
+    rec.start();
+
+    rec.onresult = (event) => {
+        let speech = event.results[0][0].transcript;
+        checkAnswer(index, speech);
+    };
+}
+
+function checkAnswer(index, speech){
+    attempts++;
+    document.getElementById("attempts").innerHTML = attempts;
+
+    const q = questions[index];
+    const result = isCorrect(speech, q);
+
+    if(result.ok){
+        correctAnswers++;
+        score = calculateScore();
+        document.getElementById("score").innerHTML = score + " / 100";
+
+        const blank = document.getElementById(`blank-${index}`);
+        blank.innerHTML = "✅ " + q.answer;
+        blank.classList.add("correct");
+
+        const hint = document.getElementById(`hint-${index}`);
+        hint.innerHTML = `Great! You said: "${speech}"`;
+        hint.style.display = "block";
+
+        const fb = document.getElementById(`feedback-${index}`);
+        fb.style.display = "none";
+
+        answeredQuestions.add(index);
+
+        let percent = (correctAnswers / questions.length) * 100;
+        document.getElementById("bar").style.width = percent + "%";
+
+        if(correctAnswers === questions.length) finishQuiz();
+    } else {
+        const fb = document.getElementById(`feedback-${index}`);
+        fb.style.display = "block";
+        fb.innerHTML = `Not quite (${Math.round(result.ratio*100)}% match). Try saying the full phrase clearly. You said: "${speech}"`;
+        alert("Almost!\nSay the complete phrase.");
+    }
+}
+
+function calculateScore(){
+    const total = questions.length;
+    let baseScore = (correctAnswers / total) * 100;
+
+    // Stronger challenge penalty:
+    // each extra attempt beyond correct answers = -3.5%
+    let extraAttempts = attempts - correctAnswers;
+    let penaltyFactor = 1 - (extraAttempts * 0.035);
+
+    // Floor lower than before (hard mode)
+    penaltyFactor = Math.max(0.45, penaltyFactor);
+
+    // Small speed bonus if finished under 3 min
+    let speedBonus = seconds <= 180 ? 3 : 0;
+
+    return Math.min(100, Math.round(baseScore * penaltyFactor + speedBonus));
+}
+
+function finishQuiz(){
+    document.getElementById("finishMessage").innerHTML = "🏆 Challenge completed!";
+    document.getElementById("submitBtn").style.display = "inline-block";
+}
+
+function submitScore(){
+    if(scoreSubmitted){
+        alert("⚠️ Your score has already been submitted!");
+        return;
+    }
+
+    let student = document.getElementById("student").value.trim();
+    let email = document.getElementById("email").value.trim();
+    let time = document.getElementById("timer").innerHTML;
+
+    if(!student || !email){
+        alert("Please complete your name and email");
+        return;
+    }
+
+    scoreSubmitted = true;
+    const btn = document.getElementById("submitBtn");
+    btn.disabled = true;
+    btn.textContent = "📤 Submitting...";
+
+    const formData = new FormData();
+    formData.append(FORM_FIELDS.student, student);
+    formData.append(FORM_FIELDS.email, email);
+    formData.append(FORM_FIELDS.score, score);
+    formData.append(FORM_FIELDS.attempts, attempts);
+    formData.append(FORM_FIELDS.duration, time);
+
+    fetch(GOOGLE_FORM_URL, {
+        method: "POST",
+        body: formData,
+        mode: "no-cors"
+    })
+    .then(() => {
+        btn.textContent = "✅ Score Submitted";
+        btn.style.background = "#10b981";
+        alert(`✅ Score submitted successfully!\n\nStudent: ${student}\nScore: ${score}/100\nAttempts: ${attempts}`);
+    })
+    .catch(error => {
+        console.error(error);
+        scoreSubmitted = false;
+        btn.disabled = false;
+        btn.textContent = "📤 Submit Score";
+        alert("Error submitting score. Please try again.");
+    });
+}
+
+buildUI();
+</script>
+</body>
+</html>
