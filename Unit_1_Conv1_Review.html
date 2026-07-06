@@ -234,54 +234,51 @@ const phraseBank = [
     "what it takes"
 ];
 
+// Ahora evaluamos ORACIÓN COMPLETA (más natural para speech recognition)
 const questions = [
     {
         a: "A: So, how’d you do on the chemistry exam?",
-        bStart: "B: I got a 100!",
-        answer: "I aced it"
+        bStart: "B:",
+        answer: "I got a 100 I aced it"
     },
     {
         a: "A: How are you going to get all your work done? You have so much to do.",
-        bStart: "B: I’ve just got to",
-        bEnd: "and do it. It can’t be late.",
-        answer: "buckle down"
+        bStart: "B:",
+        answer: "I've just got to buckle down and do it it can't be late"
     },
     {
         a: "A: You’ve been talking about changing careers, but you still haven’t filled out the application.",
-        bStart: "B: I know. I keep",
-        bEnd: "because I’m afraid I might not be qualified.",
-        answer: "putting it off"
+        bStart: "B:",
+        answer: "I know I keep putting it off because I'm afraid I might not be qualified"
     },
     {
         a: "A: I’m glad you accepted that job offer at the university.",
-        bStart: "B: Well,",
-        bEnd: "The benefits are fantastic.",
-        answer: "it was a no-brainer"
+        bStart: "B:",
+        answer: "Well it was a no brainer the benefits are fantastic"
     },
     {
         a: "A: What do you think about the new position opening up in marketing?",
-        bStart: "B: I think it’s",
-        bEnd: "You should definitely apply.",
-        answer: "right up your alley"
+        bStart: "B:",
+        answer: "I think it's right up your alley you should definitely apply"
     },
     {
-        a: "A: Do you think Karl has",
-        bEnd: "to be a lawyer?",
-        bStart: "A: Do you think Karl has",
-        answer: "what it takes"
+        a: "A: Do you think Karl has what it takes to be a lawyer?",
+        bStart: "B:",
+        answer: "Yes I do I think he would be amazing"
     },
     {
         a: "A: I can’t believe you finally achieved your goal as an entrepreneur.",
         bStart: "B:",
-        bEnd: "I couldn’t have done it without your support.",
-        answer: "I clinched it",
-        aliases: ["clinched it","I clinched it"]
+        answer: "Better late than never I couldn't have done it without your support",
+        aliases: [
+            "Better late than never I couldn't have done it without your support",
+            "better late than never i could not have done it without your support"
+        ]
     },
     {
-        a: "A: I hope Sharon didn’t think I was",
-        bEnd: "about my test score.",
-        bStart: "A: I hope Sharon didn’t think I was",
-        answer: "bragging"
+        a: "A: I hope Sharon didn’t think I was bragging about my test score.",
+        bStart: "B:",
+        answer: "Of course not she knows how concerned you were about getting a good grade"
     }
 ];
 
@@ -302,11 +299,77 @@ setInterval(() => {
 
 function normalize(text){
     return text
-      .toLowerCase()
-      .replace(/’/g,"'")
-      .replace(/[^a-z0-9' ]/g,"")
-      .replace(/\s+/g," ")
-      .trim();
+        .toLowerCase()
+        .replace(/’/g,"'")
+        .replace(/\bi'm\b/g,"i am")
+        .replace(/\bi've\b/g,"i have")
+        .replace(/\bit's\b/g,"it is")
+        .replace(/\bcan't\b/g,"cannot")
+        .replace(/\bcouldn't\b/g,"could not")
+        .replace(/[^a-z0-9' ]/g,"")
+        .replace(/\s+/g," ")
+        .trim();
+}
+
+// equivalencias/flex para pronunciación difícil
+function canonicalize(text){
+    let t = " " + text + " ";
+    const replacements = [
+        [/ no brainer /g, " no-brainer "],
+        [/ clenched /g, " clinched "],
+        [/ clinch /g, " clinched "]
+    ];
+    replacements.forEach(([pattern, repl]) => t = t.replace(pattern, repl));
+    return t.trim();
+}
+
+function levenshtein(a,b){
+    const m = a.length, n = b.length;
+    const dp = Array.from({length:m+1},()=>Array(n+1).fill(0));
+    for(let i=0;i<=m;i++) dp[i][0]=i;
+    for(let j=0;j<=n;j++) dp[0][j]=j;
+    for(let i=1;i<=m;i++){
+        for(let j=1;j<=n;j++){
+            const cost = a[i-1]===b[j-1] ? 0 : 1;
+            dp[i][j] = Math.min(
+                dp[i-1][j] + 1,
+                dp[i][j-1] + 1,
+                dp[i-1][j-1] + cost
+            );
+        }
+    }
+    return dp[m][n];
+}
+
+function similarityScore(spokenRaw, expectedRaw){
+    const spoken = canonicalize(normalize(spokenRaw));
+    const expected = canonicalize(normalize(expectedRaw));
+
+    if(!spoken || !expected) return 0;
+    if(spoken === expected) return 1;
+
+    // token coverage (estilo original: flexible)
+    const words = expected.split(" ");
+    let matches = 0;
+    words.forEach(w => { if(spoken.includes(w)) matches++; });
+    const tokenRatio = matches / words.length;
+
+    // similitud global suave
+    const dist = levenshtein(spoken, expected);
+    const maxLen = Math.max(spoken.length, expected.length);
+    const editRatio = maxLen ? (1 - dist / maxLen) : 0;
+
+    // peso más cercano a comportamiento original
+    return (tokenRatio * 0.70) + (editRatio * 0.30);
+}
+
+function isCorrect(spoken, q){
+    const targets = q.aliases ? [q.answer, ...q.aliases] : [q.answer];
+    let best = 0;
+    targets.forEach(t => best = Math.max(best, similarityScore(spoken, t)));
+
+    // dificultad similar al original
+    return { ok: best >= 0.70, ratio: best };
 }
 
 function record(index){
@@ -323,7 +386,7 @@ function record(index){
     rec.start();
 
     rec.onresult = (event) => {
-        let speech = event.results[0][0].transcript;
+        const speech = event.results[0][0].transcript;
         checkAnswer(index, speech);
     };
 }
@@ -335,21 +398,9 @@ function checkAnswer(index, speech){
     }
 
     const q = questions[index];
-    const targets = q.aliases ? q.aliases : [q.answer];
+    const result = isCorrect(speech, q);
 
-    let best = 0;
-    const spoken = normalize(speech);
-
-    targets.forEach(target => {
-        const correct = normalize(target);
-        const words = correct.split(" ");
-        let matches = 0;
-        words.forEach(word => { if(spoken.includes(word)) matches++; });
-        const similarity = matches / words.length;
-        if(similarity > best) best = similarity;
-    });
-
-    if(best >= 0.70){
+    if(result.ok){
         correctAnswers++;
         score = calculateScore();
         document.getElementById("score").innerHTML = score + " / 100";
@@ -359,7 +410,7 @@ function checkAnswer(index, speech){
         blank.classList.add("correct");
 
         const hint = document.getElementById(`hint-${index}`);
-        hint.innerHTML = "🎤 Great! Keep going.";
+        hint.innerHTML = `🎤 Great! You said: "${speech}"`;
         hint.style.display = "block";
 
         const fb = document.getElementById(`feedback-${index}`);
@@ -374,16 +425,19 @@ function checkAnswer(index, speech){
     } else {
         const fb = document.getElementById(`feedback-${index}`);
         fb.style.display = "block";
-        fb.innerHTML = `Almost! You said: "${speech}"`;
-        alert("Almost!\n\nTry again and say the complete phrase.");
+        fb.innerHTML = `Almost (${Math.round(result.ratio*100)}%). Try the full sentence.`;
+        alert("Almost!\n\nTry saying the full sentence.");
     }
 }
 
 function calculateScore(){
     const total = questions.length;
     let baseScore = (correctAnswers / total) * 100;
+
+    // Igual al estilo original (penalización suave)
     let attemptPenalty = 1 - ((attempts - correctAnswers) * 0.02);
     attemptPenalty = Math.max(0.6, attemptPenalty);
+
     return Math.round(baseScore * attemptPenalty);
 }
 
