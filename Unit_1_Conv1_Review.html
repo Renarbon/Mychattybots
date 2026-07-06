@@ -199,7 +199,7 @@ button:hover{background:#1d4ed8;}
 <div class="finish">
     <h2 id="finishMessage"></h2>
     <button id="submitBtn" onclick="submitScore()">📤 Submit Score</button>
-</div>
+   </div>
 
 <div class="footer-note">
     <img src="images/avis.png" alt="Avis logo" class="avis-logo">
@@ -217,8 +217,11 @@ const FORM_FIELDS = {
     email: "entry.1479626233",
     score: "entry.1105955459",
     attempts: "entry.1098134799",
-    duration: "entry.368430519"
+    duration: "entry.368430519",
+    assignment: "entry.670716051"
 };
+
+const ASSIGNMENT_ID = "Unit_1_Conv1_Review";
 
 const phraseBank = [
     "I got a 100 I aced it",
@@ -458,6 +461,7 @@ function submitScore(){
     formData.append(FORM_FIELDS.score, score);
     formData.append(FORM_FIELDS.attempts, attempts);
     formData.append(FORM_FIELDS.duration, time);
+    formData.append(FORM_FIELDS.assignment, ASSIGNMENT_ID);
 
     fetch(GOOGLE_FORM_URL, {
         method: "POST",
