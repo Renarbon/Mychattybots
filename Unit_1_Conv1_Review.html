@@ -172,7 +172,7 @@ button:hover{background:#1d4ed8;}
 <div class="card">
 
 <h1>🧠 Idioms Speaking Challenge</h1>
-<p class="subtitle">Look at the phrase bank, then say the <b>complete missing phrase</b> aloud.</p>
+<p class="subtitle">Look at the phrase bank, then say the <b>complete sentence</b> aloud.</p>
 
 <label>Student Name</label>
 <input id="student" placeholder="Enter your name">
@@ -231,7 +231,7 @@ const phraseBank = [
     "I got a 100 I aced it"
 ];
 
-// Ahora evaluamos ORACIÓN COMPLETA (más natural para speech recognition)
+// Respuesta esperada = ORACIÓN COMPLETA
 const questions = [
     {
         a: "A: So, how’d you do on the chemistry exam?",
@@ -268,8 +268,7 @@ const questions = [
         bStart: "B:",
         answer: "Better late than never I couldn't have done it without your support",
         aliases: [
-            "Better late than never I couldn't have done it without your support",
-            "better late than never i could not have done it without your support"
+            "Better late than never I could not have done it without your support"
         ]
     },
     {
@@ -308,7 +307,6 @@ function normalize(text){
         .trim();
 }
 
-// equivalencias/flex para pronunciación difícil
 function canonicalize(text){
     let t = " " + text + " ";
     const replacements = [
@@ -341,22 +339,18 @@ function levenshtein(a,b){
 function similarityScore(spokenRaw, expectedRaw){
     const spoken = canonicalize(normalize(spokenRaw));
     const expected = canonicalize(normalize(expectedRaw));
-
     if(!spoken || !expected) return 0;
     if(spoken === expected) return 1;
 
-    // token coverage (estilo original: flexible)
     const words = expected.split(" ");
     let matches = 0;
     words.forEach(w => { if(spoken.includes(w)) matches++; });
     const tokenRatio = matches / words.length;
 
-    // similitud global suave
     const dist = levenshtein(spoken, expected);
     const maxLen = Math.max(spoken.length, expected.length);
     const editRatio = maxLen ? (1 - dist / maxLen) : 0;
 
-    // peso más cercano a comportamiento original
     return (tokenRatio * 0.70) + (editRatio * 0.30);
 }
 
@@ -364,9 +358,7 @@ function isCorrect(spoken, q){
     const targets = q.aliases ? [q.answer, ...q.aliases] : [q.answer];
     let best = 0;
     targets.forEach(t => best = Math.max(best, similarityScore(spoken, t)));
-
-    // dificultad similar al original
-    return { ok: best >= 0.70, ratio: best };
+    return { ok: best >= 0.70, ratio: best }; // dificultad similar a original
 }
 
 function record(index){
@@ -430,11 +422,8 @@ function checkAnswer(index, speech){
 function calculateScore(){
     const total = questions.length;
     let baseScore = (correctAnswers / total) * 100;
-
-    // Igual al estilo original (penalización suave)
     let attemptPenalty = 1 - ((attempts - correctAnswers) * 0.02);
     attemptPenalty = Math.max(0.6, attemptPenalty);
-
     return Math.round(baseScore * attemptPenalty);
 }
 
