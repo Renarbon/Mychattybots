@@ -337,10 +337,6 @@ function checkAnswer(index, speech){
         document.getElementsByClassName("blank")[index].innerHTML = "✅ " + answers[index];
         document.getElementsByClassName("blank")[index].classList.add("correct");
 
-        const hint = document.getElementsByClassName("hint-line")[index];
-        hint.innerHTML = "🎤 Continue: " + supportLines[index];
-        hint.style.display = "block";
-
         answeredQuestions.add(index);
 
         let percent = (correctAnswers / 10) * 100;
