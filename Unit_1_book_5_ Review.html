@@ -210,6 +210,7 @@ button:hover{background:#1d4ed8;}
     <h3>Word/Phrase Box (3 extra choices)</h3>
     <div class="choices" id="globalChoices"></div>
     <div class="small-note">🎤 Similar difficulty to your original song activity.</div>
+    <div class="small-note">If you are using a phone, tap a phrase first, then tap the blank space.</div>
 </div>
 
 <div id="questionsWrap"></div>
@@ -247,9 +248,9 @@ const phraseBank = [
     "I've just got to buckle down and do it it can't be late",
     "I think it's right up your alley you should definitely apply",
     "I got a 100 I aced it",
-    "Of course not she knows how concerned you were about getting a good grade"
+    "Of course not she knows how concerned you were about getting a good grade",
     "Better late than never I couldn't have done it without your support",
-    "Yes I do I think he would be amazing",
+    "Yes I do I think he would be amazing"
 ];
 
 // Respuesta esperada = ORACIÓN COMPLETA
@@ -381,6 +382,15 @@ function isCorrect(spoken, q){
     let best = 0;
     targets.forEach(t => best = Math.max(best, similarityScore(spoken, t)));
     return { ok: best >= 0.70, ratio: best }; // dificultad similar a original
+}
+
+function shuffleArray(arr){
+    const a = [...arr];
+    for(let i = a.length - 1; i > 0; i--){
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
 }
 
 function useChoiceOnQuestion(index, droppedText, sourceEl){
@@ -535,7 +545,8 @@ function setupBlankDropZone(blankEl, index){
 
 function buildUI(){
     const globalChoices = document.getElementById("globalChoices");
-    phraseBank.forEach((p, idx) => {
+
+    shuffleArray(phraseBank).forEach((p, idx) => {
         const span = document.createElement("span");
         span.className = "choice-pill";
         span.textContent = p;
