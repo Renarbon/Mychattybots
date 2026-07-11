@@ -157,6 +157,9 @@ button:hover{background:#1d4ed8;}
         <source src="my-music/If It Hadn't Been for You.mp3" type="audio/mpeg">
     </audio>
 </div>
+    <div id="recordingStatus" style="display:none;margin:10px 0 18px;padding:10px 12px;border-radius:8px;background:#7f1d1d;color:#fee2e2;font-weight:600;">
+  🔴 Recording... speak now
+</div>
 
 <div class="question">
     <div class="line">I almost missed my morning train,</div>
@@ -298,22 +301,38 @@ function normalize(text){
 }
 
 function record(index){
+    const status = document.getElementById("recordingStatus");
+
     if(!window.webkitSpeechRecognition){
         alert("Use Google Chrome");
         return;
     }
+
     const rec = new webkitSpeechRecognition();
     rec.lang = "en-US";
     rec.interimResults = false;
     rec.maxAlternatives = 1;
+
+    // Mostrar aviso al empezar
+    if(status) status.style.display = "block";
+
     rec.start();
 
     rec.onresult = (event) => {
         let speech = event.results[0][0].transcript;
         checkAnswer(index, speech);
     };
-}
 
+    // Ocultar aviso al terminar
+    rec.onend = () => {
+        if(status) status.style.display = "none";
+    };
+
+    // Ocultar aviso si hay error también
+    rec.onerror = () => {
+        if(status) status.style.display = "none";
+    };
+}
 function checkAnswer(index, speech){
     if(!answeredQuestions.has(index)){
         attempts++;
