@@ -11,7 +11,7 @@
     margin:0 auto 10px;
     max-width:120px;
     height:auto;
-}    
+}
 *{margin:0;padding:0;box-sizing:border-box;}
 body{
     font-family:Segoe UI,Arial,sans-serif;
@@ -106,6 +106,19 @@ button{
     margin-top:10px;
 }
 button:hover{background:#1d4ed8;}
+
+.record-btn.recording{
+    background:#ef4444 !important;
+    animation:recPulse 1s infinite;
+}
+.record-btn.recording:hover{background:#dc2626 !important;}
+
+@keyframes recPulse{
+    0%{box-shadow:0 0 0 0 rgba(239,68,68,.55);}
+    70%{box-shadow:0 0 0 12px rgba(239,68,68,0);}
+    100%{box-shadow:0 0 0 0 rgba(239,68,68,0);}
+}
+
 .correct{background:#14532d;color:#dcfce7;}
 .finish{text-align:center;margin-top:35px;}
 #submitBtn{
@@ -157,7 +170,8 @@ button:hover{background:#1d4ed8;}
         <source src="my-music/If It Hadn't Been for You.mp3" type="audio/mpeg">
     </audio>
 </div>
-    <div id="recordingStatus" style="display:none;margin:10px 0 18px;padding:10px 12px;border-radius:8px;background:#7f1d1d;color:#fee2e2;font-weight:600;">
+
+<div id="recordingStatus" style="display:none;margin:10px 0 18px;padding:10px 12px;border-radius:8px;background:#7f1d1d;color:#fee2e2;font-weight:600;">
   🔴 Recording... speak now
 </div>
 
@@ -165,8 +179,8 @@ button:hover{background:#1d4ed8;}
     <div class="line">I almost missed my morning train,</div>
     <div class="line">The sky was dark with pouring rain.</div>
     <div class="blank">____________________________</div>
-   <div class="line">If it hadn't been for you</div>
-    <button onclick="record(0)">🎤 Record</button>
+    <div class="line">If it hadn't been for you</div>
+    <button class="record-btn" onclick="record(0, this)">🎤 Record</button>
 </div>
 
 <div class="question">
@@ -174,7 +188,7 @@ button:hover{background:#1d4ed8;}
     <div class="blank">____________________________</div>
     <div class="line">I'd still be standing in the blue...</div>
     <div class="line">if it hadn't been for you.</div>
-    <button onclick="record(1)">🎤 Record</button>
+    <button class="record-btn" onclick="record(1, this)">🎤 Record</button>
 </div>
 
 <div class="question">
@@ -182,15 +196,15 @@ button:hover{background:#1d4ed8;}
     <div class="line">Somehow life kept moving on.</div>
     <div class="blank">____________________________</div>
     <div class="line">uhh uhhh uhhh...</div>
-      <button onclick="record(2)">🎤 Record</button>
+    <button class="record-btn" onclick="record(2, this)">🎤 Record</button>
 </div>
 
 <div class="question">
     <div class="line">If it weren't for you,</div>
     <div class="blank">____________________________</div>
-   <div class="line">you're the light that gets me through</div> 
+    <div class="line">you're the light that gets me through</div>
     <div class="line">every day begins with you</div>
-    <button onclick="record(3)">🎤 Record</button>
+    <button class="record-btn" onclick="record(3, this)">🎤 Record</button>
 </div>
 
 <div class="question">
@@ -198,17 +212,17 @@ button:hover{background:#1d4ed8;}
     <div class="line">I'd be lost without a clue.</div>
     <div class="blank">____________________________</div>
     <div class="line">Life is better thanks... to you</div>
-    <button onclick="record(4)">🎤 Record</button>
+    <button class="record-btn" onclick="record(4, this)">🎤 Record</button>
 </div>
 
 <hr style="margin:35px 0">
 
 <div class="question">
     <div class="line">I caught the flight just in the nick of time,</div>
-    <div class="blank">____________________________</div>    
-    <div class="line">I smiled because I finaly knew... </div> 
+    <div class="blank">____________________________</div>
+    <div class="line">I smiled because I finaly knew... </div>
     <div class="line">if it hadn't been for you.</div>
-    <button onclick="record(5)">🎤 Record</button>
+    <button class="record-btn" onclick="record(5, this)">🎤 Record</button>
 </div>
 
 <div class="question">
@@ -216,7 +230,7 @@ button:hover{background:#1d4ed8;}
     <div class="line">It kept my worried heart so warm.</div>
     <div class="blank">____________________________</div>
     <div class="line">if it hadn't been for you.</div>
-    <button onclick="record(6)">🎤 Record</button>
+    <button class="record-btn" onclick="record(6, this)">🎤 Record</button>
 </div>
 
 <div class="question">
@@ -224,7 +238,7 @@ button:hover{background:#1d4ed8;}
     <div class="blank">____________________________</div>
     <div class="line">if it hadn't been for your helping hand</div>
     <div class="line">I never would have reached this land</div>
-    <button onclick="record(7)">🎤 Record</button>
+    <button class="record-btn" onclick="record(7, this)">🎤 Record</button>
 </div>
 
 <div class="question">
@@ -232,7 +246,7 @@ button:hover{background:#1d4ed8;}
     <div class="blank">____________________________</div>
     <div class="line">if it weren't for you.</div>
     <div class="line">every dream comes shining through</div>
-    <button onclick="record(8)">🎤 Record</button>
+    <button class="record-btn" onclick="record(8, this)">🎤 Record</button>
 </div>
 
 <div class="question">
@@ -242,7 +256,7 @@ button:hover{background:#1d4ed8;}
     <div class="blank">____________________________</div>
     <div class="line">past or present one thing is true... </div>
     <div class="line">I'm thankful....because of you</div>
-        <button onclick="record(9)">🎤 Record</button>
+    <button class="record-btn" onclick="record(9, this)">🎤 Record</button>
 </div>
 
 <div class="finish">
@@ -266,8 +280,11 @@ const FORM_FIELDS = {
     email: "entry.1479626233",
     score: "entry.1105955459",
     attempts: "entry.1098134799",
-    duration: "entry.368430519"
+    duration: "entry.368430519",
+    activity: "entry.670716051"
 };
+
+const ACTIVITY_NAME = "If It Hadn't Been for You";
 
 const answers = [
     "I found my way I made it through",
@@ -281,6 +298,7 @@ const answers = [
     "I'd fall apart before I start",
     "I'd never know the things I do"
 ];
+
 let score = 0;
 let correctAnswers = 0;
 let attempts = 0;
@@ -300,9 +318,27 @@ function normalize(text){
     return text.toLowerCase().replace(/[^a-z0-9 ]/g,"").replace(/\s+/g," ").trim();
 }
 
-function record(index){
+function setRecordUI(button, isRecording){
     const status = document.getElementById("recordingStatus");
 
+    if(status){
+        status.style.display = isRecording ? "block" : "none";
+    }
+
+    if(button){
+        if(isRecording){
+            button.classList.add("recording");
+            button.textContent = "⏺️ Recording...";
+            button.disabled = true;
+        }else{
+            button.classList.remove("recording");
+            button.textContent = "🎤 Record";
+            button.disabled = false;
+        }
+    }
+}
+
+function record(index, button){
     if(!window.webkitSpeechRecognition){
         alert("Use Google Chrome");
         return;
@@ -310,31 +346,52 @@ function record(index){
 
     const rec = new webkitSpeechRecognition();
     rec.lang = "en-US";
-    rec.interimResults = false;
+    rec.interimResults = true;
     rec.maxAlternatives = 1;
+    rec.continuous = true;
 
-    // Mostrar aviso al empezar
-    if(status) status.style.display = "block";
+    let finalTranscript = "";
+    const startedAt = Date.now();
 
+    setRecordUI(button, true);
     rec.start();
 
+    const timeout = setTimeout(() => {
+        try { rec.stop(); } catch(e) {}
+    }, 9000);
+
     rec.onresult = (event) => {
-        let speech = event.results[0][0].transcript;
-        checkAnswer(index, speech);
+        for(let i = event.resultIndex; i < event.results.length; i++){
+            if(event.results[i].isFinal){
+                finalTranscript += " " + event.results[i][0].transcript;
+            }
+        }
     };
 
-    // Ocultar aviso al terminar
     rec.onend = () => {
-        if(status) status.style.display = "none";
+        clearTimeout(timeout);
+        setRecordUI(button, false);
+
+        const elapsed = Date.now() - startedAt;
+        const cleaned = normalize(finalTranscript || "");
+
+        if(cleaned.length < 8 || elapsed < 1200){
+            alert("I heard only a short fragment. Please try the full line again (no penalty).");
+            return;
+        }
+
+        checkAnswer(index, finalTranscript, true);
     };
 
-    // Ocultar aviso si hay error también
     rec.onerror = () => {
-        if(status) status.style.display = "none";
+        clearTimeout(timeout);
+        setRecordUI(button, false);
+        alert("⚠️ Audio capture error. Please try again.");
     };
 }
-function checkAnswer(index, speech){
-    if(!answeredQuestions.has(index)){
+
+function checkAnswer(index, speech, countAttempt = true){
+    if(countAttempt && !answeredQuestions.has(index)){
         attempts++;
         document.getElementById("attempts").innerHTML = attempts;
     }
@@ -349,14 +406,16 @@ function checkAnswer(index, speech){
     let similarity = matches / words.length;
 
     if(similarity >= 0.70){
-        correctAnswers++;
+        if(!answeredQuestions.has(index)){
+            correctAnswers++;
+            answeredQuestions.add(index);
+        }
+
         score = calculateScore();
         document.getElementById("score").innerHTML = score + " / 100";
 
         document.getElementsByClassName("blank")[index].innerHTML = "✅ " + answers[index];
         document.getElementsByClassName("blank")[index].classList.add("correct");
-
-        answeredQuestions.add(index);
 
         let percent = (correctAnswers / 10) * 100;
         document.getElementById("bar").style.width = percent + "%";
@@ -405,6 +464,7 @@ function submitScore(){
     formData.append(FORM_FIELDS.score, score);
     formData.append(FORM_FIELDS.attempts, attempts);
     formData.append(FORM_FIELDS.duration, time);
+    formData.append(FORM_FIELDS.activity, ACTIVITY_NAME);
 
     fetch(GOOGLE_FORM_URL, {
         method: "POST",
