@@ -106,17 +106,6 @@ button{
     margin-top:10px;
 }
 button:hover{background:#1d4ed8;}
-.record-btn.recording{
-    background:#ef4444 !important;
-    animation:recPulse 1s infinite;
-}
-.record-btn.recording:hover{background:#dc2626 !important;}
-
-@keyframes recPulse{
-    0%{box-shadow:0 0 0 0 rgba(239,68,68,.55);}
-    70%{box-shadow:0 0 0 12px rgba(239,68,68,0);}
-    100%{box-shadow:0 0 0 0 rgba(239,68,68,0);}
-}    
 .correct{background:#14532d;color:#dcfce7;}
 .finish{text-align:center;margin-top:35px;}
 #submitBtn{
@@ -177,7 +166,7 @@ button:hover{background:#1d4ed8;}
     <div class="line">The sky was dark with pouring rain.</div>
     <div class="blank">____________________________</div>
    <div class="line">If it hadn't been for you</div>
-   <button class="record-btn" onclick="record(0, this)">🎤 Record</button>
+    <button onclick="record(0)">🎤 Record</button>
 </div>
 
 <div class="question">
@@ -185,7 +174,7 @@ button:hover{background:#1d4ed8;}
     <div class="blank">____________________________</div>
     <div class="line">I'd still be standing in the blue...</div>
     <div class="line">if it hadn't been for you.</div>
-    <button class="record-btn" onclick="record(0, this)">🎤 Record</button>
+    <button onclick="record(1)">🎤 Record</button>
 </div>
 
 <div class="question">
@@ -193,7 +182,7 @@ button:hover{background:#1d4ed8;}
     <div class="line">Somehow life kept moving on.</div>
     <div class="blank">____________________________</div>
     <div class="line">uhh uhhh uhhh...</div>
-     <button class="record-btn" onclick="record(0, this)">🎤 Record</button>
+      <button onclick="record(2)">🎤 Record</button>
 </div>
 
 <div class="question">
@@ -201,7 +190,7 @@ button:hover{background:#1d4ed8;}
     <div class="blank">____________________________</div>
    <div class="line">you're the light that gets me through</div> 
     <div class="line">every day begins with you</div>
-    <button class="record-btn" onclick="record(0, this)">🎤 Record</button>
+    <button onclick="record(3)">🎤 Record</button>
 </div>
 
 <div class="question">
@@ -209,7 +198,7 @@ button:hover{background:#1d4ed8;}
     <div class="line">I'd be lost without a clue.</div>
     <div class="blank">____________________________</div>
     <div class="line">Life is better thanks... to you</div>
-    <button class="record-btn" onclick="record(0, this)">🎤 Record</button>
+    <button onclick="record(4)">🎤 Record</button>
 </div>
 
 <hr style="margin:35px 0">
@@ -219,7 +208,7 @@ button:hover{background:#1d4ed8;}
     <div class="blank">____________________________</div>    
     <div class="line">I smiled because I finaly knew... </div> 
     <div class="line">if it hadn't been for you.</div>
-    <button class="record-btn" onclick="record(0, this)">🎤 Record</button>
+    <button onclick="record(5)">🎤 Record</button>
 </div>
 
 <div class="question">
@@ -227,7 +216,7 @@ button:hover{background:#1d4ed8;}
     <div class="line">It kept my worried heart so warm.</div>
     <div class="blank">____________________________</div>
     <div class="line">if it hadn't been for you.</div>
-    <button class="record-btn" onclick="record(0, this)">🎤 Record</button>
+    <button onclick="record(6)">🎤 Record</button>
 </div>
 
 <div class="question">
@@ -235,7 +224,7 @@ button:hover{background:#1d4ed8;}
     <div class="blank">____________________________</div>
     <div class="line">if it hadn't been for your helping hand</div>
     <div class="line">I never would have reached this land</div>
-    <button class="record-btn" onclick="record(0, this)">🎤 Record</button>
+    <button onclick="record(7)">🎤 Record</button>
 </div>
 
 <div class="question">
@@ -243,7 +232,7 @@ button:hover{background:#1d4ed8;}
     <div class="blank">____________________________</div>
     <div class="line">if it weren't for you.</div>
     <div class="line">every dream comes shining through</div>
-    <button class="record-btn" onclick="record(0, this)">🎤 Record</button>
+    <button onclick="record(8)">🎤 Record</button>
 </div>
 
 <div class="question">
@@ -253,7 +242,7 @@ button:hover{background:#1d4ed8;}
     <div class="blank">____________________________</div>
     <div class="line">past or present one thing is true... </div>
     <div class="line">I'm thankful....because of you</div>
-        <button class="record-btn" onclick="record(0, this)">🎤 Record</button>
+        <button onclick="record(9)">🎤 Record</button>
 </div>
 
 <div class="finish">
@@ -311,7 +300,7 @@ function normalize(text){
     return text.toLowerCase().replace(/[^a-z0-9 ]/g,"").replace(/\s+/g," ").trim();
 }
 
-function record(index, button){
+function record(index){
     const status = document.getElementById("recordingStatus");
 
     if(!window.webkitSpeechRecognition){
@@ -333,31 +322,17 @@ function record(index, button){
         let speech = event.results[0][0].transcript;
         checkAnswer(index, speech);
     };
-    if(button){
-    button.classList.add("recording");
-    button.textContent = "⏺️ Recording...";
-    button.disabled = true;
-}
 
     // Ocultar aviso al terminar
     rec.onend = () => {
-    if(status) status.style.display = "none";
-    if(button){
-        button.classList.remove("recording");
-        button.textContent = "🎤 Record";
-        button.disabled = false;
-    }
-};
+        if(status) status.style.display = "none";
+    };
 
     // Ocultar aviso si hay error también
     rec.onerror = () => {
-    if(status) status.style.display = "none";
-    if(button){
-        button.classList.remove("recording");
-        button.textContent = "🎤 Record";
-        button.disabled = false;
-    }
-};
+        if(status) status.style.display = "none";
+    };
+}
 function checkAnswer(index, speech){
     if(!answeredQuestions.has(index)){
         attempts++;
