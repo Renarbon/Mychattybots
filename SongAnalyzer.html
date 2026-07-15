@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My Music, Videos & Speech Recorder</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    :root{
+      --bg:#0f172a; --text:#e5e7eb; --muted:#64748b; --accent:#22d3ee; --accent2:#a78bfa; --radius:12px;
+    }
+    body{margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);}
+    .wrap{max-width:1100px;margin:24px auto;padding:0 16px;}
+    header{display:flex;flex-direction:column;gap:6px;margin-bottom:18px;}
+    h1{font-size:clamp(22px,3vw,34px);margin:0;}
+    .hint{color:#9ca3af}
+    .board{display:grid;grid-template-columns:1fr 380px;gap:16px;}
+    @media(max-width:900px){.board{grid-template-columns:1fr}}
+    .card{background:linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01));border-radius:var(--radius);padding:16px;}
+
+    .thumb {
+      width: 100%;
+      background: #0b1220;
+      border-radius: 12px;
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+      margin-bottom: 12px;
+      min-height:60px;
+      position:relative;
+      aspect-ratio: 16/9;
+    }
+    .thumb img,
+    .thumb video,
+    .thumb iframe {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 12px;
+      position:absolute;
+      top:0; left:0;
+    }
+
+    .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+    .btn{
+      appearance:none;border:1px solid rgba(255,255,255,0.12);color:var(--text);
+      background:#0b1220;padding:10px 12px;border-radius:12px;cursor:pointer;
+    }
+    .btn:hover{border-color:rgba(255,255,255,0.22);}
+    .list{max-height:62vh;overflow:auto;padding:4px;}
+    .row{
+      display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;
+      padding:10px;border-radius:12px;cursor:pointer;
+    }
+    .row:hover{background:rgba(255,255,255,0.06);}
+    .row.active{background:linear-gradient(90deg, rgba(167,139,250,0.15), rgba(34,211,238,0.12));}
+    .row .dot{width:10px;height:10px;border-radius:50%;}
+    .dot.audio{background:var(--accent);}
+    .dot.video{background:var(--accent2);}
+    .dot.youtube{background:#ff5050;}
+    .row .name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .row .dur{color:var(--muted);}
+
+    .album-grid {display:flex;flex-wrap:wrap;gap:20px;margin-bottom:24px;justify-content:flex-start;}
+    .album {
+      display:flex;flex-direction:column;align-items:center;cursor:pointer;border-radius:12px;
+      background:rgba(255,255,255,0.04);padding:10px 10px 6px 10px;border:2px solid transparent;
+    }
+    .album.active, .album:hover {
+      border:2px solid var(--accent2);
+      background:linear-gradient(180deg, rgba(34,211,238,0.04), rgba(167,139,250,0.08));
+    }
+    .album img{
+      width:80px;height:80px;object-fit:cover;border-radius:12px;margin-bottom:6px;
+      box-shadow:0 2px 8px rgba(20,20,40,0.18);
+    }
+    .album .album-label{font-size:.95em;color:var(--muted);text-align:center;max-width:90px;word-break:break-word;}
+    .album .album-count{font-size:.8em;color:var(--accent2);}
+    .show-albums-btn{margin-bottom:12px;display:none;}
+    .hide{display:none !important;}
+    .album-back-row:hover {background: rgba(167,139,250,0.13);}
+    .album-back-row img {filter: invert(65%);vertical-align:middle;}
+
+    /* Recorder */
+    .recorder-card{margin-top:18px;}
+    .recorder-title{margin:0 0 8px;color:#7dd3fc;}
+    .recorder-info{color:#9ca3af;background:#1f2937;border-radius:8px;padding:10px;margin:12px 0;}
+    .recorder input,.recorder textarea{
+      width:100%;box-sizing:border-box;border:1px solid rgba(255,255,255,.15);background:#0b1220;
+      color:var(--text);border-radius:8px;padding:10px;
+    }
+    .recorder textarea{min-height:110px;resize:vertical;}
+    .recorder .meta-row{display:flex;flex-wrap:wrap;gap:12px;margin:8px 0;align-items:center;}
+    .recorder .meta-label{color:#cbd5e1;font-weight:600;}
+    .recorder .meta-attempts{color:#f59e0b;font-weight:700;}
+    .recorder audio{width:100%;margin-top:8px;display:none;}
+    #recordBtn.recording{background:#dc3545;color:#fff;}
+    #stopBtn{background:#dc3545;color:#fff;}
+    #downloadPDF,#downloadAudio{background:#007aff;color:#fff;}
+    .feedback{background:#052e16;border-left:4px solid #22c55e;margin-top:12px;padding:10px 12px;border-radius:8px;display:none;}
+    .feedback .label{color:#7dd3fc;font-weight:700;}
+
+    @media(max-width:600px){
+      .album-grid{gap:9px;}
+      .album img{width:52px;height:52px;}
+      .album .album-label{font-size:.88em;}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>My Music & Videos</h1>
+      <div class="hint">Shortcuts: <kbd>Space</kbd>/<kbd>P</kbd> play‑pause · <kbd>N</kbd> next · <kbd>B</kbd> back</div>
+    </header>
+
+    <button class="btn show-albums-btn" id="showAlbumsBtn">← Back to Albums</button>
+    <div class="album-grid" id="albumGrid"></div>
+
+    <div class="board">
+      <section class="card player hide" id="playerCard">
+        <div class="thumb" id="thumb">
+          <svg width="60" height="60" viewBox="0 0 24 24" fill="currentColor"><path d="M10 17l6-5-6-5v10z"/></svg>
+        </div>
+        <h2 class="title" id="title">No song selected</h2>
+        <div class="meta" id="meta">—</div>
+        <audio id="audio" preload="metadata"></audio>
+        <div class="controls">
+          <button class="btn" id="prevBtn">⏮️ Prev</button>
+          <button class="btn" id="playBtn">⏯️ Play/Pause</button>
+          <button class="btn" id="nextBtn">⏭️ Next</button>
+          <button class="btn" id="shuffleBtn" aria-pressed="false">🔀 Shuffle</button>
+          <button class="btn" id="loopBtn" aria-pressed="false">🔁 Loop</button>
+        </div>
+      </section>
+
+      <aside class="card side hide" id="sideCard">
+        <div class="search" style="display:flex;gap:8px;">
+          <input id="search" type="search" placeholder="Search…" />
+          <button class="btn" id="clearBtn">✖</button>
+        </div>
+        <div class="list" id="list" role="listbox"></div>
+      </aside>
+    </div>
+
+    <!-- Recorder integrado -->
+    <section class="card recorder-card recorder">
+      <h2 class="recorder-title">🎤 ESL Speaking Practice (with Feedback)</h2>
+      <div class="recorder-info">
+        Please speak for 2 minutes about any topic. Enter your name, press <b>Record</b>, and then <b>Stop</b>.
+      </div>
+
+      <div class="meta-row">
+        <label style="width:min(100%,340px)">Student Name:
+          <input id="studentName" type="text" required />
+        </label>
+        <span class="meta-label">Date: <span id="autoDate"></span></span>
+        <span class="meta-label">Time: <span id="autoTime"></span></span>
+      </div>
+
+      <div class="meta-row">
+        <span class="meta-label">Speech Duration: <span id="speechDuration">00:00</span></span>
+        <span class="meta-attempts">Attempts: <span id="attemptCount">0</span></span>
+      </div>
+
+      <div class="controls" style="margin-top:8px;">
+        <button class="btn" id="recordBtn" onclick="startRecording()">🎙️ Record</button>
+        <button class="btn" id="stopBtn" onclick="stopRecording()" disabled>⏹️ Stop</button>
+        <button class="btn" id="downloadPDF" onclick="downloadPDF()" disabled>⬇️ Download PDF</button>
+        <button class="btn" id="downloadAudio" onclick="downloadAudio()" disabled>⬇️ Download Audio</button>
+      </div>
+
+      <audio id="audioPlayer" controls></audio>
+      <textarea id="transcript" readonly placeholder="Your transcript will appear here..."></textarea>
+
+      <div id="feedback" class="feedback">
+        <span class="label">Feedback:</span>
+        <div id="correctionText"></div>
+        <div style="margin-top:8px;">
+          <span class="label">Suggested Correction:</span>
+          <div id="correctionSuggestion" style="color:#86efac;font-weight:bold;"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+<script>
+// Playlist
+const playlist=[
+ { title: "Volví(Club Performance)", src: "-RM3KuZ0CxU", type: "youtube", poster: "images/cuarto azul.png", artist: "El Cuarto Azul" },
+ { title: "Volví", src: "my-music/Volví.mp3", type: "audio", artist: "Mr. Arguet", poster:"images/cuarto azul.png"},
+ { title: "Aún te sueño", src: "my-music/Aún te sueño .mp3", type: "audio", artist: "Mr. Arguet", poster:"images/cuarto azul.png"},
+ { title: "Brujula en la piel", src: "my-music/Brujula en la piel.mp3", type: "audio", artist: "Mr. Arguet", poster:"images/cuarto azul.png"},
+ { title: "30 dias", src: "my-music/30 dias (Remix).mp3", type: "audio", artist: "Mr. Arguet", poster:"images/cuarto azul.png"},
+ { title: "Entre Sol y Neon", src: "my-music/Entre Sol y Neón.mp3", type: "audio", artist: "Mr. Arguet", poster:"images/cuarto azul.png"},
+ { title: "Mi destino", src: "my-music/Mi destino.mp3", type: "audio", artist: "Mr. Arguet", poster:"images/cuarto azul.png"},
+ { title: "Mi radar", src: "my-music/Mi radar.mp3", type: "audio", artist: "Mr. Arguet", poster:"images/cuarto azul.png"},
+ { title: "Por un dia mas de sol", src: "my-music/por un dia mas de sol .mp3", type: "audio", artist: "Mr. Arguet", poster:"images/cuarto azul.png"},
+ { title: "Cancion para mi..", src: "my-music/te encontrare una mañana.mp3", type: "audio", artist: "Mr. Arguet", poster:"images/cuarto azul.png"},
+ { title: "Tears on the dancefloor clip", src: "soul-mus/tears on the dancefloor.mp4", type: "video", poster: "soul-mus/tears on the dancefloor-Cover.jpg", artist: "Moonstone Grooves" },
+ { title: "Candle Light Groove", src: "soul-mus/clg.mp3", type: "audio", artist: "Mr. Arguet", poster:"soul-mus/tears on the dancefloor-Cover.jpg"},
+ { title: "Don't let me go now", src: "soul-mus/dlg.mp3", type: "audio", artist: "Mr. Arguet", poster:"soul-mus/tears on the dancefloor-Cover.jpg"},
+ { title: "Funk Explosion", src: "soul-mus/fe.mp3", type: "audio", artist: "Mr. Arguet", poster:"soul-mus/tears on the dancefloor-Cover.jpg"},
+ { title: "Flirting Games", src: "soul-mus/fg.mp3", type: "audio", artist: "Mr. Arguet", poster:"soul-mus/tears on the dancefloor-Cover.jpg"},
+ { title: "Let the good times roll", src: "soul-mus/ltgr.mp3", type: "audio", artist: "Mr. Arguet", poster:"soul-mus/tears on the dancefloor-Cover.jpg"},
+ { title: "Midnight Polaroid", src: "soul-mus/mp.mp3", type: "audio", artist: "Mr. Arguet", poster:"soul-mus/tears on the dancefloor-Cover.jpg"},
+ { title: "Smooth Goodbye", src: "soul-mus/sg.mp3", type: "audio", artist: "Mr. Arguet", poster:"soul-mus/tears on the dancefloor-Cover.jpg"},
+ { title: "The grand entrance", src: "soul-mus/tge.mp3", type: "audio", artist: "Mr. Arguet", poster:"soul-mus/tears on the dancefloor-Cover.jpg"},
+ { title: "Tears on the dancefloor", src: "soul-mus/tod.mp3", type: "audio", artist: "Mr. Arguet", poster:"soul-mus/tears on the dancefloor-Cover.jpg"}
+];
+
+let currentIndex = null;
+let shuffle = false;
+let currentAlbum = null;
+
+const els = {
+  audio: document.getElementById('audio'),
+  thumb: document.getElementById('thumb'),
+  title: document.getElementById('title'),
+  meta: document.getElementById('meta'),
+  list: document.getElementById('list'),
+  search: document.getElementById('search'),
+  clearBtn: document.getElementById('clearBtn'),
+  prevBtn: document.getElementById('prevBtn'),
+  nextBtn: document.getElementById('nextBtn'),
+  playBtn: document.getElementById('playBtn'),
+  shuffleBtn: document.getElementById('shuffleBtn'),
+  loopBtn: document.getElementById('loopBtn'),
+  albumGrid: document.getElementById('albumGrid'),
+  showAlbumsBtn: document.getElementById('showAlbumsBtn'),
+  playerCard: document.getElementById('playerCard'),
+  sideCard: document.getElementById('sideCard')
+};
+
+function getAlbums() {
+  const albums = {};
+  playlist.forEach(song => {
+    if (!albums[song.poster]) albums[song.poster] = [];
+    albums[song.poster].push(song);
+  });
+  return albums;
+}
+
+function getAlbumLabel(songs) {
+  if (!songs || !songs.length) return 'Unknown Album';
+  const artist = songs[0].artist || '';
+  if (artist) return artist;
+  const poster = songs[0].poster || '';
+  return poster.split("/").pop().split(".")[0];
+}
+
+function renderAlbumGrid() {
+  const albums = getAlbums();
+  els.albumGrid.innerHTML = '';
+  Object.entries(albums).forEach(([poster, songs]) => {
+    const albumDiv = document.createElement('div');
+    albumDiv.className = 'album';
+    albumDiv.tabIndex = 0;
+    albumDiv.innerHTML = `
+      <img src="${poster}" alt="album cover">
+      <div class="album-label">${getAlbumLabel(songs)}</div>
+      <div class="album-count">${songs.length} song${songs.length > 1 ? 's' : ''}</div>
+    `;
+    albumDiv.onclick = () => showAlbum(poster);
+    albumDiv.onkeypress = e => { if (e.key === "Enter" || e.key === " ") showAlbum(poster); };
+    els.albumGrid.appendChild(albumDiv);
+  });
+  els.albumGrid.style.display = "";
+  els.showAlbumsBtn.style.display = "none";
+  els.playerCard.classList.add("hide");
+  els.sideCard.classList.add("hide");
+}
+
+function showAlbum(poster) {
+  currentAlbum = poster;
+  renderList();
+  Array.from(els.albumGrid.children).forEach(albumDiv => {
+    if (albumDiv.querySelector("img").src.includes(poster)) albumDiv.classList.add('active');
+    else albumDiv.classList.remove('active');
+  });
+  els.albumGrid.style.display = "none";
+  els.showAlbumsBtn.style.display = "";
+  els.playerCard.classList.remove("hide");
+  els.sideCard.classList.remove("hide");
+}
+
+els.showAlbumsBtn.onclick = function() {
+  currentAlbum = null;
+  currentIndex = null;
+  renderAlbumGrid();
+  els.list.innerHTML = '<div class="row"><div>Select an album to view songs.</div></div>';
+  els.title.textContent = 'No song selected';
+  els.meta.textContent = '—';
+  els.thumb.innerHTML = `<svg width="60" height="60" viewBox="0 0 24 24" fill="currentColor"><path d="M10 17l6-5-6-5v10z"/></svg>`;
+};
+
+function renderList() {
+  els.list.innerHTML = '';
+  let songs = playlist;
+  if (currentAlbum) songs = songs.filter(item => item.poster === currentAlbum);
+
+  const q = els.search.value.trim().toLowerCase();
+  if (q) {
+    songs = songs.filter(item =>
+      item.title.toLowerCase().includes(q) ||
+      (item.artist && item.artist.toLowerCase().includes(q))
+    );
+  }
+
+  if (currentAlbum) {
+    const backRow = document.createElement('div');
+    backRow.className = 'row album-back-row';
+    backRow.innerHTML = `
+      <div style="width:32px;text-align:center;">
+        <img src="https://cdn-icons-png.flaticon.com/512/271/271220.png" alt="Back" style="width:24px;">
+      </div>
+      <div style="font-weight:bold;color:var(--accent2);">Back to Albums</div>
+      <div></div>
+    `;
+    backRow.onclick = els.showAlbumsBtn.onclick;
+    els.list.appendChild(backRow);
+  }
+
+  if (!songs.length) {
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.innerHTML = "<div>No songs found.</div>";
+    els.list.appendChild(row);
+    return;
+  }
+
+  songs.forEach((item,i) => {
+    const idx = playlist.indexOf(item);
+    const row = document.createElement('div');
+    row.className = 'row' + (idx === currentIndex ? ' active' : '');
+    row.dataset.index = idx;
+
+    const dot = document.createElement('div');
+    dot.className = 'dot ' + item.type;
+
+    const name = document.createElement('div');
+    name.className = 'name';
+    name.textContent = `${i + 1}.- ${item.title}`; // ✅ numeración solicitada
+
+    const dur = document.createElement('div');
+    dur.className = 'dur';
+    dur.textContent = item.type === 'audio' ? 'MP3' : (item.type === 'youtube' ? 'YouTube' : 'MP4');
+
+    row.append(dot, name, dur);
+    row.addEventListener('click', () => load(idx, true));
+    els.list.appendChild(row);
+  });
+
+  if (currentIndex === null || !songs.find(s => playlist.indexOf(s) === currentIndex)) {
+    load(playlist.indexOf(songs[0]), false);
+  }
+}
+
+function load(i, autoplay=false) {
+  currentIndex = i;
+  const item = playlist[i];
+  els.title.textContent = item.title;
+  els.meta.textContent = (item.artist || '') + ' · ' + (item.type === 'audio' ? 'Audio' : (item.type === 'youtube' ? 'YouTube Video' : 'Video'));
+  [...els.list.children].forEach(r => r.classList.toggle('active', r.dataset.index == i));
+
+  if (item.type === 'youtube') {
+    els.audio.pause();
+    els.thumb.innerHTML = `<iframe src="https://www.youtube.com/embed/${item.src}" title="${item.title}" frameborder="0"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowfullscreen></iframe>`;
+  } else if (item.type === 'video') {
+    els.audio.pause();
+    els.thumb.innerHTML = `<video src="${item.src}" autoplay playsinline controls></video>`;
+    const vid = els.thumb.querySelector('video');
+    vid.muted = false;
+    vid.loop = els.loopBtn.getAttribute('aria-pressed') === 'true';
+    vid.onended = () => { if (!vid.loop) next(); };
+    if (autoplay) vid.play().catch(()=>{});
+  } else {
+    els.thumb.innerHTML = `<img src="${item.poster}" alt="cover art">`;
+    els.audio.src = item.src;
+    els.audio.loop = els.loopBtn.getAttribute('aria-pressed') === 'true';
+    els.audio.onended = () => { if (!els.audio.loop) next(); };
+    if (autoplay) els.audio.play().catch(()=>{});
+  }
+}
+
+function next(){
+  let songs = playlist;
+  if (currentAlbum) songs = songs.filter(item => item.poster === currentAlbum);
+  const currentFilteredIdx = songs.findIndex(item => playlist.indexOf(item) === currentIndex);
+  const nextFilteredIdx = (currentFilteredIdx + 1) % songs.length;
+  const nextRealIdx = playlist.indexOf(songs[nextFilteredIdx]);
+  load(nextRealIdx, true);
+}
+
+function prev(){
+  let songs = playlist;
+  if (currentAlbum) songs = songs.filter(item => item.poster === currentAlbum);
+  const currentFilteredIdx = songs.findIndex(item => playlist.indexOf(item) === currentIndex);
+  const prevFilteredIdx = (currentFilteredIdx - 1 + songs.length) % songs.length;
+  const prevRealIdx = playlist.indexOf(songs[prevFilteredIdx]);
+  load(prevRealIdx, true);
+}
+
+els.prevBtn.addEventListener('click', prev);
+els.nextBtn.addEventListener('click', next);
+els.playBtn.addEventListener('click', ()=>{
+  const vid = els.thumb.querySelector('video');
+  if (vid) vid.paused ? vid.play() : vid.pause();
+  else els.audio.paused ? els.audio.play() : els.audio.pause();
+});
+els.shuffleBtn.addEventListener('click', ()=>{
+  shuffle = !shuffle;
+  els.shuffleBtn.setAttribute('aria-pressed', shuffle);
+});
+els.loopBtn.addEventListener('click', ()=>{
+  const now = els.loopBtn.getAttribute('aria-pressed') === 'true';
+  els.loopBtn.setAttribute('aria-pressed', !now);
+  const vid = els.thumb.querySelector('video');
+  if (vid) vid.loop = !now;
+  else els.audio.loop = !now;
+});
+els.search.addEventListener('input', renderList);
+els.clearBtn.addEventListener('click', ()=>{ els.search.value=''; renderList(); });
+
+// ---------- Recorder logic ----------
+let recognition = null, mediaRecorder = null, audioChunks = [], finalTranscript = "";
+let isRecording = false;
+const transcriptBox = document.getElementById('transcript');
+const recordBtn = document.getElementById('recordBtn');
+const stopBtn = document.getElementById('stopBtn');
+const downloadPDFBtn = document.getElementById('downloadPDF');
+const downloadAudioBtn = document.getElementById('downloadAudio');
+const audioPlayer = document.getElementById('audioPlayer');
+let audioBlob = null;
+
+let recordStartTime = null;
+let recordEndTime = null;
+
+const attemptCountSpan = document.getElementById('attemptCount');
+let attemptCount = 0;
+const autoDate = document.getElementById('autoDate');
+const autoTime = document.getElementById('autoTime');
+const speechDuration = document.getElementById('speechDuration');
+const studentNameInput = document.getElementById('studentName');
+
+function pad2(d) { return d.toString().padStart(2, '0'); }
+function formatDuration(secs) {
+  const m = Math.floor(secs / 60);
+  const s = Math.floor(secs % 60);
+  return pad2(m) + ':' + pad2(s);
+}
+function showDateTime(dt) {
+  if (!dt) dt = new Date();
+  autoDate.textContent = dt.toLocaleDateString();
+  autoTime.textContent = dt.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+}
+function getAttemptsForName(name) {
+  if (!name) return 0;
+  const count = localStorage.getItem('attempts_' + name);
+  return count ? parseInt(count, 10) : 0;
+}
+function setAttemptsForName(name, count) {
+  if (!name) return;
+  localStorage.setItem('attempts_' + name, count);
+}
+function updateAttemptCount() {
+  const name = studentNameInput.value || 'Student';
+  attemptCount = getAttemptsForName(name);
+  attemptCountSpan.textContent = attemptCount;
+}
+studentNameInput.addEventListener('input', updateAttemptCount);
+
+function startRecording() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    alert("Sorry, your browser does not support Speech Recognition. Try Chrome or Edge.");
+    return;
+  }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    alert("Sorry, your browser does not support audio recording.");
+    return;
+  }
+
+  finalTranscript = "";
+  transcriptBox.value = "";
+  audioChunks = [];
+  audioBlob = null;
+  downloadPDFBtn.disabled = true;
+  downloadAudioBtn.disabled = true;
+  audioPlayer.style.display = "none";
+  document.getElementById('feedback').style.display = "none";
+  speechDuration.textContent = "00:00";
+
+  recordStartTime = new Date();
+  showDateTime(recordStartTime);
+
+  const name = studentNameInput.value || 'Student';
+  let count = getAttemptsForName(name);
+  count += 1;
+  setAttemptsForName(name, count);
+  attemptCount = count;
+  attemptCountSpan.textContent = attemptCount;
+
+  recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+  recognition.lang = 'en-US';
+  recognition.continuous = true;
+  recognition.interimResults = true;
+
+  recognition.onresult = function(event) {
+    let interimTranscript = '';
+    for (let i = event.resultIndex; i < event.results.length; ++i) {
+      if (event.results[i].isFinal) finalTranscript += event.results[i][0].transcript + " ";
+      else interimTranscript += event.results[i][0].transcript;
+    }
+    transcriptBox.value = finalTranscript + interimTranscript;
+  };
+
+  recognition.onerror = function(event) {
+    transcriptBox.value = "Speech recognition error: " + event.error;
+    stopRecording();
+  };
+
+  recognition.start();
+
+  navigator.mediaDevices.getUserMedia({ audio: true })
+    .then(stream => {
+      mediaRecorder = new MediaRecorder(stream);
+      mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+      mediaRecorder.onstop = () => {
+        audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+        audioPlayer.src = URL.createObjectURL(audioBlob);
+        audioPlayer.style.display = "block";
+        downloadAudioBtn.disabled = false;
+      };
+      mediaRecorder.start();
+      recordBtn.disabled = true;
+      recordBtn.classList.add("recording");
+      stopBtn.disabled = false;
+      isRecording = true;
+    })
+    .catch(err => alert("Could not start audio recording: " + err));
+}
+
+function stopRecording() {
+  if (recognition) recognition.stop();
+  if (mediaRecorder && isRecording) {
+    mediaRecorder.stop();
+    isRecording = false;
+    recordBtn.disabled = false;
+    recordBtn.classList.remove("recording");
+    stopBtn.disabled = true;
+    downloadPDFBtn.disabled = false;
+
+    recordEndTime = new Date();
+    const durationSecs = (recordEndTime - recordStartTime) / 1000;
+    speechDuration.textContent = formatDuration(durationSecs);
+    showFeedback(transcriptBox.value);
+  }
+}
+
+function downloadPDF() {
+  const { jsPDF } = window.jspdf;
+  const name = studentNameInput.value || 'Student';
+  const date = autoDate.textContent || "";
+  const time = autoTime.textContent || "";
+  const duration = speechDuration.textContent || "00:00";
+  const attempts = getAttemptsForName(name);
+
+  const doc = new jsPDF();
+  doc.setTextColor(0,0,0);
+  doc.text(`ESL Speaking Transcript\nName: ${name}\nDate: ${date}\nTime: ${time}\nDuration: ${duration}\nAttempts: ${attempts}`, 10, 10);
+
+  doc.setTextColor(30, 90, 30);
+  let y = 52;
+  const transcriptLines = doc.splitTextToSize(transcriptBox.value, 180);
+  doc.text(transcriptLines, 10, y);
+  y += transcriptLines.length * 10;
+
+  const correction = document.getElementById('correctionText').textContent;
+  const suggestion = document.getElementById('correctionSuggestion').textContent;
+  if (correction || suggestion) {
+    doc.setTextColor(0,0,0);
+    y += 10;
+    doc.text("Feedback:", 10, y);
+    y += 8;
+
+    doc.setTextColor(0,60,120);
+    const feedbackLines = doc.splitTextToSize(correction, 180);
+    doc.text(feedbackLines, 10, y);
+    y += feedbackLines.length * 10;
+
+    doc.setTextColor(34, 136, 34);
+    y += 8;
+    doc.text("Suggested Correction:", 10, y);
+    y += 8;
+
+    const suggestionLines = doc.splitTextToSize(suggestion, 180);
+    doc.text(suggestionLines, 10, y);
+  }
+
+  const filename = `${name.replace(/\s+/g,'_')}_${date.replace(/[\/]/g,'-')}_${time.replace(/:/g,'-')}_speaking.pdf`;
+  doc.save(filename);
+}
+
+function downloadAudio() {
+  if (!audioBlob) return;
+  const name = studentNameInput.value || 'Student';
+  const date = autoDate.textContent || "";
+  const time = autoTime.textContent || "";
+  const filename = `${name.replace(/\s+/g,'_')}_${date.replace(/[\/]/g,'-')}_${time.replace(/:/g,'-')}_speaking.wav`;
+
+  const url = URL.createObjectURL(audioBlob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  }, 200);
+}
+
+function showFeedback(text) {
+  const feedbackBox = document.getElementById('feedback');
+  const correctionDiv = document.getElementById('correctionText');
+  const suggestionDiv = document.getElementById('correctionSuggestion');
+  feedbackBox.style.display = "block";
+
+  fetch('https://chattybot-backend.onrender.com/api/grammar-correct', {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text })
+  })
+  .then(res => res.json())
+  .then(data => {
+    correctionDiv.textContent = data.feedback || "No feedback.";
+    suggestionDiv.textContent = data.correction || "(No suggestion)";
+  })
+  .catch(() => {
+    correctionDiv.textContent = "API error.";
+    suggestionDiv.textContent = "";
+  });
+}
+
+// init
+renderAlbumGrid();
+els.list.innerHTML = '<div class="row"><div>Select an album to view songs.</div></div>';
+els.title.textContent = 'No song selected';
+els.meta.textContent = '—';
+els.thumb.innerHTML = `<svg width="60" height="60" viewBox="0 0 24 24" fill="currentColor"><path d="M10 17l6-5-6-5v10z"/></svg>`;
+showDateTime(new Date());
+updateAttemptCount();
+</script>
+</body>
+</html>
